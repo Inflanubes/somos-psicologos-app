@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { EstadoPaciente, Paciente, Psicologo } from '@/types/database'
 import EstadosChart from './_components/EstadosChart'
 import PsicologosChart from './_components/PsicologosChart'

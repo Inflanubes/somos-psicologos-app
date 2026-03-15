@@ -37,9 +37,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  if (pathname === '/login' && session) {
+    const dashboardUrl = request.nextUrl.clone()
+    dashboardUrl.pathname = '/dashboard'
+    return NextResponse.redirect(dashboardUrl)
+  }
+
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*', '/login'],
 }

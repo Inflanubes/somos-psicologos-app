@@ -293,7 +293,7 @@ export default function CallCenterPage() {
             marginBottom: 6,
           }}
         >
-          Call Center
+          Gestiones
         </h1>
         <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
           Registra la acción realizada durante la llamada

@@ -284,7 +284,7 @@ export default function PsicologosPage() {
             marginBottom: 6,
           }}
         >
-          Formulario Psicólogo
+          Citas
         </h1>
         <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
           Gestiona citas y disponibilidad de agenda

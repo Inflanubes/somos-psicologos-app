@@ -10,20 +10,20 @@ export type EstadoPaciente =
   | 'Revisar recomendado'
   | 'Psicólogo sin disponibilidad'
 
-export interface Centro {
+export type Centro = {
   id: string
   nombre: string
   creado_en: string
 }
 
-export interface Psicologo {
+export type Psicologo = {
   id: string
   nombre: string
   centro_id: string
   activo: boolean
 }
 
-export interface Paciente {
+export type Paciente = {
   id: string
   nombre: string
   telefono: string
@@ -38,7 +38,7 @@ export interface Paciente {
   fecha_incorporacion: string
 }
 
-export interface AccionCallCenter {
+export type AccionCallCenter = {
   id: string
   paciente_id: string
   accion: string
@@ -50,7 +50,7 @@ export interface AccionCallCenter {
   comentario: string
 }
 
-export interface AccionPsicologo {
+export type AccionPsicologo = {
   id: string
   psicologo_id: string
   paciente_id: string
@@ -61,34 +61,101 @@ export interface AccionPsicologo {
   hora_cita: string
 }
 
-export interface Database {
+export type HistorialEstado = {
+  id: string
+  paciente_id: string
+  estado_anterior: EstadoPaciente
+  estado_nuevo: EstadoPaciente
+  fecha_cambio: string
+  origen: string
+  comentario: string
+}
+
+export type PacienteInsert = {
+  nombre: string
+  telefono: string
+  email?: string | null
+  edad?: number | null
+  es_menor?: boolean | null
+  centro_id: string
+  psicologo_id?: string | null
+  estado: EstadoPaciente
+  fecha_cita?: string | null
+  hora_cita?: string | null
+  fecha_incorporacion?: string | null
+}
+
+export type AccionCallCenterInsert = {
+  paciente_id: string
+  accion: string
+  agente_nombre?: string | null
+  centro_id?: string | null
+  psicologo_id?: string | null
+  fecha_cita?: string | null
+  hora_cita?: string | null
+  comentario?: string | null
+}
+
+export type AccionPsicologoInsert = {
+  psicologo_id: string
+  paciente_id?: string | null
+  accion: string
+  fecha_bloqueo_inicio?: string | null
+  fecha_bloqueo_fin?: string | null
+  fecha_cita?: string | null
+  hora_cita?: string | null
+}
+
+export type HistorialEstadoInsert = {
+  paciente_id: string
+  estado_anterior: EstadoPaciente
+  estado_nuevo: EstadoPaciente
+  fecha_cambio?: string | null
+  origen?: string | null
+  comentario?: string | null
+}
+
+export type Database = {
   public: {
     Tables: {
       centros: {
         Row: Centro
         Insert: Omit<Centro, 'id' | 'creado_en'>
         Update: Partial<Omit<Centro, 'id'>>
+        Relationships: []
       }
       psicologos: {
         Row: Psicologo
         Insert: Omit<Psicologo, 'id'>
         Update: Partial<Omit<Psicologo, 'id'>>
+        Relationships: []
       }
       pacientes: {
         Row: Paciente
-        Insert: Omit<Paciente, 'id'>
-        Update: Partial<Omit<Paciente, 'id'>>
+        Insert: PacienteInsert
+        Update: Partial<PacienteInsert>
+        Relationships: []
       }
       acciones_call_center: {
         Row: AccionCallCenter
-        Insert: Omit<AccionCallCenter, 'id'>
-        Update: Partial<Omit<AccionCallCenter, 'id'>>
+        Insert: AccionCallCenterInsert
+        Update: Partial<AccionCallCenterInsert>
+        Relationships: []
       }
       acciones_psicologos: {
         Row: AccionPsicologo
-        Insert: Omit<AccionPsicologo, 'id'>
-        Update: Partial<Omit<AccionPsicologo, 'id'>>
+        Insert: AccionPsicologoInsert
+        Update: Partial<AccionPsicologoInsert>
+        Relationships: []
+      }
+      historial_estados: {
+        Row: HistorialEstado
+        Insert: HistorialEstadoInsert
+        Update: Partial<HistorialEstadoInsert>
+        Relationships: []
       }
     }
+    Views: Record<string, { Row: Record<string, unknown>; Relationships: [] }>
+    Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>
   }
 }

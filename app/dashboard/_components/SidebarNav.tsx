@@ -42,8 +42,8 @@ function PhoneIcon() {
 const navItems = [
   { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true },
   { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon },
-  { href: '/dashboard/psicologos', label: 'Psicólogos', Icon: PersonIcon },
-  { href: '/dashboard/call-center', label: 'Call Center', Icon: PhoneIcon },
+  { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon },
+  { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon },
 ]
 
 export default function SidebarNav() {

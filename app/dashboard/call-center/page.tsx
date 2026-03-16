@@ -25,6 +25,33 @@ const ACCIONES: AccionCallCenter[] = [
 
 const ACCIONES_CON_FECHA: AccionCallCenter[] = ['He AGENDADO cita', 'He CAMBIADO cita']
 
+async function generarInicialesUnicas(nombre: string): Promise<string> {
+  // Build base initials: first letter of each word, uppercase, max 4 chars
+  const base = nombre
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+    .slice(0, 4)
+
+  if (!base) return 'XX'
+
+  // Fetch all existing iniciales that start with the base
+  const { data } = await supabase
+    .from('pacientes')
+    .select('iniciales')
+    .like('iniciales', `${base}%`)
+
+  const existing = new Set((data ?? []).map((r: { iniciales: string | null }) => r.iniciales))
+
+  if (!existing.has(base)) return base
+
+  // Find the next available suffix number
+  let n = 2
+  while (existing.has(`${base}${n}`)) n++
+  return `${base}${n}`
+}
+
 function mapAccionToEstado(accion: AccionCallCenter, estadoActual: EstadoPaciente): EstadoPaciente {
   switch (accion) {
     case 'He AGENDADO cita':
@@ -164,6 +191,8 @@ export default function CallCenterPage() {
         pacienteId = existentes[0].id
         estadoAnterior = existentes[0].estado
       } else {
+        const iniciales = await generarInicialesUnicas(nombre)
+
         const { data: nuevo, error: errInsert } = await supabase
           .from('pacientes')
           .insert({
@@ -171,13 +200,14 @@ export default function CallCenterPage() {
             telefono,
             email,
             centro_id: centroId,
-            psicologo_id: psicologoId || centroId, // fallback to avoid null if schema requires
+            psicologo_id: psicologoId || centroId,
             estado: 'Nuevo paciente' as EstadoPaciente,
             es_menor: esMenor,
             edad: esMenor && edad ? parseInt(edad, 10) : 0,
             fecha_cita: showFechaHora && fecha ? fecha : '',
             hora_cita: showFechaHora && hora ? hora : '',
             fecha_incorporacion: new Date().toISOString(),
+            iniciales,
           })
           .select('id')
           .single()

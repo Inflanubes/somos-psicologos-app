@@ -11,8 +11,8 @@ function KpiCard({
   value,
   sub,
   icon,
-  accent = '#3a8c8c',
-  accentBg = '#e8f4f4',
+  accent = '#2f5aae',
+  accentBg = '#eef2fb',
 }: {
   label: string
   value: string | number
@@ -27,8 +27,8 @@ function KpiCard({
         background: '#ffffff',
         borderRadius: 12,
         padding: '22px 24px',
-        border: '1px solid rgba(58,140,140,0.13)',
-        boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
+        border: '1px solid rgba(47,90,174,0.13)',
+        boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
         transition: 'box-shadow 0.2s, transform 0.2s',
         display: 'flex',
         flexDirection: 'column',
@@ -57,7 +57,7 @@ function KpiCard({
           style={{
             fontSize: 30,
             fontWeight: 700,
-            color: '#1a2e2e',
+            color: '#272626',
             lineHeight: 1,
             marginBottom: 6,
             fontVariantNumeric: 'tabular-nums',
@@ -65,9 +65,9 @@ function KpiCard({
         >
           {value}
         </div>
-        <div style={{ fontSize: 13, color: '#5a7070', fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: 13, color: '#4a5870', fontWeight: 500 }}>{label}</div>
         {sub && (
-          <div style={{ fontSize: 11.5, color: '#9ab0b0', marginTop: 4 }}>{sub}</div>
+          <div style={{ fontSize: 11.5, color: '#8899bb', marginTop: 4 }}>{sub}</div>
         )}
       </div>
     </div>
@@ -82,15 +82,15 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
         background: '#ffffff',
         borderRadius: 12,
         padding: '24px',
-        border: '1px solid rgba(58,140,140,0.13)',
-        boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
+        border: '1px solid rgba(47,90,174,0.13)',
+        boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
       }}
     >
       <h3
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: '#2a4545',
+          color: '#3a4a6b',
           marginBottom: 20,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
@@ -238,14 +238,14 @@ export default async function DashboardPage() {
             fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
             fontSize: 26,
             fontWeight: 600,
-            color: '#1a2e2e',
+            color: '#272626',
             margin: 0,
             marginBottom: 6,
           }}
         >
           Panel General
         </h1>
-        <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0, textTransform: 'capitalize' }}>
+        <p style={{ fontSize: 13.5, color: '#667799', margin: 0, textTransform: 'capitalize' }}>
           {today}
         </p>
         {centrosList.length > 0 && (
@@ -258,8 +258,8 @@ export default async function DashboardPage() {
                   borderRadius: 20,
                   fontSize: 12,
                   fontWeight: 500,
-                  background: '#e8f4f4',
-                  color: '#2a6b6b',
+                  background: '#eef2fb',
+                  color: '#254d99',
                   border: '1px solid rgba(58,140,140,0.2)',
                 }}
               >
@@ -322,8 +322,8 @@ export default async function DashboardPage() {
           value={psicologosActivos}
           sub={`de ${psi.length} en total`}
           icon={icons.badge}
-          accent="#3a8c8c"
-          accentBg="#e8f4f4"
+          accent="#2f5aae"
+          accentBg="#eef2fb"
         />
       </div>
 
@@ -350,15 +350,15 @@ export default async function DashboardPage() {
           background: '#ffffff',
           borderRadius: 12,
           padding: '24px',
-          border: '1px solid rgba(58,140,140,0.13)',
-          boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
+          border: '1px solid rgba(47,90,174,0.13)',
+          boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
         }}
       >
         <h3
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: '#2a4545',
+            color: '#3a4a6b',
             marginBottom: 4,
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
@@ -366,7 +366,7 @@ export default async function DashboardPage() {
         >
           Pacientes Recientes
         </h3>
-        <p style={{ fontSize: 12, color: '#9ab0b0', marginBottom: 20 }}>
+        <p style={{ fontSize: 12, color: '#8899bb', marginBottom: 20 }}>
           Últimos {tableData.length} registros
         </p>
         <PacientesTable pacientes={tableData} />

@@ -212,7 +212,7 @@ export default function MensajesPage() {
   const tabs: { key: Tab; label: string; count: number; color: string }[] = [
     { key: 'psicologo', label: 'Hablar con Psicólogo', count: pacientesPsicologo.length, color: '#f59e0b' },
     { key: 'dudoso', label: 'Dudosos', count: pacientesDudoso.length, color: '#6366f1' },
-    { key: 'espera', label: 'En Espera / Sin disp.', count: pacientesEspera.length, color: '#3a8c8c' },
+    { key: 'espera', label: 'En Espera / Sin disp.', count: pacientesEspera.length, color: '#2f5aae' },
   ]
 
   return (
@@ -223,13 +223,13 @@ export default function MensajesPage() {
           fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
           fontSize: 26,
           fontWeight: 600,
-          color: '#1a2e2e',
+          color: '#272626',
           margin: 0,
           marginBottom: 6,
         }}>
           Comunicaciones
         </h1>
-        <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
+        <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
           Envía mensajes a pacientes y psicólogos según su estado
         </p>
       </div>
@@ -238,7 +238,7 @@ export default function MensajesPage() {
       <div style={{
         display: 'flex',
         gap: 4,
-        borderBottom: '2px solid rgba(58,140,140,0.1)',
+        borderBottom: '2px solid rgba(47,90,174,0.1)',
         marginBottom: 28,
       }}>
         {tabs.map(t => (
@@ -252,7 +252,7 @@ export default function MensajesPage() {
               cursor: 'pointer',
               fontSize: 13.5,
               fontWeight: tab === t.key ? 700 : 500,
-              color: tab === t.key ? '#1a2e2e' : '#7a9090',
+              color: tab === t.key ? '#272626' : '#667799',
               borderBottom: tab === t.key ? `2px solid ${t.color}` : '2px solid transparent',
               marginBottom: -2,
               display: 'flex',
@@ -268,7 +268,7 @@ export default function MensajesPage() {
               fontSize: 11,
               fontWeight: 700,
               background: tab === t.key ? t.color : '#e8eded',
-              color: tab === t.key ? '#fff' : '#7a9090',
+              color: tab === t.key ? '#fff' : '#667799',
             }}>
               {t.count}
             </span>
@@ -277,13 +277,13 @@ export default function MensajesPage() {
       </div>
 
       {loading ? (
-        <div style={{ color: '#9ab0b0', fontSize: 14 }}>Cargando...</div>
+        <div style={{ color: '#8899bb', fontSize: 14 }}>Cargando...</div>
       ) : (
         <>
           {/* ── Tab: Hablar con psicólogo ── */}
           {tab === 'psicologo' && (
             <div>
-              <p style={{ fontSize: 13, color: '#7a9090', marginBottom: 20 }}>
+              <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
                 Pacientes que llevan más de 1 día esperando que un psicólogo les llame.
                 El mensaje se envía <strong>al psicólogo</strong> con los datos del paciente.
               </p>
@@ -295,9 +295,9 @@ export default function MensajesPage() {
                     <Card key={p.id}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: '#1a2e2e', marginBottom: 4 }}>{p.nombre}</div>
-                          <div style={{ fontSize: 13, color: '#5a7070' }}>📞 {p.telefono} · {p.centro_nombre}</div>
-                          <div style={{ fontSize: 13, color: '#5a7070', marginTop: 2 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: '#272626', marginBottom: 4 }}>{p.nombre}</div>
+                          <div style={{ fontSize: 13, color: '#4a5870' }}>📞 {p.telefono} · {p.centro_nombre}</div>
+                          <div style={{ fontSize: 13, color: '#4a5870', marginTop: 2 }}>
                             Psicólogo asignado: <strong>{p.psicologo_nombre}</strong>
                           </div>
                         </div>
@@ -334,7 +334,7 @@ export default function MensajesPage() {
           {/* ── Tab: Dudosos ── */}
           {tab === 'dudoso' && (
             <div>
-              <p style={{ fontSize: 13, color: '#7a9090', marginBottom: 20 }}>
+              <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
                 Pacientes indecisos. Escribe un mensaje personalizado para cada uno
                 y se enviará al <strong>número del paciente</strong>.
               </p>
@@ -346,8 +346,8 @@ export default function MensajesPage() {
                     <Card key={p.id}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                         <div style={{ minWidth: 200 }}>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: '#1a2e2e', marginBottom: 4 }}>{p.nombre}</div>
-                          <div style={{ fontSize: 13, color: '#5a7070' }}>📞 {p.telefono}</div>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: '#272626', marginBottom: 4 }}>{p.nombre}</div>
+                          <div style={{ fontSize: 13, color: '#4a5870' }}>📞 {p.telefono}</div>
                           <div style={{ marginTop: 6 }}>
                             <Badge text={p.estado} color={p.estado === 'Dudoso' ? 'amber' : 'gray'} />
                           </div>
@@ -364,7 +364,7 @@ export default function MensajesPage() {
                               borderRadius: 8,
                               border: '1.5px solid #d4e0e0',
                               fontSize: 13,
-                              color: '#1a2e2e',
+                              color: '#272626',
                               resize: 'vertical',
                               outline: 'none',
                               boxSizing: 'border-box',
@@ -400,7 +400,7 @@ export default function MensajesPage() {
           {/* ── Tab: En espera ── */}
           {tab === 'espera' && (
             <div>
-              <p style={{ fontSize: 13, color: '#7a9090', marginBottom: 20 }}>
+              <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
                 Mensajes estándar enviados automáticamente a cada paciente.
                 Make personaliza el nombre en cada envío.
               </p>
@@ -417,8 +417,8 @@ export default function MensajesPage() {
                       marginBottom: 12,
                     }}>
                       <div>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: '#1a2e2e' }}>{estado}</span>
-                        <span style={{ fontSize: 13, color: '#9ab0b0', marginLeft: 8 }}>{lista.length} paciente{lista.length !== 1 ? 's' : ''}</span>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: '#272626' }}>{estado}</span>
+                        <span style={{ fontSize: 13, color: '#8899bb', marginLeft: 8 }}>{lista.length} paciente{lista.length !== 1 ? 's' : ''}</span>
                       </div>
                       {allSent ? (
                         <Badge text="✓ Todos enviados" color="blue" />
@@ -433,11 +433,11 @@ export default function MensajesPage() {
                     {/* Preview message */}
                     <div style={{
                       background: '#f7f9f9',
-                      border: '1px solid rgba(58,140,140,0.12)',
+                      border: '1px solid rgba(47,90,174,0.12)',
                       borderRadius: 8,
                       padding: '10px 14px',
                       fontSize: 13,
-                      color: '#5a7070',
+                      color: '#4a5870',
                       marginBottom: 12,
                       fontStyle: 'italic',
                     }}>
@@ -454,13 +454,13 @@ export default function MensajesPage() {
                             padding: '10px 16px',
                             background: '#fff',
                             borderRadius: 8,
-                            border: '1px solid rgba(58,140,140,0.1)',
+                            border: '1px solid rgba(47,90,174,0.1)',
                             fontSize: 13,
                           }}
                         >
                           <div>
-                            <span style={{ fontWeight: 500, color: '#1a2e2e' }}>{p.nombre}</span>
-                            <span style={{ color: '#9ab0b0', marginLeft: 10 }}>📞 {p.telefono}</span>
+                            <span style={{ fontWeight: 500, color: '#272626' }}>{p.nombre}</span>
+                            <span style={{ color: '#8899bb', marginLeft: 10 }}>📞 {p.telefono}</span>
                           </div>
                           {enviados[`espera-${p.id}`] ? (
                             <Badge text="✓ Enviado" color="blue" />
@@ -500,9 +500,9 @@ function Card({ children }: { children: React.ReactNode }) {
     <div style={{
       background: '#fff',
       borderRadius: 10,
-      border: '1px solid rgba(58,140,140,0.13)',
+      border: '1px solid rgba(47,90,174,0.13)',
       padding: '16px 20px',
-      boxShadow: '0 1px 4px rgba(58,140,140,0.05)',
+      boxShadow: '0 1px 4px rgba(47,90,174,0.05)',
     }}>
       {children}
     </div>
@@ -514,11 +514,11 @@ function Empty({ text }: { text: string }) {
     <div style={{
       textAlign: 'center',
       padding: '48px 20px',
-      color: '#9ab0b0',
+      color: '#8899bb',
       fontSize: 14,
       background: '#fff',
       borderRadius: 10,
-      border: '1px solid rgba(58,140,140,0.1)',
+      border: '1px solid rgba(47,90,174,0.1)',
     }}>
       {text}
     </div>
@@ -540,15 +540,17 @@ function SendButton({
       disabled={loading || disabled}
       style={{
         padding: small ? '5px 12px' : '7px 16px',
-        borderRadius: 8,
+        borderRadius: 30,
         border: 'none',
-        background: loading || disabled ? '#c8dede' : '#3a8c8c',
+        background: loading || disabled ? '#a0b0cc' : '#2f5aae',
         color: '#fff',
         fontSize: small ? 12 : 13,
         fontWeight: 600,
         cursor: loading || disabled ? 'not-allowed' : 'pointer',
         transition: 'background 0.15s',
         whiteSpace: 'nowrap',
+        fontFamily: '"Varela Round", inherit',
+        boxShadow: '0 4px 14px rgba(47,90,174,0.30)',
       }}
     >
       {loading ? 'Enviando...' : label}

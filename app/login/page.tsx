@@ -35,11 +35,11 @@ export default function LoginPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#f7f4ef',
+        background: '#f4f5f7',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: '"DM Sans", system-ui, sans-serif',
+        fontFamily: '"Montserrat", system-ui, sans-serif',
       }}
     >
       <div
@@ -49,7 +49,7 @@ export default function LoginPage() {
           padding: '40px 36px',
           width: '100%',
           maxWidth: 400,
-          boxShadow: '0 4px 24px rgba(58,140,140,0.10)',
+          boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
         }}
       >
         {/* Logo */}
@@ -58,12 +58,12 @@ export default function LoginPage() {
             style={{
               width: 44,
               height: 44,
-              background: 'linear-gradient(135deg, #3a8c8c 0%, #2a6b6b 100%)',
+              background: 'linear-gradient(135deg, #2f5aae 0%, #254d99 100%)',
               borderRadius: 12,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(58,140,140,0.28)',
+              boxShadow: '0 4px 12px rgba(47,90,174,0.28)',
             }}
           >
             <svg width="20" height="18" fill="white" viewBox="0 0 20 18">
@@ -71,23 +71,23 @@ export default function LoginPage() {
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#1a2e2e' }}>Somos Psicología</div>
-            <div style={{ fontSize: 11, color: '#3a8c8c', letterSpacing: '0.07em', fontWeight: 500 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#272626' }}>Somos Psicología</div>
+            <div style={{ fontSize: 11, color: '#2f5aae', letterSpacing: '0.07em', fontWeight: 600 }}>
               Panel de Control
             </div>
           </div>
         </div>
 
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#1a2e2e', marginBottom: 6 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#272626', marginBottom: 6 }}>
           Iniciar sesión
         </h1>
-        <p style={{ fontSize: 14, color: '#6b8080', marginBottom: 28 }}>
+        <p style={{ fontSize: 14, color: '#667799', marginBottom: 28 }}>
           Accede con tu cuenta de equipo
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1a2e2e', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a4a6b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Correo electrónico
             </label>
             <input
@@ -98,20 +98,21 @@ export default function LoginPage() {
               placeholder="tu@email.com"
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '11px 14px',
                 borderRadius: 8,
-                border: '1.5px solid #d4e0e0',
+                border: '1.5px solid #dde1ea',
                 fontSize: 14,
-                color: '#1a2e2e',
+                color: '#272626',
                 outline: 'none',
                 boxSizing: 'border-box',
-                background: '#fafcfc',
+                fontFamily: 'inherit',
+                transition: 'border-color 0.2s',
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1a2e2e', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3a4a6b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Contraseña
             </label>
             <input
@@ -122,14 +123,15 @@ export default function LoginPage() {
               placeholder="••••••••"
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '11px 14px',
                 borderRadius: 8,
-                border: '1.5px solid #d4e0e0',
+                border: '1.5px solid #dde1ea',
                 fontSize: 14,
-                color: '#1a2e2e',
+                color: '#272626',
                 outline: 'none',
                 boxSizing: 'border-box',
-                background: '#fafcfc',
+                fontFamily: 'inherit',
+                transition: 'border-color 0.2s',
               }}
             />
           </div>
@@ -137,12 +139,13 @@ export default function LoginPage() {
           {error && (
             <div
               style={{
-                background: '#fff2f2',
-                border: '1px solid #fcc',
+                background: '#fdeaea',
+                border: '1.5px solid #f5b7b1',
                 borderRadius: 8,
                 padding: '10px 14px',
                 fontSize: 13,
                 color: '#c0392b',
+                fontWeight: 600,
               }}
             >
               {error}
@@ -154,15 +157,18 @@ export default function LoginPage() {
             disabled={loading}
             style={{
               marginTop: 4,
-              padding: '12px',
-              borderRadius: 8,
+              padding: '13px',
+              borderRadius: 30,
               border: 'none',
-              background: loading ? '#a0c4c4' : '#3a8c8c',
+              background: loading ? '#a0b0cc' : '#2f5aae',
               color: '#ffffff',
               fontSize: 15,
               fontWeight: 600,
               cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.2s',
+              fontFamily: '"Varela Round", sans-serif',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              boxShadow: loading ? 'none' : '0 4px 14px rgba(47,90,174,0.30)',
+              letterSpacing: '0.3px',
             }}
           >
             {loading ? 'Entrando...' : 'Entrar'}

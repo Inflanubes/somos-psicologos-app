@@ -1,30 +1,23 @@
 import type { ReactNode } from 'react'
-import { DM_Sans, Lora } from 'next/font/google'
+import { Montserrat } from 'next/font/google'
 import SidebarNav from './_components/SidebarNav'
 
-const dmSans = DM_Sans({
+const montserrat = Montserrat({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  variable: '--font-montserrat',
   display: 'swap',
-  weight: ['400', '500', '600'],
-})
-
-const lora = Lora({
-  subsets: ['latin'],
-  variable: '--font-lora',
-  display: 'swap',
-  weight: ['400', '600'],
+  weight: ['400', '500', '600', '700'],
 })
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`${dmSans.variable} ${lora.variable}`}
+      className={montserrat.variable}
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: '#f7f4ef',
-        fontFamily: 'var(--font-dm-sans, "DM Sans", system-ui, sans-serif)',
+        background: '#f4f5f7',
+        fontFamily: 'var(--font-montserrat, "Montserrat", system-ui, sans-serif)',
       }}
     >
       {/* Sidebar */}
@@ -33,7 +26,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           width: 252,
           flexShrink: 0,
           background: '#ffffff',
-          borderRight: '1px solid rgba(58,140,140,0.12)',
+          borderRight: '1px solid rgba(47,90,174,0.12)',
           display: 'flex',
           flexDirection: 'column',
           position: 'sticky',
@@ -46,7 +39,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div
           style={{
             padding: '24px 20px 20px',
-            borderBottom: '1px solid rgba(58,140,140,0.08)',
+            borderBottom: '1px solid rgba(47,90,174,0.08)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -54,13 +47,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               style={{
                 width: 44,
                 height: 44,
-                background: 'linear-gradient(135deg, #3a8c8c 0%, #2a6b6b 100%)',
+                background: 'linear-gradient(135deg, #2f5aae 0%, #254d99 100%)',
                 borderRadius: 12,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(58,140,140,0.28)',
+                boxShadow: '0 4px 12px rgba(47,90,174,0.28)',
               }}
             >
               <svg width="20" height="18" fill="white" viewBox="0 0 20 18">
@@ -70,10 +63,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div>
               <div
                 style={{
-                  fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
+                  fontFamily: 'var(--font-montserrat, "Montserrat", sans-serif)',
                   fontSize: 15.5,
-                  fontWeight: 600,
-                  color: '#1a2e2e',
+                  fontWeight: 700,
+                  color: '#272626',
                   lineHeight: 1.2,
                 }}
               >
@@ -82,9 +75,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <div
                 style={{
                   fontSize: 11,
-                  color: '#3a8c8c',
+                  color: '#2f5aae',
                   letterSpacing: '0.07em',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   marginTop: 2,
                 }}
               >
@@ -100,9 +93,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div
           style={{
             padding: '14px 20px',
-            borderTop: '1px solid rgba(58,140,140,0.08)',
+            borderTop: '1px solid rgba(47,90,174,0.08)',
             fontSize: 11,
-            color: '#c0caca',
+            color: '#a0b0cc',
           }}
         >
           © 2026 Somos Psicología

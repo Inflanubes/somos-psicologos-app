@@ -19,7 +19,7 @@ interface Props {
 export default function PsicologosChart({ data }: Props) {
   if (data.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280, color: '#aab8b8', fontSize: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280, color: '#a0b0cc', fontSize: 14 }}>
         Sin datos disponibles
       </div>
     )
@@ -33,11 +33,11 @@ export default function PsicologosChart({ data }: Props) {
         data: data.map((d) => d.count),
         backgroundColor: data.map((_, i) => {
           const opacity = 1 - i * 0.08
-          return `rgba(58, 140, 140, ${Math.max(0.3, opacity)})`
+          return `rgba(47, 90, 174, ${Math.max(0.3, opacity)})`
         }),
         borderColor: data.map((_, i) => {
           const opacity = 1 - i * 0.08
-          return `rgba(42, 107, 107, ${Math.max(0.3, opacity)})`
+          return `rgba(37, 77, 153, ${Math.max(0.3, opacity)})`
         }),
         borderWidth: 1,
         borderRadius: 6,
@@ -57,7 +57,7 @@ export default function PsicologosChart({ data }: Props) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#1a2e2e',
+              backgroundColor: '#272626',
               titleFont: { family: '"DM Sans", system-ui, sans-serif', size: 12 },
               bodyFont: { family: '"DM Sans", system-ui, sans-serif', size: 12 },
               padding: 10,
@@ -68,10 +68,10 @@ export default function PsicologosChart({ data }: Props) {
           },
           scales: {
             x: {
-              grid: { color: 'rgba(58,140,140,0.08)' },
+              grid: { color: 'rgba(47,90,174,0.08)' },
               ticks: {
                 font: { family: '"DM Sans", system-ui, sans-serif', size: 11 },
-                color: '#7a9090',
+                color: '#667799',
                 stepSize: 1,
               },
               border: { display: false },

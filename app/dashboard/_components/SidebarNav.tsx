@@ -65,7 +65,7 @@ export default function SidebarNav() {
         style={{
           fontSize: 10,
           fontWeight: 700,
-          color: '#b0bcbc',
+          color: '#a0b0cc',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           padding: '0 10px',
@@ -86,17 +86,17 @@ export default function SidebarNav() {
               gap: 10,
               padding: '9px 10px',
               borderRadius: 8,
-              color: isActive ? '#3a8c8c' : '#4a5870',
-              background: isActive ? '#e8f4f4' : 'transparent',
+              color: isActive ? '#2f5aae' : '#4a5870',
+              background: isActive ? '#eef2fb' : 'transparent',
               textDecoration: 'none',
               fontSize: 13.5,
-              fontWeight: isActive ? 600 : 500,
+              fontWeight: isActive ? 700 : 500,
               marginBottom: 2,
               transition: 'background 0.15s, color 0.15s',
-              borderLeft: isActive ? '3px solid #3a8c8c' : '3px solid transparent',
+              borderLeft: isActive ? '3px solid #2f5aae' : '3px solid transparent',
             }}
           >
-            <span style={{ color: isActive ? '#3a8c8c' : '#7a9090', lineHeight: 1 }}>
+            <span style={{ color: isActive ? '#2f5aae' : '#8899bb', lineHeight: 1 }}>
               <Icon />
             </span>
             {label}

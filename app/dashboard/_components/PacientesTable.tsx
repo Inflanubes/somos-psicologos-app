@@ -21,7 +21,7 @@ interface Props {
 }
 
 const ESTADO_STYLE: Record<EstadoPaciente, { bg: string; color: string }> = {
-  'Nuevo paciente':              { bg: '#e8f4f4', color: '#2a6b6b' },
+  'Nuevo paciente':              { bg: '#eef2fb', color: '#254d99' },
   'Agendado':                    { bg: '#d1fae5', color: '#065f46' },
   'Anulado':                     { bg: '#fee2e2', color: '#991b1b' },
   'Sin disponibilidad':          { bg: '#f3f4f6', color: '#6b7280' },
@@ -85,7 +85,7 @@ export default function PacientesTable({ pacientes }: Props) {
             height="14"
             fill="none"
             viewBox="0 0 24 24"
-            stroke="#7a9090"
+            stroke="#667799"
             strokeWidth={2.5}
             style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
           >
@@ -104,10 +104,10 @@ export default function PacientesTable({ pacientes }: Props) {
               paddingTop: 8,
               paddingBottom: 8,
               borderRadius: 8,
-              border: '1px solid rgba(58,140,140,0.2)',
-              background: '#f7f4ef',
+              border: '1px solid rgba(47,90,174,0.2)',
+              background: '#f4f5f7',
               fontSize: 13,
-              color: '#1a2e2e',
+              color: '#272626',
               outline: 'none',
               fontFamily: 'inherit',
             }}
@@ -119,10 +119,10 @@ export default function PacientesTable({ pacientes }: Props) {
           style={{
             padding: '8px 12px',
             borderRadius: 8,
-            border: '1px solid rgba(58,140,140,0.2)',
-            background: '#f7f4ef',
+            border: '1px solid rgba(47,90,174,0.2)',
+            background: '#f4f5f7',
             fontSize: 13,
-            color: '#1a2e2e',
+            color: '#272626',
             outline: 'none',
             fontFamily: 'inherit',
             cursor: 'pointer',
@@ -133,7 +133,7 @@ export default function PacientesTable({ pacientes }: Props) {
             <option key={e} value={e}>{e}</option>
           ))}
         </select>
-        <span style={{ fontSize: 12, color: '#7a9090', marginLeft: 'auto' }}>
+        <span style={{ fontSize: 12, color: '#667799', marginLeft: 'auto' }}>
           {filtered.length} pacientes
         </span>
       </div>
@@ -142,7 +142,7 @@ export default function PacientesTable({ pacientes }: Props) {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid rgba(58,140,140,0.12)' }}>
+            <tr style={{ borderBottom: '2px solid rgba(47,90,174,0.12)' }}>
               {['Nombre', 'Estado', 'Psicólogo', 'Fecha Cita', 'Edad', 'Teléfono'].map((h) => (
                 <th
                   key={h}
@@ -151,7 +151,7 @@ export default function PacientesTable({ pacientes }: Props) {
                     padding: '10px 12px',
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#7a9090',
+                    color: '#667799',
                     letterSpacing: '0.06em',
                     textTransform: 'uppercase',
                     whiteSpace: 'nowrap',
@@ -165,7 +165,7 @@ export default function PacientesTable({ pacientes }: Props) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '40px 12px', textAlign: 'center', color: '#aab8b8', fontSize: 14 }}>
+                <td colSpan={6} style={{ padding: '40px 12px', textAlign: 'center', color: '#a0b0cc', fontSize: 14 }}>
                   No se encontraron pacientes
                 </td>
               </tr>
@@ -176,14 +176,14 @@ export default function PacientesTable({ pacientes }: Props) {
                   <tr
                     key={p.id}
                     style={{
-                      borderBottom: '1px solid rgba(58,140,140,0.07)',
+                      borderBottom: '1px solid rgba(47,90,174,0.07)',
                       transition: 'background 0.12s',
-                      background: i % 2 === 0 ? 'transparent' : 'rgba(58,140,140,0.018)',
+                      background: i % 2 === 0 ? 'transparent' : 'rgba(47,90,174,0.018)',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(58,140,140,0.05)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(58,140,140,0.018)')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(47,90,174,0.05)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(47,90,174,0.018)')}
                   >
-                    <td style={{ padding: '12px', fontSize: 13.5, fontWeight: 500, color: '#1a2e2e', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px', fontSize: 13.5, fontWeight: 500, color: '#272626', whiteSpace: 'nowrap' }}>
                       {p.nombre}
                       {p.es_menor && (
                         <span
@@ -227,7 +227,7 @@ export default function PacientesTable({ pacientes }: Props) {
                     <td style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
                       {p.edad ?? '—'}
                     </td>
-                    <td style={{ padding: '12px', fontSize: 13, color: '#7a9090', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px', fontSize: 13, color: '#667799', whiteSpace: 'nowrap' }}>
                       {p.telefono || '—'}
                     </td>
                   </tr>

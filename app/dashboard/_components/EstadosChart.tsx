@@ -7,7 +7,7 @@ import type { EstadoPaciente } from '@/types/database'
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 const ESTADO_COLORS: Record<EstadoPaciente, string> = {
-  'Nuevo paciente': '#3a8c8c',
+  'Nuevo paciente': '#2f5aae',
   'Agendado': '#10b981',
   'Anulado': '#ef4444',
   'Sin disponibilidad': '#9ca3af',
@@ -29,7 +29,7 @@ export default function EstadosChart({ data }: Props) {
 
   if (filtered.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260, color: '#aab8b8', fontSize: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260, color: '#a0b0cc', fontSize: 14 }}>
         Sin datos disponibles
       </div>
     )
@@ -68,7 +68,7 @@ export default function EstadosChart({ data }: Props) {
               },
             },
             tooltip: {
-              backgroundColor: '#1a2e2e',
+              backgroundColor: '#272626',
               titleFont: { family: '"DM Sans", system-ui, sans-serif', size: 12 },
               bodyFont: { family: '"DM Sans", system-ui, sans-serif', size: 12 },
               padding: 10,

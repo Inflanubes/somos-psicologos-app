@@ -36,7 +36,7 @@ function estadoBadgeStyle(estado: EstadoPaciente): React.CSSProperties {
     case 'Agendado':
       return { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' }
     case 'Nuevo paciente':
-      return { background: '#e8f4f4', color: '#1a5f5f', border: '1px solid #b2dede' }
+      return { background: '#eef2fb', color: '#1a5f5f', border: '1px solid #b2dede' }
     case 'Anulado':
       return { background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' }
     case 'En espera':
@@ -75,10 +75,10 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
 
   const inputStyle: React.CSSProperties = {
     padding: '9px 14px',
-    border: '1px solid rgba(58,140,140,0.25)',
+    border: '1px solid rgba(47,90,174,0.25)',
     borderRadius: 8,
     fontSize: 13.5,
-    color: '#1a2e2e',
+    color: '#272626',
     background: '#fff',
     outline: 'none',
     fontFamily: 'inherit',
@@ -112,10 +112,10 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
             onClick={() => { setSearch(''); setEstadoFilter('') }}
             style={{
               padding: '9px 16px',
-              border: '1px solid rgba(58,140,140,0.25)',
+              border: '1px solid rgba(47,90,174,0.25)',
               borderRadius: 8,
               fontSize: 13,
-              color: '#5a7070',
+              color: '#4a5870',
               background: '#fff',
               cursor: 'pointer',
               fontFamily: 'inherit',
@@ -124,7 +124,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
             Limpiar
           </button>
         )}
-        <span style={{ marginLeft: 'auto', fontSize: 13, color: '#9ab0b0', alignSelf: 'center' }}>
+        <span style={{ marginLeft: 'auto', fontSize: 13, color: '#8899bb', alignSelf: 'center' }}>
           {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -142,10 +142,10 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                     padding: '10px 14px',
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#7a9090',
+                    color: '#667799',
                     textTransform: 'uppercase',
                     letterSpacing: '0.07em',
-                    borderBottom: '1px solid rgba(58,140,140,0.1)',
+                    borderBottom: '1px solid rgba(47,90,174,0.1)',
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -159,7 +159,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
               <tr>
                 <td
                   colSpan={6}
-                  style={{ textAlign: 'center', padding: '48px 0', color: '#9ab0b0', fontSize: 14 }}
+                  style={{ textAlign: 'center', padding: '48px 0', color: '#8899bb', fontSize: 14 }}
                 >
                   No se encontraron pacientes
                 </td>
@@ -170,10 +170,10 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                   key={p.id}
                   style={{
                     borderBottom:
-                      i < filtered.length - 1 ? '1px solid rgba(58,140,140,0.07)' : 'none',
+                      i < filtered.length - 1 ? '1px solid rgba(47,90,174,0.07)' : 'none',
                   }}
                 >
-                  <td style={{ padding: '13px 14px', color: '#1a2e2e', fontWeight: 500 }}>
+                  <td style={{ padding: '13px 14px', color: '#272626', fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {p.nombre}
                       {p.es_menor && (
@@ -193,12 +193,12 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       )}
                     </div>
                     {p.email && (
-                      <div style={{ fontSize: 12, color: '#9ab0b0', marginTop: 2 }}>{p.email}</div>
+                      <div style={{ fontSize: 12, color: '#8899bb', marginTop: 2 }}>{p.email}</div>
                     )}
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#4a6060' }}>{p.telefono || '—'}</td>
-                  <td style={{ padding: '13px 14px', color: '#4a6060' }}>{p.centro_nombre || '—'}</td>
-                  <td style={{ padding: '13px 14px', color: '#4a6060' }}>{p.psicologo_nombre}</td>
+                  <td style={{ padding: '13px 14px', color: '#4a5870' }}>{p.telefono || '—'}</td>
+                  <td style={{ padding: '13px 14px', color: '#4a5870' }}>{p.centro_nombre || '—'}</td>
+                  <td style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
                   <td style={{ padding: '13px 14px' }}>
                     <span
                       style={{
@@ -215,10 +215,10 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       {p.estado}
                     </span>
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#4a6060', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
                     {formatFecha(p.fecha_cita)}
                     {p.hora_cita && (
-                      <span style={{ marginLeft: 6, color: '#9ab0b0', fontSize: 12 }}>
+                      <span style={{ marginLeft: 6, color: '#8899bb', fontSize: 12 }}>
                         {p.hora_cita}
                       </span>
                     )}

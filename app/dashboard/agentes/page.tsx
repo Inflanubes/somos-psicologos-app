@@ -45,20 +45,20 @@ export default function AgentesPage() {
           fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
           fontSize: 26,
           fontWeight: 600,
-          color: '#1a2e2e',
+          color: '#272626',
           margin: 0,
           marginBottom: 6,
         }}>
           Agentes
         </h1>
-        <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
+        <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
           Gestiona el estado activo de cada agente de call center
         </p>
       </div>
 
       {/* Summary */}
       {!loading && (
-        <p style={{ fontSize: 13, color: '#7a9090', marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: '#667799', marginBottom: 16 }}>
           {activos} activo{activos !== 1 ? 's' : ''} de {agentes.length} agente{agentes.length !== 1 ? 's' : ''}
         </p>
       )}
@@ -67,29 +67,29 @@ export default function AgentesPage() {
       <div style={{
         background: '#fff',
         borderRadius: 12,
-        border: '1px solid rgba(58,140,140,0.13)',
-        boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
+        border: '1px solid rgba(47,90,174,0.13)',
+        boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
         overflow: 'hidden',
       }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#9ab0b0', fontSize: 14 }}>
+          <div style={{ padding: 40, textAlign: 'center', color: '#8899bb', fontSize: 14 }}>
             Cargando...
           </div>
         ) : agentes.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#9ab0b0', fontSize: 14 }}>
+          <div style={{ padding: 40, textAlign: 'center', color: '#8899bb', fontSize: 14 }}>
             No hay agentes registrados
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(58,140,140,0.1)' }}>
+              <tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
                 {['Nombre', 'Teléfono', 'Estado', 'Acción'].map(h => (
                   <th key={h} style={{
                     padding: '12px 20px',
                     textAlign: 'left',
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#7a9090',
+                    color: '#667799',
                     textTransform: 'uppercase',
                     letterSpacing: '0.07em',
                   }}>
@@ -103,14 +103,14 @@ export default function AgentesPage() {
                 <tr
                   key={a.id}
                   style={{
-                    borderBottom: i < agentes.length - 1 ? '1px solid rgba(58,140,140,0.07)' : 'none',
+                    borderBottom: i < agentes.length - 1 ? '1px solid rgba(47,90,174,0.07)' : 'none',
                     background: i % 2 === 0 ? '#fff' : '#fafcfc',
                   }}
                 >
-                  <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 500, color: '#1a2e2e' }}>
+                  <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 500, color: '#272626' }}>
                     {a.nombre}
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#5a7070' }}>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#4a5870' }}>
                     {a.telefono ?? '—'}
                   </td>
                   <td style={{ padding: '14px 20px' }}>
@@ -134,9 +134,9 @@ export default function AgentesPage() {
                         padding: '6px 16px',
                         borderRadius: 8,
                         border: '1.5px solid',
-                        borderColor: a.activo ? '#fca5a5' : '#3a8c8c',
-                        background: a.activo ? '#fff' : '#e8f4f4',
-                        color: a.activo ? '#dc2626' : '#2a6b6b',
+                        borderColor: a.activo ? '#fca5a5' : '#2f5aae',
+                        background: a.activo ? '#fff' : '#eef2fb',
+                        color: a.activo ? '#dc2626' : '#254d99',
                         fontSize: 12.5,
                         fontWeight: 600,
                         cursor: toggling === a.id ? 'not-allowed' : 'pointer',

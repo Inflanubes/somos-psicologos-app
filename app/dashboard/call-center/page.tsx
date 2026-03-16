@@ -47,10 +47,10 @@ function mapAccionToEstado(accion: AccionCallCenter, estadoActual: EstadoPacient
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 14px',
-  border: '1px solid rgba(58,140,140,0.25)',
+  border: '1px solid rgba(47,90,174,0.25)',
   borderRadius: 8,
   fontSize: 14,
-  color: '#1a2e2e',
+  color: '#272626',
   background: '#fff',
   outline: 'none',
   fontFamily: 'inherit',
@@ -61,9 +61,10 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: 12.5,
   fontWeight: 600,
-  color: '#2a4545',
+  color: '#2f5aae',
   marginBottom: 6,
   letterSpacing: '0.02em',
+  textTransform: 'uppercase',
 }
 
 function FormField({
@@ -288,14 +289,14 @@ export default function CallCenterPage() {
             fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
             fontSize: 26,
             fontWeight: 600,
-            color: '#1a2e2e',
+            color: '#272626',
             margin: 0,
             marginBottom: 6,
           }}
         >
           Gestiones
         </h1>
-        <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
+        <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
           Registra la acción realizada durante la llamada
         </p>
       </div>
@@ -340,10 +341,9 @@ export default function CallCenterPage() {
       <div
         style={{
           background: '#ffffff',
-          borderRadius: 12,
+          borderRadius: 16,
           padding: '28px 32px',
-          border: '1px solid rgba(58,140,140,0.13)',
-          boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
+          boxShadow: '6px 6px 30px rgba(0,0,0,0.08)',
         }}
       >
         <form onSubmit={handleSubmit}>
@@ -466,7 +466,7 @@ export default function CallCenterPage() {
                 gap: 10,
                 cursor: 'pointer',
                 fontSize: 14,
-                color: '#2a4545',
+                color: '#3a4a6b',
                 fontWeight: 500,
               }}
             >
@@ -474,7 +474,7 @@ export default function CallCenterPage() {
                 type="checkbox"
                 checked={esMenor}
                 onChange={(e) => setEsMenor(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: '#3a8c8c', cursor: 'pointer' }}
+                style={{ width: 16, height: 16, accentColor: '#2f5aae', cursor: 'pointer' }}
               />
               Es paciente menor de edad
             </label>
@@ -512,15 +512,16 @@ export default function CallCenterPage() {
               disabled={loading}
               style={{
                 padding: '11px 28px',
-                background: loading ? '#9ab0b0' : '#3a8c8c',
+                background: loading ? '#8899bb' : '#2f5aae',
                 color: '#fff',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 30,
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
+                fontFamily: '"Varela Round", inherit',
                 transition: 'background 0.2s',
+                boxShadow: '0 4px 14px rgba(47,90,174,0.30)',
               }}
             >
               {loading ? 'Guardando…' : 'Guardar registro'}

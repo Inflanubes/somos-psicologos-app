@@ -167,6 +167,12 @@ export type Database = {
         Update: Partial<HistorialEstadoInsert>
         Relationships: []
       }
+      agentes: {
+        Row: Agente
+        Insert: Omit<Agente, 'id' | 'creado_en'>
+        Update: Partial<Omit<Agente, 'id' | 'creado_en'>>
+        Relationships: []
+      }
     }
     Views: Record<string, { Row: Record<string, unknown>; Relationships: [] }>
     Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>

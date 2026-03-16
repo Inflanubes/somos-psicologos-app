@@ -9,11 +9,11 @@ export interface PacienteRow {
   telefono: string
   estado: EstadoPaciente
   psicologo_nombre: string
-  fecha_cita: string
-  hora_cita: string
+  fecha_cita: string | null
+  hora_cita: string | null
   es_menor: boolean
-  edad: number
-  fecha_incorporacion: string
+  edad: number | null
+  fecha_incorporacion: string | null
 }
 
 interface Props {

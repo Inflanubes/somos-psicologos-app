@@ -33,9 +33,10 @@ export type Paciente = {
   centro_id: string
   psicologo_id: string
   estado: EstadoPaciente
-  fecha_cita: string
-  hora_cita: string
-  fecha_incorporacion: string
+  fecha_cita: string | null
+  hora_cita: string | null
+  fecha_incorporacion: string | null
+  fecha_cambio_estado: string | null
 }
 
 export type AccionCallCenter = {

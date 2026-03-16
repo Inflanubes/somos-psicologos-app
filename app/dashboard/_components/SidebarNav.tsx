@@ -38,6 +38,13 @@ function PhoneIcon() {
     </svg>
   )
 }
+function ChatIcon() {
+  return (
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
 
 const navItems = [
   { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true },
@@ -45,6 +52,7 @@ const navItems = [
   { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon },
   { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon },
   { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon },
+  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon },
 ]
 
 export default function SidebarNav() {

@@ -50,6 +50,7 @@ const navItems = [
   { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true },
   { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon },
   { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon },
+  { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon },
   { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon },
   { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon },
   { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon },

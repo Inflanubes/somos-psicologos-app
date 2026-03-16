@@ -25,6 +25,15 @@ export type Psicologo = {
   telefono: string | null
 }
 
+export type Agente = {
+  id: string
+  nombre: string
+  telefono: string | null
+  activo: boolean
+  centro_id: string | null
+  creado_en: string
+}
+
 export type Paciente = {
   id: string
   nombre: string

@@ -182,7 +182,7 @@ export default function MensajesPage() {
       // Update Supabase after successful send
       if (pacienteId) {
         const tipo = payload.tipo === 'mensaje_dudoso' ? 'dudoso'
-          : payload.tipo === 'notificar_psicologo' ? 'psicologo'
+          : payload.tipo === 'notificar_psicólogo' ? 'psicologo'
           : 'espera'
         await actualizarPaciente(pacienteId, tipo)
       }
@@ -307,14 +307,17 @@ export default function MensajesPage() {
                             <SendButton
                               loading={enviando[p.id]}
                               label="Notificar psicólogo"
-                              onClick={() => enviar(p.id, {
-                                tipo: 'notificar_psicologo',
-                                paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
-                                psicologo: { nombre: p.psicologo_nombre },
-                                centro: p.centro_nombre,
-                                dias_espera: p.dias_espera,
-                                mensaje: `Tienes una llamada pendiente con ${p.nombre} (${p.telefono}). Llevan ${p.dias_espera} día(s) esperando.`,
-                              }, p.id)}
+                              onClick={() => {
+                                const psi = psicologos.find(ps => ps.id === p.psicologo_id)
+                                enviar(p.id, {
+                                  tipo: 'notificar_psicólogo',
+                                  paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
+                                  psicologo: { nombre: p.psicologo_nombre, telefono: psi?.telefono ?? null },
+                                  centro: p.centro_nombre,
+                                  dias_espera: p.dias_espera,
+                                  mensaje: `Tienes una llamada pendiente con ${p.nombre} (${p.telefono}). Llevan ${p.dias_espera} día(s) esperando.`,
+                                }, p.id)
+                              }}
                             />
                           )}
                         </div>

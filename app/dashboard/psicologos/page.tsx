@@ -328,8 +328,8 @@ export default function PsicologosPage() {
         style={{
           background: '#ffffff',
           borderRadius: 16,
-          padding: '28px 32px',
-          boxShadow: '6px 6px 30px rgba(0,0,0,0.08)',
+          padding: '36px 40px',
+          boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
         }}
       >
         <form onSubmit={handleSubmit}>
@@ -392,15 +392,7 @@ export default function PsicologosPage() {
 
           {/* CITA FIELDS */}
           {isCitaAction && (
-            <div
-              style={{
-                background: '#f4f5f7',
-                borderRadius: 10,
-                padding: '4px 20px 4px',
-                marginBottom: 18,
-                border: '1.5px solid #eef0f5',
-              }}
-            >
+            <div>
               <SectionTitle>
                 {accion === 'Agendar cita' ? 'Nueva cita' : accion === 'Cancelar cita' ? 'Cancelar cita' : 'Cambiar cita'}
               </SectionTitle>
@@ -483,15 +475,7 @@ export default function PsicologosPage() {
 
           {/* BLOQUEO FIELDS */}
           {isBloqueoAction && (
-            <div
-              style={{
-                background: '#f4f5f7',
-                borderRadius: 10,
-                padding: '4px 20px 4px',
-                marginBottom: 18,
-                border: '1.5px solid #eef0f5',
-              }}
-            >
+            <div>
               <SectionTitle>
                 {accion === 'Bloquear agenda' ? 'Bloquear agenda' : 'Desbloquear agenda'}
               </SectionTitle>
@@ -549,18 +533,19 @@ export default function PsicologosPage() {
           )}
 
           {/* Submit */}
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 28 }}>
             <button
               type="submit"
               disabled={loading}
               style={{
-                padding: '13px 32px',
+                width: '100%',
+                padding: '14px',
                 background: loading ? '#a0b0cc' : BRAND_BLUE,
                 color: '#fff',
                 border: 'none',
                 borderRadius: 30,
-                fontSize: 14,
-                fontWeight: 600,
+                fontSize: 15,
+                fontWeight: 400,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: "'Varela Round', sans-serif",
                 transition: 'background 0.2s, box-shadow 0.2s',

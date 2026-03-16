@@ -85,6 +85,7 @@ export type PacienteInsert = {
   fecha_cita?: string | null
   hora_cita?: string | null
   fecha_incorporacion?: string | null
+  fecha_cambio_estado?: string | null
 }
 
 export type AccionCallCenterInsert = {

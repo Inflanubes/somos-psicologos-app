@@ -131,8 +131,44 @@ export default function MensajesPage() {
     p => ['En espera', 'Cambio solicitado', 'Psicólogo sin disponibilidad'].includes(p.estado)
   )
 
+  // ── Update patient in Supabase after sending ─────────────────────────────
+  async function actualizarPaciente(pacienteId: string, tipo: 'psicologo' | 'dudoso' | 'espera') {
+    const ahora = new Date().toISOString()
+    if (tipo === 'dudoso') {
+      await supabase
+        .from('pacientes')
+        .update({ estado: 'Dudoso contactado', fecha_cambio_estado: ahora })
+        .eq('id', pacienteId)
+      // Also log in historial_estados
+      await supabase.from('historial_estados').insert({
+        paciente_id: pacienteId,
+        estado_anterior: 'Dudoso',
+        estado_nuevo: 'Dudoso contactado',
+        fecha_cambio: ahora,
+        origen: 'comunicaciones',
+        comentario: 'Contactado desde panel de comunicaciones',
+      })
+      setPacientes(prev => prev.map(p =>
+        p.id === pacienteId
+          ? { ...p, estado: 'Dudoso contactado', fecha_cambio_estado: ahora }
+          : p
+      ))
+    } else {
+      // For 'psicologo' and 'espera': just reset the fecha_cambio_estado (resets days-waiting counter)
+      await supabase
+        .from('pacientes')
+        .update({ fecha_cambio_estado: ahora })
+        .eq('id', pacienteId)
+      setPacientes(prev => prev.map(p =>
+        p.id === pacienteId
+          ? { ...p, fecha_cambio_estado: ahora, dias_espera: 0 }
+          : p
+      ))
+    }
+  }
+
   // ── Send webhook ─────────────────────────────────────────────────────────
-  async function enviar(id: string, payload: object) {
+  async function enviar(id: string, payload: Record<string, unknown> & { tipo: string }, pacienteId?: string) {
     const url = process.env.NEXT_PUBLIC_MAKE_MENSAJES_WEBHOOK
     if (!url) { alert('Webhook de mensajes no configurado.'); return }
     setEnviando(prev => ({ ...prev, [id]: true }))
@@ -143,6 +179,13 @@ export default function MensajesPage() {
         body: JSON.stringify(payload),
       })
       setEnviados(prev => ({ ...prev, [id]: true }))
+      // Update Supabase after successful send
+      if (pacienteId) {
+        const tipo = payload.tipo === 'mensaje_dudoso' ? 'dudoso'
+          : payload.tipo === 'notificar_psicologo' ? 'psicologo'
+          : 'espera'
+        await actualizarPaciente(pacienteId, tipo)
+      }
     } catch {
       alert('Error al enviar el mensaje.')
     }
@@ -159,7 +202,7 @@ export default function MensajesPage() {
         estado,
         paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
         mensaje,
-      })
+      }, p.id)
     }
   }
 
@@ -271,7 +314,7 @@ export default function MensajesPage() {
                                 centro: p.centro_nombre,
                                 dias_espera: p.dias_espera,
                                 mensaje: `Tienes una llamada pendiente con ${p.nombre} (${p.telefono}). Llevan ${p.dias_espera} día(s) esperando.`,
-                              })}
+                              }, p.id)}
                             />
                           )}
                         </div>
@@ -336,7 +379,7 @@ export default function MensajesPage() {
                                   paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
                                   estado: p.estado,
                                   mensaje: mensajesDudoso[p.id],
-                                })}
+                                }, p.id)}
                               />
                             )}
                           </div>
@@ -428,7 +471,7 @@ export default function MensajesPage() {
                                   estado,
                                   paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
                                   mensaje,
-                                })
+                                }, p.id)
                               }}
                             />
                           )}

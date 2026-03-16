@@ -9,6 +9,7 @@ export type EstadoPaciente =
   | 'Dudoso contactado'
   | 'Revisar recomendado'
   | 'Psicólogo sin disponibilidad'
+  | 'Psicólogo'
 
 export type Centro = {
   id: string

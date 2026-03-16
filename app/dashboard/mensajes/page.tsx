@@ -83,6 +83,7 @@ export default function MensajesPage() {
           .from('pacientes')
           .select('id,nombre,telefono,email,estado,psicologo_id,centro_id,fecha_cambio_estado')
           .in('estado', [
+            'Psicólogo',
             'En espera',
             'Cambio solicitado',
             'Psicólogo sin disponibilidad',
@@ -120,37 +121,8 @@ export default function MensajesPage() {
     load()
   }, [])
 
-  // ── Query patients for tabs ──────────────────────────────────────────────
-  // For "Hablar con psicólogo" we query acciones_call_center separately
-  const [pacientesPsicologo, setPacientesPsicologo] = useState<PacienteConExtra[]>([])
-  useEffect(() => {
-    async function loadHablarConPsicologo() {
-      // Get patients whose last call center action was 'Hablar con psicólogo' and estado = 'En espera'
-      const { data } = await supabase
-        .from('acciones_call_center')
-        .select('paciente_id, fecha_cita')
-        .eq('accion', 'Hablar con psicólogo')
-        .order('id', { ascending: false })
-
-      if (!data) return
-      // dedupe - keep most recent per patient
-      const seen = new Set<string>()
-      const recientes = data.filter(r => {
-        if (seen.has(r.paciente_id)) return false
-        seen.add(r.paciente_id)
-        return true
-      })
-      // filter only those in pacientes list with estado En espera and >1 day
-      setPacientesPsicologo(
-        pacientes.filter(p =>
-          recientes.some(r => r.paciente_id === p.id) &&
-          p.estado === 'En espera' &&
-          p.dias_espera >= 1
-        )
-      )
-    }
-    if (!loading) loadHablarConPsicologo()
-  }, [loading, pacientes])
+  // Patients with estado 'Psicólogo' are those waiting for a psychologist callback
+  const pacientesPsicologo = pacientes.filter(p => p.estado === 'Psicólogo')
 
   const pacientesDudoso = pacientes.filter(
     p => p.estado === 'Dudoso' || p.estado === 'Dudoso contactado'

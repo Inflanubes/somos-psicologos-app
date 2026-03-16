@@ -153,8 +153,8 @@ export default function MensajesPage() {
           ? { ...p, estado: 'Dudoso contactado', fecha_cambio_estado: ahora }
           : p
       ))
-    } else {
-      // For 'psicologo' and 'espera': just reset the fecha_cambio_estado (resets days-waiting counter)
+    } else if (tipo === 'espera') {
+      // For 'espera': reset fecha_cambio_estado to record when they were last contacted
       await supabase
         .from('pacientes')
         .update({ fecha_cambio_estado: ahora })
@@ -165,6 +165,8 @@ export default function MensajesPage() {
           : p
       ))
     }
+    // For 'psicologo': no Supabase update — keep the date so days-waiting counter stays accurate
+
   }
 
   // ── Send webhook ─────────────────────────────────────────────────────────

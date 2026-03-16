@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Centro, Psicologo, Paciente, EstadoPaciente } from '@/types/database'
+import type { Centro, Psicologo, Paciente } from '@/types/database'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -11,7 +11,7 @@ type AccionPsicologo =
   | 'Bloquear agenda'
   | 'Desbloquear agenda'
 
-type PeriodoBloqueo = 'Dias' | 'Semanas'
+type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
 
 const ACCIONES: AccionPsicologo[] = [
   'Agendar cita',
@@ -24,49 +24,31 @@ const ACCIONES: AccionPsicologo[] = [
 const ACCIONES_CITA: AccionPsicologo[] = ['Agendar cita', 'Cancelar cita', 'Cambiar cita']
 const ACCIONES_BLOQUEO: AccionPsicologo[] = ['Bloquear agenda', 'Desbloquear agenda']
 
-function mapAccionToEstado(accion: AccionPsicologo): EstadoPaciente | null {
-  switch (accion) {
-    case 'Agendar cita':
-      return 'Agendado'
-    case 'Cancelar cita':
-      return 'Anulado'
-    case 'Cambiar cita':
-      return 'Cambio solicitado'
-    default:
-      return null
-  }
-}
-
-function addPeriodo(startDate: string, duracion: number, periodo: PeriodoBloqueo): string {
-  const d = new Date(startDate)
-  if (periodo === 'Dias') {
-    d.setDate(d.getDate() + duracion)
-  } else {
-    d.setDate(d.getDate() + duracion * 7)
-  }
-  return d.toISOString().split('T')[0]
-}
+const BRAND_BLUE   = '#2f5aae'
+const BRAND_ORANGE = '#ed8f0c'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '10px 14px',
-  border: '1px solid rgba(58,140,140,0.25)',
+  padding: '11px 14px',
+  border: '1.5px solid #dde1ea',
   borderRadius: 8,
   fontSize: 14,
-  color: '#1a2e2e',
+  color: '#272626',
   background: '#fff',
   outline: 'none',
-  fontFamily: 'inherit',
+  fontFamily: "'Montserrat', inherit",
   boxSizing: 'border-box',
+  transition: 'border-color 0.2s',
 }
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: 12.5,
-  fontWeight: 600,
-  color: '#2a4545',
+  fontWeight: 700,
+  color: BRAND_BLUE,
   marginBottom: 6,
-  letterSpacing: '0.02em',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
 }
 
 function FormField({
@@ -89,33 +71,73 @@ function FormField({
   )
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: BRAND_ORANGE,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        margin: '20px 0 14px',
+        paddingBottom: 8,
+        borderBottom: `2px solid #fdefd5`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function InfoBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: '#eef2fb',
+        borderLeft: `4px solid ${BRAND_BLUE}`,
+        borderRadius: '0 8px 8px 0',
+        padding: '10px 14px',
+        fontSize: 13,
+        color: '#3a4a6b',
+        marginBottom: 16,
+        lineHeight: 1.55,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function PsicologosPage() {
   const [centros, setCentros] = useState<Centro[]>([])
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
   const [filteredPsicologos, setFilteredPsicologos] = useState<Psicologo[]>([])
+  const [pacientes, setPacientes] = useState<Paciente[]>([])
+  const [loadingPacientes, setLoadingPacientes] = useState(false)
 
   const [centroId, setCentroId] = useState('')
   const [psicologoId, setPsicologoId] = useState('')
   const [accion, setAccion] = useState<AccionPsicologo | ''>('')
 
   // Cita fields
-  const [pacienteSearch, setPacienteSearch] = useState('')
-  const [pacienteResults, setPacienteResults] = useState<Paciente[]>([])
-  const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null)
-  const [showDropdown, setShowDropdown] = useState(false)
+  const [pacienteIniciales, setPacienteIniciales] = useState('')
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
 
+  // Cambiar cita: current appointment date/time (so Make can find the GCal event)
+  const [fechaActual, setFechaActual] = useState('')
+  const [horaActual, setHoraActual] = useState('')
+
   // Bloqueo fields
   const [fechaInicio, setFechaInicio] = useState('')
+  const [horaInicio, setHoraInicio] = useState('')
   const [periodo, setPeriodo] = useState<PeriodoBloqueo>('Dias')
   const [duracion, setDuracion] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-
-  const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -136,53 +158,46 @@ export default function PsicologosPage() {
       setFilteredPsicologos([])
     }
     setPsicologoId('')
+    setPacientes([])
+    setPacienteIniciales('')
   }, [centroId, psicologos])
 
-  // Patient search debounce
+  // Load patients filtered by selected psychologist
   useEffect(() => {
-    if (pacienteSearch.length < 2) {
-      setPacienteResults([])
-      setShowDropdown(false)
+    if (!psicologoId) {
+      setPacientes([])
+      setPacienteIniciales('')
       return
     }
-    const timer = setTimeout(async () => {
-      const q = pacienteSearch.trim()
-      const { data } = await supabase
-        .from('pacientes')
-        .select('*')
-        .or(`nombre.ilike.%${q}%,telefono.ilike.%${q}%`)
-        .limit(8)
-      setPacienteResults((data ?? []) as Paciente[])
-      setShowDropdown(true)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [pacienteSearch])
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
+    setLoadingPacientes(true)
+    supabase
+      .from('pacientes')
+      .select('id, nombre, iniciales, psicologo_id')
+      .eq('psicologo_id', psicologoId)
+      .not('iniciales', 'is', null)
+      .order('iniciales')
+      .then(({ data }) => {
+        setPacientes((data ?? []) as Paciente[])
+        setLoadingPacientes(false)
+      })
+  }, [psicologoId])
 
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
+  const isCambiarCita = accion === 'Cambiar cita'
 
   function resetForm() {
     setCentroId('')
     setPsicologoId('')
     setAccion('')
-    setPacienteSearch('')
-    setSelectedPaciente(null)
-    setPacienteResults([])
-    setShowDropdown(false)
+    setPacienteIniciales('')
+    setPacientes([])
     setFecha('')
     setHora('')
+    setFechaActual('')
+    setHoraActual('')
     setFechaInicio('')
+    setHoraInicio('')
     setPeriodo('Dias')
     setDuracion('')
   }
@@ -193,7 +208,7 @@ export default function PsicologosPage() {
       setError('Por favor, completa los campos obligatorios.')
       return
     }
-    if (isCitaAction && !selectedPaciente) {
+    if (isCitaAction && !pacienteIniciales) {
       setError('Debes seleccionar un paciente para esta acción.')
       return
     }
@@ -206,60 +221,41 @@ export default function PsicologosPage() {
       const centroNombre = centros.find((c) => c.id === centroId)?.nombre ?? ''
       const psicologoNombre = filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? ''
 
-      const fechaFinCalculada =
-        isBloqueoAction && fechaInicio && duracion
-          ? addPeriodo(fechaInicio, parseInt(duracion, 10), periodo)
-          : null
-
-      // 1. Insert accion_psicologo
-      const { error: errAccion } = await supabase.from('acciones_psicologos').insert({
-        psicologo_id: psicologoId,
-        paciente_id: isCitaAction && selectedPaciente ? selectedPaciente.id : psicologoId,
-        accion: accion as string,
-        fecha_bloqueo_inicio: isBloqueoAction && fechaInicio ? fechaInicio : '',
-        fecha_bloqueo_fin: fechaFinCalculada ?? '',
-        fecha_cita: isCitaAction && fecha ? fecha : '',
-        hora_cita: isCitaAction && hora ? hora : '',
-      })
-
-      if (errAccion) throw new Error(errAccion.message)
-
-      // 2. Update paciente if cita action
-      if (isCitaAction && selectedPaciente) {
-        const nuevoEstado = mapAccionToEstado(accion as AccionPsicologo)
-        if (nuevoEstado) {
-          const { error: errUpdate } = await supabase
-            .from('pacientes')
-            .update({
-              estado: nuevoEstado,
-              ...(fecha ? { fecha_cita: fecha } : {}),
-              ...(hora ? { hora_cita: hora } : {}),
-            })
-            .eq('id', selectedPaciente.id)
-          if (errUpdate) throw new Error(errUpdate.message)
-        }
-      }
-
-      // 3. Fire webhook
       const webhookUrl = process.env.NEXT_PUBLIC_MAKE_PSYCHOLOGIST_WEBHOOK
-      if (webhookUrl) {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            'Selecciona tu centro': centroNombre,
-            'Psicólogos [CENTRO]': psicologoNombre,
-            '¿Qué necesitas hoy?': accion,
-            'Selecciona la fecha': isCitaAction ? fecha : '',
-            'Selecciona la hora': isCitaAction ? hora : '',
-            '¿Cuando quieres que se inicie el bloqueo o desbloqueo de tu agenda?': isBloqueoAction
-              ? fechaInicio
-              : '',
-            'Periodo que quieres bloquear/desbloquear': isBloqueoAction ? periodo : '',
-            'Indícanos la duración en números enteros': isBloqueoAction ? duracion : '',
-          }),
-        })
+      if (!webhookUrl) throw new Error('Webhook URL no configurada.')
+
+      const datosProcesados = {
+        centro: centroNombre,
+        psicologo_nombre: psicologoNombre,
+        accion: accion,
+        paciente_iniciales: isCitaAction ? pacienteIniciales : null,
+        // For "Cambiar cita": fecha_cita/hora_cita = NEW appointment
+        fecha_cita: isCitaAction ? fecha || null : null,
+        hora_cita: isCitaAction ? hora || null : null,
+        // For "Cambiar cita": fecha_inicio_bloqueo/hora_inicio_bloqueo = CURRENT appointment (to find GCal event)
+        // For bloqueo actions: fecha_inicio_bloqueo/hora_inicio_bloqueo = block start
+        fecha_inicio_bloqueo: isCambiarCita
+          ? fechaActual || null
+          : isBloqueoAction
+            ? fechaInicio || null
+            : null,
+        hora_inicio_bloqueo: isCambiarCita
+          ? horaActual || null
+          : isBloqueoAction
+            ? horaInicio || null
+            : null,
+        periodo: isBloqueoAction ? periodo : null,
+        duracion: isBloqueoAction && duracion ? parseInt(duracion, 10) : null,
       }
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'dashboard',
+          datosProcesados,
+        }),
+      })
 
       setSuccess(true)
       resetForm()
@@ -279,14 +275,14 @@ export default function PsicologosPage() {
             fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
             fontSize: 26,
             fontWeight: 600,
-            color: '#1a2e2e',
+            color: '#272626',
             margin: 0,
             marginBottom: 6,
           }}
         >
           Citas
         </h1>
-        <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
+        <p style={{ fontSize: 13.5, color: '#888', margin: 0 }}>
           Gestiona citas y disponibilidad de agenda
         </p>
       </div>
@@ -295,17 +291,17 @@ export default function PsicologosPage() {
       {success && (
         <div
           style={{
-            background: '#dcfce7',
-            border: '1px solid #bbf7d0',
+            background: '#e8f4e8',
+            border: '1.5px solid #b5d9b5',
             borderRadius: 10,
             padding: '14px 18px',
             marginBottom: 24,
-            color: '#166534',
+            color: '#2a7a2a',
             fontSize: 14,
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
-          ✓ Acción registrada correctamente.
+          ✅ ¡Listo! La acción se ha registrado correctamente.
         </div>
       )}
 
@@ -313,17 +309,17 @@ export default function PsicologosPage() {
       {error && (
         <div
           style={{
-            background: '#fee2e2',
-            border: '1px solid #fecaca',
+            background: '#fdeaea',
+            border: '1.5px solid #f5b7b1',
             borderRadius: 10,
             padding: '14px 18px',
             marginBottom: 24,
-            color: '#991b1b',
+            color: '#c0392b',
             fontSize: 14,
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
-          {error}
+          ⚠️ {error}
         </div>
       )}
 
@@ -331,10 +327,9 @@ export default function PsicologosPage() {
       <div
         style={{
           background: '#ffffff',
-          borderRadius: 12,
+          borderRadius: 16,
           padding: '28px 32px',
-          border: '1px solid rgba(58,140,140,0.13)',
-          boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
+          boxShadow: '6px 6px 30px rgba(0,0,0,0.08)',
         }}
       >
         <form onSubmit={handleSubmit}>
@@ -375,6 +370,9 @@ export default function PsicologosPage() {
             </FormField>
           </div>
 
+          {/* Divider */}
+          <hr style={{ border: 'none', borderTop: '1.5px solid #eef0f5', margin: '4px 0 20px' }} />
+
           {/* Acción */}
           <FormField label="¿Qué necesitas hoy?" required>
             <select
@@ -396,153 +394,74 @@ export default function PsicologosPage() {
           {isCitaAction && (
             <div
               style={{
-                background: '#f7f4ef',
+                background: '#f4f5f7',
                 borderRadius: 10,
-                padding: '20px 20px 4px',
+                padding: '4px 20px 4px',
                 marginBottom: 18,
-                border: '1px solid rgba(58,140,140,0.12)',
+                border: '1.5px solid #eef0f5',
               }}
             >
-              <div
-                style={{
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  color: '#3a8c8c',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 14,
-                }}
-              >
-                Datos de la cita
-              </div>
+              <SectionTitle>
+                {accion === 'Agendar cita' ? 'Nueva cita' : accion === 'Cancelar cita' ? 'Cancelar cita' : 'Cambiar cita'}
+              </SectionTitle>
 
-              {/* Patient search */}
-              <FormField label="Buscar paciente" required>
-                <div ref={searchRef} style={{ position: 'relative' }}>
-                  {selectedPaciente ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 14px',
-                        border: '1px solid rgba(58,140,140,0.35)',
-                        borderRadius: 8,
-                        background: '#e8f4f4',
-                        fontSize: 14,
-                        color: '#1a2e2e',
-                      }}
-                    >
-                      <div>
-                        <span style={{ fontWeight: 600 }}>{selectedPaciente.nombre}</span>
-                        <span style={{ color: '#5a7070', marginLeft: 8, fontSize: 12.5 }}>
-                          {selectedPaciente.telefono}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedPaciente(null)
-                          setPacienteSearch('')
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: '#7a9090',
-                          fontSize: 16,
-                          lineHeight: 1,
-                          padding: '0 4px',
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    <input
-                      type="text"
-                      value={pacienteSearch}
-                      onChange={(e) => setPacienteSearch(e.target.value)}
-                      onFocus={() => pacienteResults.length > 0 && setShowDropdown(true)}
-                      placeholder="Escribe nombre o teléfono (mín. 2 caracteres)…"
-                      style={inputStyle}
-                    />
-                  )}
-                  {showDropdown && pacienteResults.length > 0 && !selectedPaciente && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        zIndex: 50,
-                        background: '#fff',
-                        border: '1px solid rgba(58,140,140,0.2)',
-                        borderRadius: 8,
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                        marginTop: 4,
-                        maxHeight: 240,
-                        overflowY: 'auto',
-                      }}
-                    >
-                      {pacienteResults.map((p) => (
-                        <div
-                          key={p.id}
-                          onClick={() => {
-                            setSelectedPaciente(p)
-                            setPacienteSearch('')
-                            setShowDropdown(false)
-                          }}
-                          style={{
-                            padding: '10px 14px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid rgba(58,140,140,0.07)',
-                            fontSize: 13.5,
-                          }}
-                          onMouseEnter={(e) =>
-                            ((e.currentTarget as HTMLDivElement).style.background = '#f7f4ef')
-                          }
-                          onMouseLeave={(e) =>
-                            ((e.currentTarget as HTMLDivElement).style.background = 'transparent')
-                          }
-                        >
-                          <div style={{ fontWeight: 600, color: '#1a2e2e' }}>{p.nombre}</div>
-                          <div style={{ fontSize: 12, color: '#9ab0b0', marginTop: 2 }}>
-                            {p.telefono}
-                            {p.email ? ` · ${p.email}` : ''}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {showDropdown && pacienteResults.length === 0 && pacienteSearch.length >= 2 && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        zIndex: 50,
-                        background: '#fff',
-                        border: '1px solid rgba(58,140,140,0.2)',
-                        borderRadius: 8,
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                        marginTop: 4,
-                        padding: '14px',
-                        fontSize: 13.5,
-                        color: '#9ab0b0',
-                        textAlign: 'center',
-                      }}
-                    >
-                      No se encontraron pacientes
-                    </div>
-                  )}
-                </div>
+              {/* Patient dropdown */}
+              <FormField label="Paciente" required>
+                <select
+                  value={pacienteIniciales}
+                  onChange={(e) => setPacienteIniciales(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                  disabled={!psicologoId || loadingPacientes}
+                  required
+                >
+                  <option value="">
+                    {!psicologoId
+                      ? 'Primero selecciona psicólogo'
+                      : loadingPacientes
+                        ? 'Cargando pacientes…'
+                        : pacientes.length === 0
+                          ? 'Sin pacientes con iniciales'
+                          : 'Selecciona el paciente'}
+                  </option>
+                  {pacientes.map((p) => (
+                    <option key={p.id} value={p.iniciales ?? ''}>
+                      {p.iniciales}
+                    </option>
+                  ))}
+                </select>
               </FormField>
+
+              {/* For Cambiar cita: current appointment */}
+              {isCambiarCita && (
+                <>
+                  <InfoBox>
+                    Fecha y hora <strong>actual</strong> de la cita a cambiar:
+                  </InfoBox>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <FormField label="Fecha actual">
+                      <input
+                        type="date"
+                        value={fechaActual}
+                        onChange={(e) => setFechaActual(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Hora actual">
+                      <input
+                        type="time"
+                        value={horaActual}
+                        onChange={(e) => setHoraActual(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+                  <InfoBox>Nueva fecha y hora:</InfoBox>
+                </>
+              )}
 
               {/* Fecha + hora */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <FormField label="Fecha de cita">
+                <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'}>
                   <input
                     type="date"
                     value={fecha}
@@ -550,7 +469,7 @@ export default function PsicologosPage() {
                     style={inputStyle}
                   />
                 </FormField>
-                <FormField label="Hora de cita">
+                <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'}>
                   <input
                     type="time"
                     value={hora}
@@ -566,80 +485,64 @@ export default function PsicologosPage() {
           {isBloqueoAction && (
             <div
               style={{
-                background: '#f7f4ef',
+                background: '#f4f5f7',
                 borderRadius: 10,
-                padding: '20px 20px 4px',
+                padding: '4px 20px 4px',
                 marginBottom: 18,
-                border: '1px solid rgba(58,140,140,0.12)',
+                border: '1.5px solid #eef0f5',
               }}
             >
-              <div
-                style={{
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  color: '#3a8c8c',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 14,
-                }}
-              >
-                Datos del bloqueo
-              </div>
+              <SectionTitle>
+                {accion === 'Bloquear agenda' ? 'Bloquear agenda' : 'Desbloquear agenda'}
+              </SectionTitle>
 
-              <FormField label="Fecha de inicio">
-                <input
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  style={inputStyle}
-                />
-              </FormField>
+              {accion === 'Desbloquear agenda' && (
+                <InfoBox>Indica la fecha y hora de inicio del bloqueo que quieres eliminar.</InfoBox>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <FormField label="Periodo">
-                  <select
-                    value={periodo}
-                    onChange={(e) => setPeriodo(e.target.value as PeriodoBloqueo)}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="Dias">Días</option>
-                    <option value="Semanas">Semanas</option>
-                  </select>
-                </FormField>
-                <FormField label="Duración">
+                <FormField label="Fecha de inicio">
                   <input
-                    type="number"
-                    value={duracion}
-                    onChange={(e) => setDuracion(e.target.value)}
-                    placeholder="Ej. 2"
-                    min={1}
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Hora de inicio">
+                  <input
+                    type="time"
+                    value={horaInicio}
+                    onChange={(e) => setHoraInicio(e.target.value)}
                     style={inputStyle}
                   />
                 </FormField>
               </div>
 
-              {fechaInicio && duracion && (
-                <div
-                  style={{
-                    marginBottom: 16,
-                    fontSize: 13,
-                    color: '#5a7070',
-                    background: '#e8f4f4',
-                    border: '1px solid rgba(58,140,140,0.2)',
-                    borderRadius: 6,
-                    padding: '8px 12px',
-                  }}
-                >
-                  Fecha fin estimada:{' '}
-                  <strong>
-                    {new Date(
-                      addPeriodo(fechaInicio, parseInt(duracion, 10) || 0, periodo)
-                    ).toLocaleDateString('es-ES', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                    })}
-                  </strong>
+              {accion === 'Bloquear agenda' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <FormField label="Periodo">
+                    <select
+                      value={periodo}
+                      onChange={(e) => setPeriodo(e.target.value as PeriodoBloqueo)}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
+                    >
+                      <option value="Horas">Horas</option>
+                      <option value="Dias">Días</option>
+                      <option value="Semanas">Semanas</option>
+                      <option value="Meses">Meses</option>
+                    </select>
+                  </FormField>
+                  <FormField label="Duración">
+                    <input
+                      type="number"
+                      value={duracion}
+                      onChange={(e) => setDuracion(e.target.value)}
+                      placeholder="Ej. 2"
+                      min={1}
+                      style={inputStyle}
+                    />
+                  </FormField>
                 </div>
               )}
             </div>
@@ -651,19 +554,21 @@ export default function PsicologosPage() {
               type="submit"
               disabled={loading}
               style={{
-                padding: '11px 28px',
-                background: loading ? '#9ab0b0' : '#3a8c8c',
+                padding: '13px 32px',
+                background: loading ? '#a0b0cc' : BRAND_BLUE,
                 color: '#fff',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 30,
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-                transition: 'background 0.2s',
+                fontFamily: "'Varela Round', sans-serif",
+                transition: 'background 0.2s, box-shadow 0.2s',
+                boxShadow: loading ? 'none' : `0 4px 14px rgba(47,90,174,0.30)`,
+                letterSpacing: '0.3px',
               }}
             >
-              {loading ? 'Guardando…' : 'Guardar acción'}
+              {loading ? 'Enviando…' : 'Guardar acción'}
             </button>
           </div>
         </form>

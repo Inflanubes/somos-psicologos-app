@@ -108,6 +108,7 @@ export type AccionCallCenterInsert = {
   fecha_cita?: string | null
   hora_cita?: string | null
   comentario?: string | null
+  created_by?: string | null
 }
 
 export type AccionPsicologoInsert = {
@@ -118,6 +119,7 @@ export type AccionPsicologoInsert = {
   fecha_bloqueo_fin?: string | null
   fecha_cita?: string | null
   hora_cita?: string | null
+  created_by?: string | null
 }
 
 export type HistorialEstadoInsert = {

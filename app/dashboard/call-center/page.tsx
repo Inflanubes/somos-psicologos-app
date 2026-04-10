@@ -232,6 +232,7 @@ export default function CallCenterPage() {
         fecha_cita: showFechaHora && fecha ? fecha : null,
         hora_cita: showFechaHora && hora ? hora : null,
         comentario: comentarios,
+        created_by: 'call center',
       })
 
       if (errAccion) throw new Error(errAccion.message)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Centro, Psicologo, Paciente } from '@/types/database'
+import type { Centro, Psicologo, Paciente, AccionPsicologoInsert } from '@/types/database'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -220,6 +220,28 @@ export default function PsicologosPage() {
     try {
       const centroNombre = centros.find((c) => c.id === centroId)?.nombre ?? ''
       const psicologoNombre = filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? ''
+
+      // Insert into acciones_psicologos
+      const accionPsicologo: AccionPsicologoInsert = {
+        psicologo_id: psicologoId,
+        accion: accion,
+        created_by: psicologoNombre,
+        fecha_cita: isCitaAction ? fecha || null : null,
+        hora_cita: isCitaAction ? hora || null : null,
+        fecha_bloqueo_inicio: isBloqueoAction ? fechaInicio || null : isCambiarCita ? fechaActual || null : null,
+      }
+      if (isCitaAction && pacienteIniciales) {
+        const { data: pacData } = await supabase
+          .from('pacientes')
+          .select('id')
+          .eq('psicologo_id', psicologoId)
+          .eq('iniciales', pacienteIniciales)
+          .limit(1)
+        if (pacData && pacData.length > 0) {
+          accionPsicologo.paciente_id = (pacData[0] as { id: string }).id
+        }
+      }
+      await supabase.from('acciones_psicologos').insert(accionPsicologo)
 
       const webhookUrl = process.env.NEXT_PUBLIC_MAKE_PSYCHOLOGIST_WEBHOOK
       if (!webhookUrl) throw new Error('Webhook URL no configurada.')

@@ -23,7 +23,7 @@ const ACCIONES: AccionCallCenter[] = [
   'Otro',
 ]
 
-const ACCIONES_CON_FECHA: AccionCallCenter[] = ['He AGENDADO cita', 'He CAMBIADO cita']
+const ACCIONES_CON_FECHA: AccionCallCenter[] = ['He AGENDADO cita', 'He CAMBIADO cita', 'He ANULADO cita']
 
 async function generarInicialesUnicas(nombre: string): Promise<string> {
   // Build base initials: first letter of each word, uppercase, max 4 chars
@@ -127,6 +127,8 @@ export default function CallCenterPage() {
   const [accion, setAccion] = useState<AccionCallCenter | ''>('')
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
+  const [fechaAnterior, setFechaAnterior] = useState('')
+  const [horaAnterior, setHoraAnterior] = useState('')
   const [esMenor, setEsMenor] = useState(false)
   const [edad, setEdad] = useState('')
   const [comentarios, setComentarios] = useState('')
@@ -157,6 +159,8 @@ export default function CallCenterPage() {
   }, [centroId, psicologos])
 
   const showFechaHora = accion !== '' && ACCIONES_CON_FECHA.includes(accion as AccionCallCenter)
+  const isCambiarCita = accion === 'He CAMBIADO cita'
+  const isAnularCita = accion === 'He ANULADO cita'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -204,8 +208,8 @@ export default function CallCenterPage() {
             estado: 'Nuevo paciente' as EstadoPaciente,
             es_menor: esMenor,
             edad: esMenor && edad ? parseInt(edad, 10) : 0,
-            fecha_cita: showFechaHora && fecha ? fecha : '',
-            hora_cita: showFechaHora && hora ? hora : '',
+            fecha_cita: showFechaHora && fecha ? fecha : null,
+            hora_cita: showFechaHora && hora ? hora : null,
             fecha_incorporacion: new Date().toISOString(),
             iniciales,
           })
@@ -225,8 +229,8 @@ export default function CallCenterPage() {
         agente_nombre: agenteNombre,
         centro_id: centroId,
         psicologo_id: psicologoId || centroId,
-        fecha_cita: showFechaHora && fecha ? fecha : '',
-        hora_cita: showFechaHora && hora ? hora : '',
+        fecha_cita: showFechaHora && fecha ? fecha : null,
+        hora_cita: showFechaHora && hora ? hora : null,
         comentario: comentarios,
       })
 
@@ -275,6 +279,8 @@ export default function CallCenterPage() {
               'ACCIÓN TOMADA': accionValue,
               'FECHA': fecha,
               'HORA': hora,
+              'FECHA ANTERIOR': isCambiarCita ? fechaAnterior : '',
+              'HORA ANTERIOR': isCambiarCita ? horaAnterior : '',
               'EDAD (si es menor)': esMenor ? edad : '',
               'COMENTARIOS': comentarios,
             },
@@ -300,6 +306,8 @@ export default function CallCenterPage() {
       setAccion('')
       setFecha('')
       setHora('')
+      setFechaAnterior('')
+      setHoraAnterior('')
       setEsMenor(false)
       setEdad('')
       setComentarios('')
@@ -467,23 +475,91 @@ export default function CallCenterPage() {
 
           {/* Fecha + hora (conditional) */}
           {showFechaHora && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <FormField label="Fecha de cita">
-                <input
-                  type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  style={inputStyle}
-                />
-              </FormField>
-              <FormField label="Hora de cita">
-                <input
-                  type="time"
-                  value={hora}
-                  onChange={(e) => setHora(e.target.value)}
-                  style={inputStyle}
-                />
-              </FormField>
+            <div>
+              {/* Cambiar cita: fecha/hora anterior (para que Make encuentre el evento) */}
+              {isCambiarCita && (
+                <>
+                  <div
+                    style={{
+                      background: '#eef2fb',
+                      borderLeft: '4px solid #2f5aae',
+                      borderRadius: '0 8px 8px 0',
+                      padding: '10px 14px',
+                      fontSize: 13,
+                      color: '#3a4a6b',
+                      marginBottom: 14,
+                    }}
+                  >
+                    Fecha y hora <strong>actual</strong> de la cita a cambiar:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <FormField label="Fecha actual de la cita">
+                      <input
+                        type="date"
+                        value={fechaAnterior}
+                        onChange={(e) => setFechaAnterior(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Hora actual de la cita">
+                      <input
+                        type="time"
+                        value={horaAnterior}
+                        onChange={(e) => setHoraAnterior(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+                  <div
+                    style={{
+                      background: '#eef2fb',
+                      borderLeft: '4px solid #2f5aae',
+                      borderRadius: '0 8px 8px 0',
+                      padding: '10px 14px',
+                      fontSize: 13,
+                      color: '#3a4a6b',
+                      marginBottom: 14,
+                    }}
+                  >
+                    Nueva fecha y hora:
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <FormField
+                  label={
+                    isCambiarCita
+                      ? 'Nueva fecha de cita'
+                      : isAnularCita
+                        ? 'Fecha de la cita anulada'
+                        : 'Fecha de cita'
+                  }
+                >
+                  <input
+                    type="date"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField
+                  label={
+                    isCambiarCita
+                      ? 'Nueva hora de cita'
+                      : isAnularCita
+                        ? 'Hora de la cita anulada'
+                        : 'Hora de cita'
+                  }
+                >
+                  <input
+                    type="time"
+                    value={hora}
+                    onChange={(e) => setHora(e.target.value)}
+                    style={inputStyle}
+                  />
+                </FormField>
+              </div>
             </div>
           )}
 

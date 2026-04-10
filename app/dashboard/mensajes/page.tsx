@@ -171,11 +171,9 @@ export default function MensajesPage() {
 
   // ── Send webhook ─────────────────────────────────────────────────────────
   async function enviar(id: string, payload: Record<string, unknown> & { tipo: string }, pacienteId?: string) {
-    const url = process.env.NEXT_PUBLIC_MAKE_MENSAJES_WEBHOOK
-    if (!url) { alert('Webhook de mensajes no configurado.'); return }
     setEnviando(prev => ({ ...prev, [id]: true }))
     try {
-      await fetch(url, {
+      await fetch('/api/webhook/mensajes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

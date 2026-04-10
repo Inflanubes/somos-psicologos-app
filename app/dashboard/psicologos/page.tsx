@@ -243,9 +243,6 @@ export default function PsicologosPage() {
       }
       await supabase.from('acciones_psicologos').insert(accionPsicologo)
 
-      const webhookUrl = process.env.NEXT_PUBLIC_MAKE_PSYCHOLOGIST_WEBHOOK
-      if (!webhookUrl) throw new Error('Webhook URL no configurada.')
-
       const datosProcesados = {
         centro: centroNombre,
         psicologo_nombre: psicologoNombre,
@@ -270,7 +267,7 @@ export default function PsicologosPage() {
         duracion: isBloqueoAction && duracion ? parseInt(duracion, 10) : null,
       }
 
-      await fetch(webhookUrl, {
+      await fetch('/api/webhook/psicologos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

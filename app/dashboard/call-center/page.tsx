@@ -265,9 +265,8 @@ export default function CallCenterPage() {
       const centroNombre = centros.find((c) => c.id === centroId)?.nombre ?? ''
       const psicologoNombre = filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? ''
 
-      const webhookUrl = process.env.NEXT_PUBLIC_MAKE_CALL_CENTER_WEBHOOK
-      if (webhookUrl) {
-        await fetch(webhookUrl, {
+      {
+        await fetch('/api/webhook/call-center', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

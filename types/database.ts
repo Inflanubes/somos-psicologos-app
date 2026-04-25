@@ -1,16 +1,19 @@
-export type EstadoPaciente =
-  | 'Nuevo paciente'
-  | 'Agendado'
-  | 'Anulado'
-  | 'Sin disponibilidad'
-  | 'En espera'
-  | 'Cambio solicitado'
-  | 'Dudoso'
-  | 'Dudoso contactado'
-  | 'Revisar recomendado'
-  | 'Psicólogo sin disponibilidad'
-  | 'Psicólogo'
-  | 'Inactivo'
+export const ESTADOS_PACIENTE = [
+  'Nuevo paciente',
+  'Agendado',
+  'Anulado',
+  'Sin disponibilidad',
+  'En espera',
+  'Cambio solicitado',
+  'Dudoso',
+  'Dudoso contactado',
+  'Revisar recomendado',
+  'Psicólogo sin disponibilidad',
+  'Psicólogo',
+  'Inactivo',
+] as const
+
+export type EstadoPaciente = typeof ESTADOS_PACIENTE[number]
 
 export type Centro = {
   id: string

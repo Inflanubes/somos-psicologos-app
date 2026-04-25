@@ -22,7 +22,7 @@ type PacienteConExtra = PacienteBase & {
   dias_espera: number
 }
 
-type Tab = 'psicologo' | 'dudoso' | 'espera'
+type Tab = 'psicologo' | 'dudoso' | 'espera' | 'sin-disp'
 
 const MENSAJES_ESPERA: Record<string, string> = {
   'En espera':
@@ -87,6 +87,7 @@ export default function MensajesPage() {
             'En espera',
             'Cambio solicitado',
             'Psicólogo sin disponibilidad',
+            'Sin disponibilidad',
             'Dudoso',
             'Dudoso contactado',
           ]),
@@ -130,9 +131,10 @@ export default function MensajesPage() {
   const pacientesEspera = pacientes.filter(
     p => ['En espera', 'Cambio solicitado', 'Psicólogo sin disponibilidad'].includes(p.estado)
   )
+  const pacientesSinDisp = pacientes.filter(p => p.estado === 'Sin disponibilidad')
 
   // ── Update patient in Supabase after sending ─────────────────────────────
-  async function actualizarPaciente(pacienteId: string, tipo: 'psicologo' | 'dudoso' | 'espera') {
+  async function actualizarPaciente(pacienteId: string, tipo: 'psicologo' | 'dudoso' | 'espera' | 'sin-disp') {
     const ahora = new Date().toISOString()
     if (tipo === 'dudoso') {
       await supabase
@@ -151,6 +153,24 @@ export default function MensajesPage() {
       setPacientes(prev => prev.map(p =>
         p.id === pacienteId
           ? { ...p, estado: 'Dudoso contactado', fecha_cambio_estado: ahora }
+          : p
+      ))
+    } else if (tipo === 'sin-disp') {
+      await supabase
+        .from('pacientes')
+        .update({ estado: 'En espera', fecha_cambio_estado: ahora })
+        .eq('id', pacienteId)
+      await supabase.from('historial_estados').insert({
+        paciente_id: pacienteId,
+        estado_anterior: 'Sin disponibilidad',
+        estado_nuevo: 'En espera',
+        fecha_cambio: ahora,
+        origen: 'comunicaciones',
+        comentario: 'Movido a En espera desde panel de comunicaciones',
+      })
+      setPacientes(prev => prev.map(p =>
+        p.id === pacienteId
+          ? { ...p, estado: 'En espera', fecha_cambio_estado: ahora, dias_espera: 0 }
           : p
       ))
     } else if (tipo === 'espera') {
@@ -183,6 +203,7 @@ export default function MensajesPage() {
       if (pacienteId) {
         const tipo = payload.tipo === 'mensaje_dudoso' ? 'dudoso'
           : payload.tipo === 'notificar_psicólogo' ? 'psicologo'
+          : payload.tipo === 'mensaje_sin_disponibilidad' ? 'sin-disp'
           : 'espera'
         await actualizarPaciente(pacienteId, tipo)
       }
@@ -210,7 +231,8 @@ export default function MensajesPage() {
   const tabs: { key: Tab; label: string; count: number; color: string }[] = [
     { key: 'psicologo', label: 'Hablar con Psicólogo', count: pacientesPsicologo.length, color: '#f59e0b' },
     { key: 'dudoso', label: 'Dudosos', count: pacientesDudoso.length, color: '#6366f1' },
-    { key: 'espera', label: 'En Espera / Sin disp.', count: pacientesEspera.length, color: '#2f5aae' },
+    { key: 'espera', label: 'En Espera', count: pacientesEspera.length, color: '#2f5aae' },
+    { key: 'sin-disp', label: 'Sin disponibilidad', count: pacientesSinDisp.length, color: '#dc2626' },
   ]
 
   return (
@@ -390,6 +412,67 @@ export default function MensajesPage() {
                       </div>
                     </Card>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Tab: Sin disponibilidad ── */}
+          {tab === 'sin-disp' && (
+            <div>
+              <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
+                Pacientes sin disponibilidad. Al pulsar el botón se envía un mensaje al
+                paciente y su estado pasa a <strong>En espera</strong>.
+              </p>
+              {pacientesSinDisp.length === 0 ? (
+                <Empty text="No hay pacientes sin disponibilidad" />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {pacientesSinDisp.map(p => {
+                    const nombrePila = p.nombre.split(' ')[0]
+                    const mensaje = `Hola ${nombrePila}, sigues en lista de espera para una cita en ${p.centro_nombre}. Te avisaremos en cuanto haya disponibilidad.`
+                    return (
+                      <Card key={p.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                          <div style={{ flex: 1, minWidth: 260 }}>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: '#272626', marginBottom: 4 }}>{p.nombre}</div>
+                            <div style={{ fontSize: 13, color: '#4a5870' }}>📞 {p.telefono} · {p.centro_nombre}</div>
+                            <div style={{ fontSize: 13, color: '#4a5870', marginTop: 2 }}>
+                              Psicólogo asignado: <strong>{p.psicologo_nombre}</strong>
+                            </div>
+                            <div style={{
+                              marginTop: 10,
+                              background: '#f7f9f9',
+                              border: '1px solid rgba(47,90,174,0.12)',
+                              borderRadius: 8,
+                              padding: '8px 12px',
+                              fontSize: 12.5,
+                              color: '#4a5870',
+                              fontStyle: 'italic',
+                            }}>
+                              {mensaje}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            {enviados[p.id] ? (
+                              <Badge text="✓ Movido a En espera" color="blue" />
+                            ) : (
+                              <SendButton
+                                loading={enviando[p.id]}
+                                label="Mover a En espera"
+                                onClick={() => enviar(p.id, {
+                                  tipo: 'mensaje_sin_disponibilidad',
+                                  paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
+                                  centro: p.centro_nombre,
+                                  mensaje,
+                                }, p.id)}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    )
+                  })}
                 </div>
               )}
             </div>

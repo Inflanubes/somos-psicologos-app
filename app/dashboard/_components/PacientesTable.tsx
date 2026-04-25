@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { EstadoPaciente } from '@/types/database'
+import { ESTADOS_PACIENTE, type EstadoPaciente } from '@/types/database'
 
 export interface PacienteRow {
   id: string
@@ -51,11 +51,6 @@ function formatDate(dateStr: string) {
 export default function PacientesTable({ pacientes }: Props) {
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<string>('todos')
-
-  const allEstados = useMemo(() => {
-    const set = new Set(pacientes.map((p) => p.estado))
-    return Array.from(set).sort()
-  }, [pacientes])
 
   const filtered = useMemo(() => {
     return pacientes.filter((p) => {
@@ -130,7 +125,7 @@ export default function PacientesTable({ pacientes }: Props) {
           }}
         >
           <option value="todos">Todos los estados</option>
-          {allEstados.map((e) => (
+          {ESTADOS_PACIENTE.map((e) => (
             <option key={e} value={e}>{e}</option>
           ))}
         </select>

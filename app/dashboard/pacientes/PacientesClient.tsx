@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { EstadoPaciente } from '@/types/database'
+import { ESTADOS_PACIENTE, type EstadoPaciente } from '@/types/database'
 
 export interface PacienteTableRow {
   id: string
@@ -17,20 +17,6 @@ export interface PacienteTableRow {
   edad: number | null
   fecha_incorporacion: string | null
 }
-
-const ESTADOS: EstadoPaciente[] = [
-  'Nuevo paciente',
-  'Agendado',
-  'Anulado',
-  'Sin disponibilidad',
-  'En espera',
-  'Cambio solicitado',
-  'Dudoso',
-  'Dudoso contactado',
-  'Revisar recomendado',
-  'Psicólogo sin disponibilidad',
-  'Inactivo',
-]
 
 function estadoBadgeStyle(estado: EstadoPaciente): React.CSSProperties {
   switch (estado) {
@@ -104,7 +90,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
           style={{ ...inputStyle, minWidth: 200, cursor: 'pointer' }}
         >
           <option value="">Todos los estados</option>
-          {ESTADOS.map((e) => (
+          {ESTADOS_PACIENTE.map((e) => (
             <option key={e} value={e}>
               {e}
             </option>

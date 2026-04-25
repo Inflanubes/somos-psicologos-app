@@ -233,6 +233,7 @@ export default function CallCenterPage() {
         hora_cita: showFechaHora && hora ? hora : null,
         comentario: comentarios,
         created_by: 'call center',
+        marca_temporal: new Date().toISOString(),
       })
 
       if (errAccion) throw new Error(errAccion.message)

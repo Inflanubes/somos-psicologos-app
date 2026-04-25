@@ -122,6 +122,7 @@ export type AccionCallCenterInsert = {
   hora_cita?: string | null
   comentario?: string | null
   created_by?: string | null
+  marca_temporal?: string | null
 }
 
 export type AccionPsicologoInsert = {

@@ -48,6 +48,7 @@ function ChatIcon() {
 
 const navItems = [
   { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true },
+  { href: '/dashboard/psicologos/stats', label: 'Estadísticas', Icon: GridIcon },
   { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon },
   { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon },
   { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon },

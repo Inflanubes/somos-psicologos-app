@@ -66,15 +66,25 @@ export type AccionCallCenter = {
   comentario: string
 }
 
+export type MotivoBloqueo = 'Asuntos propios' | 'Vacaciones' | 'Baja laboral' | 'Otros'
+
 export type AccionPsicologo = {
   id: string
-  psicologo_id: string
-  paciente_id: string
+  psicologo_id: string | null
+  paciente_id: string | null
   accion: string
-  fecha_bloqueo_inicio: string
-  fecha_bloqueo_fin: string
-  fecha_cita: string
-  hora_cita: string
+  fecha_bloqueo_inicio: string | null
+  fecha_bloqueo_fin: string | null
+  motivo_bloqueo: MotivoBloqueo | null
+  fecha_cita: string | null
+  hora_cita: string | null
+  comentario: string | null
+  creado_en: string | null
+  marca_temporal: string | null
+  gcal_event_id: string | null
+  created_by: string | null
+  es_paciente_recomendado: boolean | null
+  recomendado_por: string | null
 }
 
 export type HistorialEstado = {

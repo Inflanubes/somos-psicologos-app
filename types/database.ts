@@ -23,6 +23,9 @@ export type Psicologo = {
   centro_id: string
   activo: boolean
   telefono: string | null
+  centro: string | null
+  calendar_id: string | null
+  email: string | null
 }
 
 export type Agente = {

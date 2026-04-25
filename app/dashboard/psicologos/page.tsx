@@ -10,6 +10,9 @@ type AccionPsicologo =
   | 'Cambiar cita'
   | 'Bloquear agenda'
   | 'Desbloquear agenda'
+  | 'Asuntos propios'
+  | 'Vacaciones'
+  | 'Baja laboral'
 
 type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
 
@@ -19,10 +22,19 @@ const ACCIONES: AccionPsicologo[] = [
   'Cambiar cita',
   'Bloquear agenda',
   'Desbloquear agenda',
+  'Asuntos propios',
+  'Vacaciones',
+  'Baja laboral',
 ]
 
 const ACCIONES_CITA: AccionPsicologo[] = ['Agendar cita', 'Cancelar cita', 'Cambiar cita']
-const ACCIONES_BLOQUEO: AccionPsicologo[] = ['Bloquear agenda', 'Desbloquear agenda']
+const ACCIONES_BLOQUEO: AccionPsicologo[] = [
+  'Bloquear agenda',
+  'Desbloquear agenda',
+  'Asuntos propios',
+  'Vacaciones',
+  'Baja laboral',
+]
 
 const BRAND_BLUE   = '#2f5aae'
 const BRAND_ORANGE = '#ed8f0c'
@@ -496,7 +508,7 @@ export default function PsicologosPage() {
           {isBloqueoAction && (
             <div>
               <SectionTitle>
-                {accion === 'Bloquear agenda' ? 'Bloquear agenda' : 'Desbloquear agenda'}
+                {accion === 'Desbloquear agenda' ? 'Desbloquear agenda' : accion}
               </SectionTitle>
 
               {accion === 'Desbloquear agenda' && (
@@ -522,7 +534,7 @@ export default function PsicologosPage() {
                 </FormField>
               </div>
 
-              {accion === 'Bloquear agenda' && (
+              {accion !== 'Desbloquear agenda' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <FormField label="Periodo">
                     <select

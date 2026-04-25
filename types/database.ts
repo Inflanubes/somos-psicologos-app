@@ -10,6 +10,7 @@ export type EstadoPaciente =
   | 'Revisar recomendado'
   | 'Psicólogo sin disponibilidad'
   | 'Psicólogo'
+  | 'Inactivo'
 
 export type Centro = {
   id: string
@@ -134,6 +135,7 @@ export type AccionPsicologoInsert = {
   fecha_cita?: string | null
   hora_cita?: string | null
   created_by?: string | null
+  marca_temporal?: string | null
 }
 
 export type HistorialEstadoInsert = {

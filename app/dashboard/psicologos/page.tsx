@@ -241,6 +241,7 @@ export default function PsicologosPage() {
         fecha_cita: isCitaAction ? fecha || null : null,
         hora_cita: isCitaAction ? hora || null : null,
         fecha_bloqueo_inicio: isBloqueoAction ? fechaInicio || null : isCambiarCita ? fechaActual || null : null,
+        marca_temporal: new Date().toISOString(),
       }
       if (isCitaAction && pacienteIniciales) {
         const { data: pacData } = await supabase

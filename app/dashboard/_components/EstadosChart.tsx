@@ -18,6 +18,7 @@ const ESTADO_COLORS: Record<EstadoPaciente, string> = {
   'Revisar recomendado': '#a855f7',
   'Psicólogo sin disponibilidad': '#ec4899',
   'Psicólogo': '#0ea5e9',
+  'Inactivo': '#94a3b8',
 }
 
 interface Props {

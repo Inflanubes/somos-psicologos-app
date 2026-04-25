@@ -32,6 +32,7 @@ const ESTADO_STYLE: Record<EstadoPaciente, { bg: string; color: string }> = {
   'Revisar recomendado':         { bg: '#f3e8ff', color: '#6b21a8' },
   'Psicólogo sin disponibilidad':{ bg: '#fce7f3', color: '#9d174d' },
   'Psicólogo':                   { bg: '#e0f2fe', color: '#075985' },
+  'Inactivo':                    { bg: '#f1f5f9', color: '#475569' },
 }
 
 function formatDate(dateStr: string) {

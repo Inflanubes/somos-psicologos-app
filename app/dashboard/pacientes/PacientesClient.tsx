@@ -29,6 +29,7 @@ const ESTADOS: EstadoPaciente[] = [
   'Dudoso contactado',
   'Revisar recomendado',
   'Psicólogo sin disponibilidad',
+  'Inactivo',
 ]
 
 function estadoBadgeStyle(estado: EstadoPaciente): React.CSSProperties {
@@ -43,6 +44,8 @@ function estadoBadgeStyle(estado: EstadoPaciente): React.CSSProperties {
       return { background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }
     case 'Sin disponibilidad':
       return { background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }
+    case 'Inactivo':
+      return { background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }
     default:
       return { background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb' }
   }

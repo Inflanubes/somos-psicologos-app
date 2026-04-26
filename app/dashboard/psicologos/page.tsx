@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Centro, Psicologo, Paciente, AccionPsicologoInsert } from '@/types/database'
+import type { Centro, Psicologo, Paciente } from '@/types/database'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -10,6 +10,7 @@ type AccionPsicologo =
   | 'Cambiar cita'
   | 'Bloquear agenda'
   | 'Desbloquear agenda'
+  | 'Añadir nuevo paciente'
   | 'Asuntos propios'
   | 'Vacaciones'
   | 'Baja laboral'
@@ -18,8 +19,9 @@ type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
 
 const ACCIONES: AccionPsicologo[] = [
   'Agendar cita',
-  'Cancelar cita',
+  'Añadir nuevo paciente',
   'Cambiar cita',
+  'Cancelar cita',
   'Bloquear agenda',
   'Desbloquear agenda',
   'Asuntos propios',
@@ -35,6 +37,18 @@ const ACCIONES_BLOQUEO: AccionPsicologo[] = [
   'Vacaciones',
   'Baja laboral',
 ]
+
+const LABEL_MAP: Record<AccionPsicologo, string> = {
+  'Agendar cita':          'Confirmar cita',
+  'Bloquear agenda':       'Bloquear agenda',
+  'Desbloquear agenda':    'Desbloquear agenda',
+  'Cambiar cita':          'Cambiar cita',
+  'Cancelar cita':         'Cancelar cita',
+  'Añadir nuevo paciente': 'Añadir paciente',
+  'Asuntos propios':       'Confirmar asuntos propios',
+  'Vacaciones':            'Confirmar vacaciones',
+  'Baja laboral':          'Confirmar baja laboral',
+}
 
 const BRAND_BLUE   = '#2f5aae'
 const BRAND_ORANGE = '#ed8f0c'
@@ -121,6 +135,20 @@ function InfoBox({ children }: { children: React.ReactNode }) {
   )
 }
 
+function formatTime(val: string): string | null {
+  if (!val) return null
+  return val.length === 5 ? val + ':00' : val
+}
+
+function generarIniciales(nombre: string): string {
+  const trimmed = nombre.trim()
+  if (!trimmed) return ''
+  const words = trimmed.split(/\s+/)
+  const initials = words.map((w) => w[0]?.toUpperCase() ?? '').join('').slice(0, 4) || 'XX'
+  const firstName = words[0] || ''
+  return `${initials} (${firstName})`
+}
+
 export default function PsicologosPage() {
   const [centros, setCentros] = useState<Centro[]>([])
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
@@ -146,6 +174,14 @@ export default function PsicologosPage() {
   const [horaInicio, setHoraInicio] = useState('')
   const [periodo, setPeriodo] = useState<PeriodoBloqueo>('Dias')
   const [duracion, setDuracion] = useState('')
+
+  // Nuevo paciente fields
+  const [npNombre, setNpNombre] = useState('')
+  const [npTelefono, setNpTelefono] = useState('')
+  const [npEmail, setNpEmail] = useState('')
+  const [npEdad, setNpEdad] = useState('')
+  const [npEsMenor, setNpEsMenor] = useState(false)
+  const [npEsRecomendado, setNpEsRecomendado] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -197,6 +233,7 @@ export default function PsicologosPage() {
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
   const isCambiarCita = accion === 'Cambiar cita'
+  const isNuevoPaciente = accion === 'Añadir nuevo paciente'
 
   function resetForm() {
     setCentroId('')
@@ -212,10 +249,19 @@ export default function PsicologosPage() {
     setHoraInicio('')
     setPeriodo('Dias')
     setDuracion('')
+    setNpNombre('')
+    setNpTelefono('')
+    setNpEmail('')
+    setNpEdad('')
+    setNpEsMenor(false)
+    setNpEsRecomendado(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError('')
+    setSuccess(false)
+
     if (!centroId || !psicologoId || !accion) {
       setError('Por favor, completa los campos obligatorios.')
       return
@@ -224,69 +270,162 @@ export default function PsicologosPage() {
       setError('Debes seleccionar un paciente para esta acción.')
       return
     }
+    if (isNuevoPaciente && (!npNombre.trim() || !npTelefono.trim())) {
+      setError('El nombre y el teléfono son obligatorios.')
+      return
+    }
 
     setLoading(true)
-    setError('')
-    setSuccess(false)
-
     try {
-      const centroNombre = centros.find((c) => c.id === centroId)?.nombre ?? ''
+      const centroNombre    = centros.find((c) => c.id === centroId)?.nombre ?? ''
       const psicologoNombre = filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? ''
 
-      // Insert into acciones_psicologos
-      const accionPsicologo: AccionPsicologoInsert = {
-        psicologo_id: psicologoId,
-        accion: accion,
-        created_by: psicologoNombre,
-        fecha_cita: isCitaAction ? fecha || null : null,
-        hora_cita: isCitaAction ? hora || null : null,
-        fecha_bloqueo_inicio: isBloqueoAction ? fechaInicio || null : isCambiarCita ? fechaActual || null : null,
-        marca_temporal: new Date().toISOString(),
-      }
-      if (isCitaAction && pacienteIniciales) {
-        const { data: pacData } = await supabase
+      // ── AÑADIR NUEVO PACIENTE ─────────────────────────────────────────────
+      if (isNuevoPaciente) {
+        // 1) Duplicate check — does this telefono already belong to a patient?
+        const telefonoNorm = npTelefono.trim()
+        const { data: existentes } = await supabase
           .from('pacientes')
-          .select('id')
-          .eq('psicologo_id', psicologoId)
-          .eq('iniciales', pacienteIniciales)
-          .limit(1)
-        if (pacData && pacData.length > 0) {
-          accionPsicologo.paciente_id = (pacData[0] as { id: string }).id
+          .select('id, nombre, iniciales, psicologo_id')
+          .eq('telefono', telefonoNorm)
+
+        if (existentes && existentes.length > 0) {
+          const dup = existentes[0]
+          // Same psicólogo: friendly notice, no agent alert.
+          if (dup.psicologo_id === psicologoId) {
+            setError(
+              `Este paciente ya está añadido en tu lista: ${dup.nombre} (${dup.iniciales}).`
+            )
+            return
+          }
+          // Different psicólogo: alert agentes via Make and block the insert.
+          const psicologoActual = psicologos.find((p) => p.id === dup.psicologo_id)
+          await fetch('/api/webhook/psicologos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mensaje: 'Paciente duplicado',
+              responseId: 'web_' + Date.now(),
+              timestampFormulario: new Date().toISOString(),
+              datosProcesados: {
+                accion: 'Paciente duplicado',
+                psicologo_solicitante_nombre: psicologoNombre,
+                psicologo_solicitante_id: psicologoId,
+                paciente_existente_nombre: dup.nombre,
+                paciente_existente_iniciales: dup.iniciales,
+                paciente_existente_id: dup.id,
+                psicologo_actual_id: dup.psicologo_id,
+                psicologo_actual_nombre: psicologoActual?.nombre ?? null,
+                telefono: telefonoNorm,
+                nombre_intentado: npNombre.trim(),
+                es_paciente_recomendado: npEsRecomendado,
+              },
+              respuestasFormulario: {
+                'Selecciona tu centro': centroNombre,
+                '¿Qué necesitas hoy?': 'Añadir nuevo paciente',
+              },
+            }),
+          })
+          setError(
+            `Este paciente ya existe en la base de datos asignado a otro psicólogo. ` +
+            `Hemos avisado al equipo para que lo revisen.`
+          )
+          return
         }
-      }
-      await supabase.from('acciones_psicologos').insert(accionPsicologo)
 
+        // 2) No duplicate — proceed with the standard insert + Make notification.
+        const iniciales = generarIniciales(npNombre)
+        const { error: supaError } = await supabase.from('pacientes').insert({
+          nombre:              npNombre.trim(),
+          iniciales,
+          telefono:            telefonoNorm,
+          email:               npEmail.trim() || null,
+          edad:                npEdad ? parseInt(npEdad, 10) : null,
+          es_menor:            npEsMenor,
+          centro_id:           centroId,
+          psicologo_id:        psicologoId,
+          recomendado_por:     npEsRecomendado ? psicologoId : null,
+          estado:              'Nuevo paciente',
+          fecha_incorporacion: new Date().toISOString().split('T')[0],
+        })
+        if (supaError) throw new Error('Error al añadir paciente: ' + supaError.message)
+
+        await fetch('/api/webhook/psicologos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mensaje:             'Formulario Web Psicólogos',
+            responseId:          'web_' + Date.now(),
+            timestampFormulario: new Date().toISOString(),
+            datosProcesados: {
+              psicologo_nombre: psicologoNombre,
+              accion:           'Añadir nuevo paciente',
+              paciente_nombre:  npNombre.trim(),
+              paciente_iniciales: iniciales,
+              telefono:         npTelefono.trim(),
+              email:            npEmail.trim() || null,
+              edad:             npEdad ? parseInt(npEdad, 10) : null,
+              es_menor:         npEsMenor,
+              es_paciente_recomendado: npEsRecomendado,
+              recomendado_por:  npEsRecomendado ? psicologoId : null,
+            },
+            respuestasFormulario: {
+              'Selecciona tu centro': centroNombre,
+              '¿Qué necesitas hoy?':  'Añadir nuevo paciente',
+            },
+          }),
+        })
+
+        setSuccess(true)
+        resetForm()
+        return
+      }
+
+      // ── CITAS / BLOQUEOS — send to Make webhook ───────────────────────────
       const datosProcesados = {
-        centro: centroNombre,
-        psicologo_nombre: psicologoNombre,
-        accion: accion,
-        paciente_iniciales: isCitaAction ? pacienteIniciales : null,
-        // For "Cambiar cita": fecha_cita/hora_cita = NEW appointment
-        fecha_cita: isCitaAction ? fecha || null : null,
-        hora_cita: isCitaAction ? hora || null : null,
-        // For "Cambiar cita": fecha_inicio_bloqueo/hora_inicio_bloqueo = CURRENT appointment (to find GCal event)
-        // For bloqueo actions: fecha_inicio_bloqueo/hora_inicio_bloqueo = block start
-        fecha_inicio_bloqueo: isCambiarCita
-          ? fechaActual || null
-          : isBloqueoAction
-            ? fechaInicio || null
-            : null,
-        hora_inicio_bloqueo: isCambiarCita
-          ? horaActual || null
-          : isBloqueoAction
-            ? horaInicio || null
-            : null,
-        periodo: isBloqueoAction ? periodo : null,
-        duracion: isBloqueoAction && duracion ? parseInt(duracion, 10) : null,
+        psicologo_nombre:     psicologoNombre,
+        accion,
+        paciente_iniciales:   isCitaAction ? pacienteIniciales : null,
+        fecha_cita:           isCitaAction ? fecha || null : null,
+        hora_cita:            isCitaAction ? formatTime(hora) : null,
+        fecha_inicio_bloqueo: isCambiarCita ? fechaActual || null : isBloqueoAction ? fechaInicio || null : null,
+        hora_inicio_bloqueo:  isCambiarCita ? formatTime(horaActual) : isBloqueoAction ? formatTime(horaInicio) : null,
+        periodo:              isBloqueoAction ? periodo : null,
+        duracion:             isBloqueoAction && duracion ? parseInt(duracion, 10) : null,
       }
 
-      await fetch('/api/webhook/psicologos', {
+      const payload = {
+        mensaje:              'Formulario Web Psicólogos',
+        responseId:           'web_' + Date.now(),
+        timestampFormulario:  new Date().toISOString(),
+        datosProcesados,
+        respuestasFormulario: {
+          'Selecciona tu centro': centroNombre,
+          '¿Qué necesitas hoy?':  accion,
+        },
+      }
+
+      const webhookRes = await fetch('/api/webhook/psicologos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source: 'dashboard',
-          datosProcesados,
-        }),
+        body: JSON.stringify(payload),
+      })
+      if (!webhookRes.ok) throw new Error('Error en webhook: ' + webhookRes.status)
+
+      // Form-submission log (matches citas-psicologos behavior).
+      // The canonical action record (acciones_psicologos) is written by Make.
+      await supabase.from('formulario_citas_psicologos').insert({
+        centro:          centroNombre,
+        psicologo:       psicologoNombre,
+        accion,
+        fecha_inicio:    datosProcesados.fecha_inicio_bloqueo,
+        hora_inicio:     datosProcesados.hora_inicio_bloqueo,
+        periodo:         datosProcesados.periodo,
+        duracion:        datosProcesados.duracion,
+        fecha_cita:      datosProcesados.fecha_cita,
+        hora_cita:       datosProcesados.hora_cita,
+        response_id:     payload.responseId,
+        timestamp_envio: payload.timestampFormulario,
       })
 
       setSuccess(true)
@@ -315,7 +454,7 @@ export default function PsicologosPage() {
           Citas
         </h1>
         <p style={{ fontSize: 13.5, color: '#888', margin: 0 }}>
-          Gestiona citas y disponibilidad de agenda
+          Gestiona citas, bloqueos y altas de pacientes
         </p>
       </div>
 
@@ -411,9 +550,12 @@ export default function PsicologosPage() {
               value={accion}
               onChange={(e) => setAccion(e.target.value as AccionPsicologo)}
               style={{ ...inputStyle, cursor: 'pointer' }}
+              disabled={!psicologoId}
               required
             >
-              <option value="">Selecciona una acción</option>
+              <option value="">
+                {psicologoId ? 'Selecciona una acción' : 'Primero selecciona psicólogo'}
+              </option>
               {ACCIONES.map((a) => (
                 <option key={a} value={a}>
                   {a}
@@ -421,6 +563,115 @@ export default function PsicologosPage() {
               ))}
             </select>
           </FormField>
+
+          {/* NUEVO PACIENTE FIELDS */}
+          {isNuevoPaciente && (
+            <div>
+              <SectionTitle>Datos del nuevo paciente</SectionTitle>
+              <InfoBox>
+                El paciente quedará asignado a{' '}
+                <strong>{filteredPsicologos.find((p) => p.id === psicologoId)?.nombre}</strong>{' '}
+                con estado <strong>Nuevo paciente</strong>.
+              </InfoBox>
+
+              <FormField label="Nombre completo" required>
+                <input
+                  type="text"
+                  value={npNombre}
+                  onChange={(e) => setNpNombre(e.target.value)}
+                  placeholder="Ej. María García López"
+                  style={inputStyle}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Teléfono" required>
+                <input
+                  type="tel"
+                  value={npTelefono}
+                  onChange={(e) => setNpTelefono(e.target.value)}
+                  placeholder="Ej. 612 345 678"
+                  style={inputStyle}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Email">
+                <input
+                  type="email"
+                  value={npEmail}
+                  onChange={(e) => setNpEmail(e.target.value)}
+                  placeholder="Ej. maria@email.com"
+                  style={inputStyle}
+                />
+              </FormField>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <FormField label="Edad">
+                  <input
+                    type="number"
+                    value={npEdad}
+                    onChange={(e) => {
+                      setNpEdad(e.target.value)
+                      setNpEsMenor(parseInt(e.target.value, 10) < 18)
+                    }}
+                    placeholder="Ej. 34"
+                    min={0}
+                    max={120}
+                    style={inputStyle}
+                  />
+                </FormField>
+
+                <FormField label="¿Es menor de edad?">
+                  <select
+                    value={npEsMenor ? 'si' : 'no'}
+                    onChange={(e) => setNpEsMenor(e.target.value === 'si')}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="no">No</option>
+                    <option value="si">Sí</option>
+                  </select>
+                </FormField>
+              </div>
+
+              {npNombre.trim() && (
+                <div style={{ fontSize: 12, color: '#888', marginTop: -8, marginBottom: 16 }}>
+                  Iniciales generadas automáticamente:{' '}
+                  <strong style={{ color: BRAND_BLUE }}>{generarIniciales(npNombre)}</strong>
+                </div>
+              )}
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px 14px',
+                  border: `1.5px solid ${npEsRecomendado ? BRAND_BLUE : '#dde1ea'}`,
+                  background: npEsRecomendado ? '#eef2fb' : '#fafbfc',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  transition: 'background 0.12s, border 0.12s',
+                  fontSize: 14,
+                  color: '#272626',
+                  fontWeight: 500,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={npEsRecomendado}
+                  onChange={(e) => setNpEsRecomendado(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: BRAND_BLUE, cursor: 'pointer' }}
+                />
+                <span>
+                  Nueva recomendación{' '}
+                  <span style={{ fontWeight: 400, color: '#888', fontSize: 13 }}>
+                    — el paciente queda recomendado por este psicólogo
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
 
           {/* CITA FIELDS */}
           {isCitaAction && (
@@ -525,7 +776,9 @@ export default function PsicologosPage() {
                     style={inputStyle}
                   />
                 </FormField>
-                <FormField label="Hora de inicio">
+                <FormField
+                  label={accion === 'Desbloquear agenda' ? 'Hora del bloqueo' : 'Hora inicio (opcional)'}
+                >
                   <input
                     type="time"
                     value={horaInicio}
@@ -568,24 +821,24 @@ export default function PsicologosPage() {
           <div style={{ marginTop: 28 }}>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !accion}
               style={{
                 width: '100%',
                 padding: '14px',
-                background: loading ? '#a0b0cc' : BRAND_BLUE,
+                background: loading || !accion ? '#a0b0cc' : BRAND_BLUE,
                 color: '#fff',
                 border: 'none',
                 borderRadius: 30,
                 fontSize: 15,
                 fontWeight: 400,
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loading || !accion ? 'not-allowed' : 'pointer',
                 fontFamily: "'Varela Round', sans-serif",
                 transition: 'background 0.2s, box-shadow 0.2s',
-                boxShadow: loading ? 'none' : `0 4px 14px rgba(47,90,174,0.30)`,
+                boxShadow: loading || !accion ? 'none' : `0 4px 14px rgba(47,90,174,0.30)`,
                 letterSpacing: '0.3px',
               }}
             >
-              {loading ? 'Enviando…' : 'Guardar acción'}
+              {loading ? 'Enviando…' : accion ? LABEL_MAP[accion] : 'Selecciona una acción'}
             </button>
           </div>
         </form>

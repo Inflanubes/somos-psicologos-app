@@ -114,6 +114,22 @@ export type PacienteInsert = {
   hora_cita?: string | null
   fecha_incorporacion?: string | null
   fecha_cambio_estado?: string | null
+  iniciales?: string | null
+  recomendado_por?: string | null
+}
+
+export type FormularioCitasPsicologosInsert = {
+  centro?: string | null
+  psicologo?: string | null
+  accion?: string | null
+  fecha_inicio?: string | null
+  hora_inicio?: string | null
+  periodo?: string | null
+  duracion?: number | null
+  fecha_cita?: string | null
+  hora_cita?: string | null
+  response_id?: string | null
+  timestamp_envio?: string | null
 }
 
 export type AccionCallCenterInsert = {
@@ -187,6 +203,12 @@ export type Database = {
         Row: HistorialEstado
         Insert: HistorialEstadoInsert
         Update: Partial<HistorialEstadoInsert>
+        Relationships: []
+      }
+      formulario_citas_psicologos: {
+        Row: FormularioCitasPsicologosInsert & { id: number; created_at: string }
+        Insert: FormularioCitasPsicologosInsert
+        Update: Partial<FormularioCitasPsicologosInsert>
         Relationships: []
       }
       agentes: {

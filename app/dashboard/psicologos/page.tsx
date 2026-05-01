@@ -230,6 +230,8 @@ export default function PsicologosPage() {
       })
   }, [psicologoId])
 
+  const psicologoSeleccionado = filteredPsicologos.find((p) => p.id === psicologoId) ?? null
+
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
   const isCambiarCita = accion === 'Cambiar cita'
@@ -438,7 +440,29 @@ export default function PsicologosPage() {
   }
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 800 }}>
+    <>
+      <style>{`
+        .layout-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          width: 100%;
+        }
+        @media (min-width: 1024px) {
+          .layout-wrapper {
+            flex-direction: row;
+            align-items: flex-start;
+          }
+          .form-card {
+            flex: 0 0 500px;
+          }
+          .calendar-panel {
+            flex: 1;
+            min-width: 0;
+          }
+        }
+      `}</style>
+    <div style={{ padding: '36px 40px', maxWidth: 1320 }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1
@@ -494,8 +518,12 @@ export default function PsicologosPage() {
         </div>
       )}
 
+      {/* Form + Calendar wrapper */}
+      <div className="layout-wrapper">
+
       {/* Form card */}
       <div
+        className="form-card"
         style={{
           background: '#ffffff',
           borderRadius: 16,
@@ -843,6 +871,31 @@ export default function PsicologosPage() {
           </div>
         </form>
       </div>
+
+      {/* Google Calendar embed */}
+      {psicologoSeleccionado?.calendar_id && (
+        <div className="calendar-panel" style={{
+          background: '#fff', borderRadius: 16,
+          boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
+          padding: '24px', width: '100%',
+        }}>
+          <div style={{
+            fontSize: 12.5, fontWeight: 700, color: BRAND_BLUE,
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+            marginBottom: 16,
+          }}>
+            Calendario — {psicologoSeleccionado.nombre}
+          </div>
+          <iframe
+            src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(psicologoSeleccionado.calendar_id)}&ctz=Europe%2FMadrid&mode=WEEK&showTitle=0&showNav=1&showPrint=0&showTabs=0&showCalendars=0&hl=es`}
+            style={{ width: '100%', height: 600, border: 0, borderRadius: 8, display: 'block' }}
+            scrolling="no"
+          />
+        </div>
+      )}
+
+      </div>{/* end layout-wrapper */}
     </div>
+    </>
   )
 }

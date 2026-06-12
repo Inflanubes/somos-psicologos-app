@@ -135,18 +135,28 @@ export async function fetchCitasActivas(params: {
 export async function fetchBloqueosActivos(params: {
   tabla: string
   psicologoId: string
+  /**
+   * true  → only blocks WITH a motivo (Vacaciones/Asuntos propios/Baja laboral) — "Modificar bloqueo"
+   * false → only generic blocks (no motivo) — "Desbloquear agenda"
+   * undefined → all blocks
+   */
+  conMotivo?: boolean
 }): Promise<EventoActivo[]> {
-  const { tabla, psicologoId } = params
+  const { tabla, psicologoId, conMotivo } = params
   const hoy = todayISODate()
 
-  const { data, error } = await sb
+  let query = sb
     .from(tabla)
     .select('id, gcal_event_id, fecha_bloqueo_inicio, fecha_bloqueo_fin, accion, motivo_bloqueo')
     .eq('psicologo_id', psicologoId)
     .eq('accion', ACCION_BLOQUEO)
     .eq('activo', true)
     .or(`fecha_bloqueo_fin.gte.${hoy},fecha_bloqueo_fin.is.null`)
-    .order('fecha_bloqueo_inicio', { ascending: true })
+
+  if (conMotivo === true) query = query.not('motivo_bloqueo', 'is', null)
+  else if (conMotivo === false) query = query.is('motivo_bloqueo', null)
+
+  const { data, error } = await query.order('fecha_bloqueo_inicio', { ascending: true })
 
   if (error) throw error
 

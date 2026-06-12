@@ -13,6 +13,7 @@ type AccionPsicologo =
   | 'Cambiar cita'
   | 'Bloquear agenda'
   | 'Desbloquear agenda'
+  | 'Modificar bloqueo'
   | 'Añadir nuevo paciente'
   | 'Asuntos propios'
   | 'Vacaciones'
@@ -27,6 +28,7 @@ const ACCIONES: AccionPsicologo[] = [
   'Cancelar cita',
   'Bloquear agenda',
   'Desbloquear agenda',
+  'Modificar bloqueo',
   'Asuntos propios',
   'Vacaciones',
   'Baja laboral',
@@ -36,6 +38,7 @@ const ACCIONES_CITA: AccionPsicologo[] = ['Agendar cita', 'Cancelar cita', 'Camb
 const ACCIONES_BLOQUEO: AccionPsicologo[] = [
   'Bloquear agenda',
   'Desbloquear agenda',
+  'Modificar bloqueo',
   'Asuntos propios',
   'Vacaciones',
   'Baja laboral',
@@ -45,6 +48,7 @@ const LABEL_MAP: Record<AccionPsicologo, string> = {
   'Agendar cita':          'Confirmar cita',
   'Bloquear agenda':       'Bloquear agenda',
   'Desbloquear agenda':    'Desbloquear agenda',
+  'Modificar bloqueo':     'Modificar bloqueo',
   'Cambiar cita':          'Cambiar cita',
   'Cancelar cita':         'Cancelar cita',
   'Añadir nuevo paciente': 'Añadir paciente',
@@ -174,6 +178,10 @@ export default function PsicologosPage() {
   const [periodo, setPeriodo] = useState<PeriodoBloqueo>('Dias')
   const [duracion, setDuracion] = useState('')
 
+  // Modificar bloqueo: nuevas fechas de inicio/fin
+  const [modFechaInicio, setModFechaInicio] = useState('')
+  const [modFechaFin, setModFechaFin] = useState('')
+
   // Nuevo paciente fields
   const [npNombre, setNpNombre] = useState('')
   const [npTelefono, setNpTelefono] = useState('')
@@ -249,7 +257,8 @@ export default function PsicologosPage() {
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
-  const requiereSelectorBloqueo = accion === 'Desbloquear agenda'
+  const esModificarBloqueo = accion === 'Modificar bloqueo'
+  const requiereSelectorBloqueo = accion === 'Desbloquear agenda' || esModificarBloqueo
   const eventoActual = [...citasActivas, ...bloqueosActivos].find((e) => e.id === eventoSeleccionadoId)
 
   // Load logged-in identity
@@ -305,7 +314,8 @@ export default function PsicologosPage() {
     }
     let cancelled = false
     setLoadingEventos(true)
-    fetchBloqueosActivos({ tabla: 'acciones_psicologos', psicologoId })
+    // Desbloquear → bloqueos genéricos (sin motivo); Modificar → con motivo (vacaciones/baja/…)
+    fetchBloqueosActivos({ tabla: 'acciones_psicologos', psicologoId, conMotivo: esModificarBloqueo })
       .then((eventos) => { if (!cancelled) setBloqueosActivos(eventos) })
       .catch(() => { if (!cancelled) setBloqueosActivos([]) })
       .finally(() => { if (!cancelled) setLoadingEventos(false) })
@@ -325,6 +335,8 @@ export default function PsicologosPage() {
     setHoraInicio('')
     setPeriodo('Dias')
     setDuracion('')
+    setModFechaInicio('')
+    setModFechaFin('')
     setCitasActivas([])
     setBloqueosActivos([])
     setEventoSeleccionadoId('')
@@ -355,6 +367,10 @@ export default function PsicologosPage() {
     }
     if ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId) {
       setError('Debes seleccionar el evento sobre el que actuar.')
+      return
+    }
+    if (esModificarBloqueo && (!modFechaInicio || !modFechaFin)) {
+      setError('Indica la nueva fecha de inicio y de fin del bloqueo.')
       return
     }
 
@@ -467,7 +483,8 @@ export default function PsicologosPage() {
       // ── CITAS / BLOQUEOS — send to Make webhook ───────────────────────────
       // Block-creation actions still collect a manual start date; modify/cancel
       // actions identify the event via gcal_event_id from the selector instead.
-      const isBloqueoCreacion = isBloqueoAction && accion !== 'Desbloquear agenda'
+      const isBloqueoCreacion =
+        isBloqueoAction && accion !== 'Desbloquear agenda' && accion !== 'Modificar bloqueo'
       const origen = perfil?.rol ?? 'agente'
       const quienNombre = perfil?.nombre ?? psicologoNombre
 
@@ -477,10 +494,13 @@ export default function PsicologosPage() {
         paciente_iniciales:   isCitaAction ? pacienteIniciales : null,
         fecha_cita:           isCitaAction ? fecha || null : null,
         hora_cita:            isCitaAction ? formatTime(hora) : null,
-        // Exact event to act on (Cambiar/Cancelar cita, Desbloquear agenda).
+        // Exact event to act on (Cambiar/Cancelar cita, Desbloquear/Modificar bloqueo).
         // Make uses this gcal_event_id instead of searching by date.
         gcal_event_id:        (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.gcalEventId ?? null : null,
         accion_id:            (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.id ?? null : null,
+        // Modificar bloqueo: new start/end dates for the selected block
+        nueva_fecha_inicio:   esModificarBloqueo ? modFechaInicio || null : null,
+        nueva_fecha_fin:      esModificarBloqueo ? modFechaFin || null : null,
         // Block-creation actions: start + period/duration
         fecha_inicio_bloqueo: isBloqueoCreacion ? fechaInicio || null : null,
         hora_inicio_bloqueo:  isBloqueoCreacion ? formatTime(horaInicio) : null,
@@ -898,7 +918,7 @@ export default function PsicologosPage() {
                 {accion === 'Desbloquear agenda' ? 'Desbloquear agenda' : accion}
               </SectionTitle>
 
-              {/* Desbloquear: pick the existing block to remove */}
+              {/* Desbloquear: pick the existing generic block to remove */}
               {accion === 'Desbloquear agenda' && (
                 <FormField label="Bloqueo a eliminar" required>
                   <EventoSelect
@@ -914,8 +934,45 @@ export default function PsicologosPage() {
                 </FormField>
               )}
 
+              {/* Modificar bloqueo: pick a vacaciones/baja/asuntos block + new dates */}
+              {esModificarBloqueo && (
+                <>
+                  <FormField label="Bloqueo a modificar" required>
+                    <EventoSelect
+                      eventos={bloqueosActivos}
+                      value={eventoSeleccionadoId}
+                      onChange={setEventoSeleccionadoId}
+                      loading={loadingEventos}
+                      emptyText="Sin vacaciones, baja o asuntos propios activos"
+                      placeholder="Selecciona el bloqueo"
+                      inputStyle={inputStyle}
+                      required
+                    />
+                  </FormField>
+                  <InfoBox>Nuevas fechas del bloqueo:</InfoBox>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <FormField label="Nueva fecha de inicio" required>
+                      <input
+                        type="date"
+                        value={modFechaInicio}
+                        onChange={(e) => setModFechaInicio(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Nueva fecha de fin" required>
+                      <input
+                        type="date"
+                        value={modFechaFin}
+                        onChange={(e) => setModFechaFin(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+                </>
+              )}
+
               {/* Block-creation actions: manual start + period/duration */}
-              {accion !== 'Desbloquear agenda' && (
+              {!requiereSelectorBloqueo && (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <FormField label="Fecha de inicio">

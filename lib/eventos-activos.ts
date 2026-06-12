@@ -24,10 +24,16 @@ export type EventoActivo = {
 
 /**
  * `accion` is a Postgres enum. Blocks are stored as 'Bloquear agenda' (a valid
- * enum value); the kind of block (Vacaciones / Baja laboral / Asuntos propios)
- * lives in `motivo_bloqueo`, NOT in `accion`.
+ * enum value); the kind of block lives in `motivo_bloqueo`, NOT in `accion`.
+ *
+ * IMPORTANT (real data): Make stamps EVERY block with a motivo_bloqueo. Generic
+ * "Bloquear agenda" blocks get `motivo_bloqueo='Otros'` (not null). The named
+ * blocks get 'Vacaciones' / 'Asuntos propios' / 'Baja laboral'.
+ *   - Desbloquear agenda → generic blocks ('Otros' or null)
+ *   - Modificar bloqueo  → the named ones (MOTIVOS_MODIFICABLES)
  */
 export const ACCION_BLOQUEO = 'Bloquear agenda'
+export const MOTIVOS_MODIFICABLES = ['Vacaciones', 'Asuntos propios', 'Baja laboral']
 
 /** Today's date as `YYYY-MM-DD` in the clinic's timezone (Europe/Madrid). */
 export function todayISODate(): string {
@@ -78,11 +84,12 @@ function formatRangoFechas(inicio: string | null, fin: string | null): string {
 /** "Vacaciones · 1 jul – 15 jul 2026" */
 export function formatBloqueoLabel(
   motivo: string | null,
-  accion: string,
+  _accion: string,
   inicio: string | null,
   fin: string | null,
 ): string {
-  const etiquetaMotivo = motivo || accion || 'Bloqueo'
+  // 'Otros' / null are generic blocks → show "Bloqueo"; named motivos show as-is.
+  const etiquetaMotivo = !motivo || motivo === 'Otros' ? 'Bloqueo' : motivo
   const rango = formatRangoFechas(inicio, fin)
   return [etiquetaMotivo, rango].filter(Boolean).join(' · ')
 }
@@ -136,13 +143,13 @@ export async function fetchBloqueosActivos(params: {
   tabla: string
   psicologoId: string
   /**
-   * true  → only blocks WITH a motivo (Vacaciones/Asuntos propios/Baja laboral) — "Modificar bloqueo"
-   * false → only generic blocks (no motivo) — "Desbloquear agenda"
+   * 'desbloquear' → generic blocks ('Otros' or null)
+   * 'modificar'   → named blocks (Vacaciones/Asuntos propios/Baja laboral)
    * undefined → all blocks
    */
-  conMotivo?: boolean
+  categoria?: 'desbloquear' | 'modificar'
 }): Promise<EventoActivo[]> {
-  const { tabla, psicologoId, conMotivo } = params
+  const { tabla, psicologoId, categoria } = params
   const hoy = todayISODate()
 
   let query = sb
@@ -153,8 +160,11 @@ export async function fetchBloqueosActivos(params: {
     .eq('activo', true)
     .or(`fecha_bloqueo_fin.gte.${hoy},fecha_bloqueo_fin.is.null`)
 
-  if (conMotivo === true) query = query.not('motivo_bloqueo', 'is', null)
-  else if (conMotivo === false) query = query.is('motivo_bloqueo', null)
+  if (categoria === 'modificar') {
+    query = query.in('motivo_bloqueo', MOTIVOS_MODIFICABLES)
+  } else if (categoria === 'desbloquear') {
+    query = query.or('motivo_bloqueo.is.null,motivo_bloqueo.eq.Otros')
+  }
 
   const { data, error } = await query.order('fecha_bloqueo_inicio', { ascending: true })
 

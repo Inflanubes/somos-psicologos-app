@@ -314,8 +314,12 @@ export default function PsicologosPage() {
     }
     let cancelled = false
     setLoadingEventos(true)
-    // Desbloquear → bloqueos genéricos (sin motivo); Modificar → con motivo (vacaciones/baja/…)
-    fetchBloqueosActivos({ tabla: 'acciones_psicologos', psicologoId, conMotivo: esModificarBloqueo })
+    // Desbloquear → bloqueos genéricos (Otros/null); Modificar → vacaciones/asuntos/baja
+    fetchBloqueosActivos({
+      tabla: 'acciones_psicologos',
+      psicologoId,
+      categoria: esModificarBloqueo ? 'modificar' : 'desbloquear',
+    })
       .then((eventos) => { if (!cancelled) setBloqueosActivos(eventos) })
       .catch(() => { if (!cancelled) setBloqueosActivos([]) })
       .finally(() => { if (!cancelled) setLoadingEventos(false) })

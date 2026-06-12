@@ -369,8 +369,8 @@ export default function PsicologosPage() {
       setError('Debes seleccionar el evento sobre el que actuar.')
       return
     }
-    if (esModificarBloqueo && (!modFechaInicio || !modFechaFin)) {
-      setError('Indica la nueva fecha de inicio y de fin del bloqueo.')
+    if (esModificarBloqueo && !modFechaInicio && !modFechaFin) {
+      setError('Indica al menos una fecha nueva (inicio o fin) para modificar el bloqueo.')
       return
     }
 
@@ -949,9 +949,11 @@ export default function PsicologosPage() {
                       required
                     />
                   </FormField>
-                  <InfoBox>Nuevas fechas del bloqueo:</InfoBox>
+                  <InfoBox>
+                    Cambia solo lo que necesites. <strong>Lo que dejes vacío se mantiene como está.</strong>
+                  </InfoBox>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <FormField label="Nueva fecha de inicio" required>
+                    <FormField label="Nueva fecha de inicio">
                       <input
                         type="date"
                         value={modFechaInicio}
@@ -959,7 +961,7 @@ export default function PsicologosPage() {
                         style={inputStyle}
                       />
                     </FormField>
-                    <FormField label="Nueva fecha de fin" required>
+                    <FormField label="Nueva fecha de fin">
                       <input
                         type="date"
                         value={modFechaFin}

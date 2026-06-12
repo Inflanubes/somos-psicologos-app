@@ -52,11 +52,11 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
     return pacientes.filter((p) => {
       const matchSearch =
         !q ||
-        p.nombre.toLowerCase().includes(q) ||
-        p.telefono.includes(q) ||
-        p.email.toLowerCase().includes(q) ||
-        p.psicologo_nombre.toLowerCase().includes(q) ||
-        p.centro_nombre.toLowerCase().includes(q)
+        (p.nombre ?? '').toLowerCase().includes(q) ||
+        (p.telefono ?? '').includes(q) ||
+        (p.email ?? '').toLowerCase().includes(q) ||
+        (p.psicologo_nombre ?? '').toLowerCase().includes(q) ||
+        (p.centro_nombre ?? '').toLowerCase().includes(q)
       const matchEstado = !estadoFilter || p.estado === estadoFilter
       return matchSearch && matchEstado
     })

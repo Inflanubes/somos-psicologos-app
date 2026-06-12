@@ -1,7 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { getPerfilActual } from '@/lib/perfil'
+import type { Perfil, Rol } from '@/types/database'
 
 function GridIcon() {
   return (
@@ -46,22 +50,48 @@ function ChatIcon() {
   )
 }
 
-const navItems = [
-  { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true },
-  { href: '/dashboard/psicologos/stats', label: 'Estadísticas', Icon: GridIcon },
-  { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon },
-  { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon },
-  { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon },
-  { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true },
-  { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon },
-  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon },
+type NavItem = {
+  href: string
+  label: string
+  Icon: () => React.ReactElement
+  exact?: boolean
+  roles: Rol[]
+}
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true, roles: ['agente'] },
+  { href: '/dashboard/psicologos/stats', label: 'Estadísticas', Icon: GridIcon, roles: ['agente'] },
+  { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente'] },
+  { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon, roles: ['agente'] },
+  { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente'] },
+  { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo'] },
+  { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon, roles: ['agente', 'call_center'] },
+  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, roles: ['agente'] },
 ]
 
 export default function SidebarNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [perfil, setPerfil] = useState<Perfil | null>(null)
+  const [cargado, setCargado] = useState(false)
+
+  useEffect(() => {
+    getPerfilActual()
+      .then(setPerfil)
+      .finally(() => setCargado(true))
+  }, [])
+
+  // No profile row → treat as full-access agent (keeps current logins working).
+  const rol: Rol = perfil?.rol ?? 'agente'
+  const visibleItems = navItems.filter((item) => item.roles.includes(rol))
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
-    <nav style={{ padding: '16px 10px', flex: 1 }}>
+    <nav style={{ padding: '16px 10px', flex: 1, display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
           fontSize: 10,
@@ -75,7 +105,7 @@ export default function SidebarNav() {
       >
         Principal
       </div>
-      {navItems.map(({ href, label, Icon, exact }) => {
+      {visibleItems.map(({ href, label, Icon, exact }) => {
         const isActive = exact ? pathname === href : pathname.startsWith(href)
         return (
           <Link
@@ -104,6 +134,39 @@ export default function SidebarNav() {
           </Link>
         )
       })}
+
+      {/* User + logout */}
+      <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid rgba(47,90,174,0.08)' }}>
+        {cargado && perfil && (
+          <div style={{ padding: '0 10px 8px', fontSize: 12, color: '#4a5870' }}>
+            <div style={{ fontWeight: 700 }}>{perfil.nombre}</div>
+            <div style={{ fontSize: 10.5, color: '#a0b0cc', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {perfil.rol === 'call_center' ? 'Call center' : perfil.rol}
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleLogout}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            width: '100%',
+            padding: '9px 10px',
+            borderRadius: 8,
+            border: 'none',
+            background: 'transparent',
+            color: '#c0392b',
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </nav>
   )
 }

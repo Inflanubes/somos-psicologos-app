@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Montserrat } from 'next/font/google'
 import SidebarNav from './_components/SidebarNav'
+import RoleGate from './_components/RoleGate'
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -104,7 +105,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main style={{ flex: 1, overflowX: 'hidden', minWidth: 0 }}>
-        {children}
+        <RoleGate>{children}</RoleGate>
       </main>
     </div>
   )

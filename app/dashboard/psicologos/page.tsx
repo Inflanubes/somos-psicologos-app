@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Centro, Psicologo, Paciente } from '@/types/database'
+import type { Centro, Psicologo, Paciente, Perfil } from '@/types/database'
+import EventoSelect from '@/components/EventoSelect'
+import { fetchCitasActivas, fetchBloqueosActivos, type EventoActivo } from '@/lib/eventos-activos'
+import { getPerfilActual } from '@/lib/perfil'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -165,10 +168,6 @@ export default function PsicologosPage() {
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
 
-  // Cambiar cita: current appointment date/time (so Make can find the GCal event)
-  const [fechaActual, setFechaActual] = useState('')
-  const [horaActual, setHoraActual] = useState('')
-
   // Bloqueo fields
   const [fechaInicio, setFechaInicio] = useState('')
   const [horaInicio, setHoraInicio] = useState('')
@@ -182,6 +181,17 @@ export default function PsicologosPage() {
   const [npEdad, setNpEdad] = useState('')
   const [npEsMenor, setNpEsMenor] = useState(false)
   const [npEsRecomendado, setNpEsRecomendado] = useState(false)
+
+  // Event selector (Cambiar/Cancelar cita, Desbloquear agenda)
+  const [citasActivas, setCitasActivas] = useState<EventoActivo[]>([])
+  const [bloqueosActivos, setBloqueosActivos] = useState<EventoActivo[]>([])
+  const [eventoSeleccionadoId, setEventoSeleccionadoId] = useState('')
+  const [loadingEventos, setLoadingEventos] = useState(false)
+
+  // Logged-in identity (to fix the form to a psychologist and stamp who acted)
+  const [perfil, setPerfil] = useState<Perfil | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const esPsicologo = perfil?.rol === 'psicologo'
 
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -237,6 +247,72 @@ export default function PsicologosPage() {
   const isCambiarCita = accion === 'Cambiar cita'
   const isNuevoPaciente = accion === 'Añadir nuevo paciente'
 
+  // Actions that act on an existing event → need the event selector
+  const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
+  const requiereSelectorBloqueo = accion === 'Desbloquear agenda'
+  const eventoActual = [...citasActivas, ...bloqueosActivos].find((e) => e.id === eventoSeleccionadoId)
+
+  // Load logged-in identity
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null))
+    getPerfilActual().then(setPerfil)
+  }, [])
+
+  // Psychologist user: lock the form to their own centro + psychologist record.
+  useEffect(() => {
+    if (esPsicologo && perfil?.centro_id) setCentroId(perfil.centro_id)
+  }, [esPsicologo, perfil])
+
+  useEffect(() => {
+    if (
+      esPsicologo &&
+      perfil?.psicologo_id &&
+      filteredPsicologos.some((p) => p.id === perfil.psicologo_id) &&
+      psicologoId !== perfil.psicologo_id
+    ) {
+      setPsicologoId(perfil.psicologo_id)
+    }
+  }, [esPsicologo, perfil, filteredPsicologos, psicologoId])
+
+  // Load active appointments of the selected patient (for Cancelar/Cambiar cita)
+  useEffect(() => {
+    setEventoSeleccionadoId('')
+    if (!requiereSelectorCita || !psicologoId || !pacienteIniciales) {
+      setCitasActivas([])
+      return
+    }
+    const pacienteId = pacientes.find((p) => p.iniciales === pacienteIniciales)?.id
+    if (!pacienteId) {
+      setCitasActivas([])
+      return
+    }
+    let cancelled = false
+    setLoadingEventos(true)
+    fetchCitasActivas({ tabla: 'acciones_psicologos', psicologoId, pacienteId })
+      .then((eventos) => { if (!cancelled) setCitasActivas(eventos) })
+      .catch(() => { if (!cancelled) setCitasActivas([]) })
+      .finally(() => { if (!cancelled) setLoadingEventos(false) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [psicologoId, accion, pacienteIniciales])
+
+  // Load active blocks of the selected psychologist (for Desbloquear agenda)
+  useEffect(() => {
+    setEventoSeleccionadoId('')
+    if (!requiereSelectorBloqueo || !psicologoId) {
+      setBloqueosActivos([])
+      return
+    }
+    let cancelled = false
+    setLoadingEventos(true)
+    fetchBloqueosActivos({ tabla: 'acciones_psicologos', psicologoId })
+      .then((eventos) => { if (!cancelled) setBloqueosActivos(eventos) })
+      .catch(() => { if (!cancelled) setBloqueosActivos([]) })
+      .finally(() => { if (!cancelled) setLoadingEventos(false) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [psicologoId, accion])
+
   function resetForm() {
     setCentroId('')
     setPsicologoId('')
@@ -245,12 +321,13 @@ export default function PsicologosPage() {
     setPacientes([])
     setFecha('')
     setHora('')
-    setFechaActual('')
-    setHoraActual('')
     setFechaInicio('')
     setHoraInicio('')
     setPeriodo('Dias')
     setDuracion('')
+    setCitasActivas([])
+    setBloqueosActivos([])
+    setEventoSeleccionadoId('')
     setNpNombre('')
     setNpTelefono('')
     setNpEmail('')
@@ -274,6 +351,10 @@ export default function PsicologosPage() {
     }
     if (isNuevoPaciente && (!npNombre.trim() || !npTelefono.trim())) {
       setError('El nombre y el teléfono son obligatorios.')
+      return
+    }
+    if ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId) {
+      setError('Debes seleccionar el evento sobre el que actuar.')
       return
     }
 
@@ -384,16 +465,31 @@ export default function PsicologosPage() {
       }
 
       // ── CITAS / BLOQUEOS — send to Make webhook ───────────────────────────
+      // Block-creation actions still collect a manual start date; modify/cancel
+      // actions identify the event via gcal_event_id from the selector instead.
+      const isBloqueoCreacion = isBloqueoAction && accion !== 'Desbloquear agenda'
+      const origen = perfil?.rol ?? 'agente'
+      const quienNombre = perfil?.nombre ?? psicologoNombre
+
       const datosProcesados = {
         psicologo_nombre:     psicologoNombre,
         accion,
         paciente_iniciales:   isCitaAction ? pacienteIniciales : null,
         fecha_cita:           isCitaAction ? fecha || null : null,
         hora_cita:            isCitaAction ? formatTime(hora) : null,
-        fecha_inicio_bloqueo: isCambiarCita ? fechaActual || null : isBloqueoAction ? fechaInicio || null : null,
-        hora_inicio_bloqueo:  isCambiarCita ? formatTime(horaActual) : isBloqueoAction ? formatTime(horaInicio) : null,
-        periodo:              isBloqueoAction ? periodo : null,
-        duracion:             isBloqueoAction && duracion ? parseInt(duracion, 10) : null,
+        // Exact event to act on (Cambiar/Cancelar cita, Desbloquear agenda).
+        // Make uses this gcal_event_id instead of searching by date.
+        gcal_event_id:        (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.gcalEventId ?? null : null,
+        accion_id:            (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.id ?? null : null,
+        // Block-creation actions: start + period/duration
+        fecha_inicio_bloqueo: isBloqueoCreacion ? fechaInicio || null : null,
+        hora_inicio_bloqueo:  isBloqueoCreacion ? formatTime(horaInicio) : null,
+        periodo:              isBloqueoCreacion ? periodo : null,
+        duracion:             isBloqueoCreacion && duracion ? parseInt(duracion, 10) : null,
+        // Who performed the action (from login)
+        created_by:           quienNombre,
+        created_by_id:        userId,
+        origen,
       }
 
       const payload = {
@@ -532,7 +628,23 @@ export default function PsicologosPage() {
         }}
       >
         <form onSubmit={handleSubmit}>
-          {/* Centro + Psicólogo */}
+          {/* Centro + Psicólogo — hidden for a psychologist (form fixed to them) */}
+          {esPsicologo ? (
+            <div
+              style={{
+                background: '#eef2fb',
+                borderLeft: `4px solid ${BRAND_BLUE}`,
+                borderRadius: '0 8px 8px 0',
+                padding: '12px 16px',
+                marginBottom: 20,
+                fontSize: 13.5,
+                color: '#3a4a6b',
+              }}
+            >
+              Estás gestionando tu propia agenda como{' '}
+              <strong>{filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? perfil?.nombre}</strong>.
+            </div>
+          ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <FormField label="Centro" required>
               <select
@@ -568,6 +680,7 @@ export default function PsicologosPage() {
               </select>
             </FormField>
           </div>
+          )}
 
           {/* Divider */}
           <hr style={{ border: 'none', borderTop: '1.5px solid #eef0f5', margin: '4px 0 20px' }} />
@@ -734,53 +847,47 @@ export default function PsicologosPage() {
                 </select>
               </FormField>
 
-              {/* For Cambiar cita: current appointment */}
-              {isCambiarCita && (
+              {/* Event selector: pick the existing appointment to change/cancel */}
+              {requiereSelectorCita && (
+                <FormField label={isCambiarCita ? 'Cita a cambiar' : 'Cita a cancelar'} required>
+                  <EventoSelect
+                    eventos={citasActivas}
+                    value={eventoSeleccionadoId}
+                    onChange={setEventoSeleccionadoId}
+                    loading={loadingEventos}
+                    emptyText="Sin citas activas para este paciente"
+                    placeholder="Selecciona la cita"
+                    disabled={!pacienteIniciales}
+                    inputStyle={inputStyle}
+                    required
+                  />
+                </FormField>
+              )}
+
+              {/* New date/time — only for scheduling or changing an appointment */}
+              {(accion === 'Agendar cita' || isCambiarCita) && (
                 <>
-                  <InfoBox>
-                    Fecha y hora <strong>actual</strong> de la cita a cambiar:
-                  </InfoBox>
+                  {isCambiarCita && <InfoBox>Nueva fecha y hora:</InfoBox>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <FormField label="Fecha actual">
+                    <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'}>
                       <input
                         type="date"
-                        value={fechaActual}
-                        onChange={(e) => setFechaActual(e.target.value)}
+                        value={fecha}
+                        onChange={(e) => setFecha(e.target.value)}
                         style={inputStyle}
                       />
                     </FormField>
-                    <FormField label="Hora actual">
+                    <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'}>
                       <input
                         type="time"
-                        value={horaActual}
-                        onChange={(e) => setHoraActual(e.target.value)}
+                        value={hora}
+                        onChange={(e) => setHora(e.target.value)}
                         style={inputStyle}
                       />
                     </FormField>
                   </div>
-                  <InfoBox>Nueva fecha y hora:</InfoBox>
                 </>
               )}
-
-              {/* Fecha + hora */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'}>
-                  <input
-                    type="date"
-                    value={fecha}
-                    onChange={(e) => setFecha(e.target.value)}
-                    style={inputStyle}
-                  />
-                </FormField>
-                <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'}>
-                  <input
-                    type="time"
-                    value={hora}
-                    onChange={(e) => setHora(e.target.value)}
-                    style={inputStyle}
-                  />
-                </FormField>
-              </div>
             </div>
           )}
 
@@ -791,83 +898,103 @@ export default function PsicologosPage() {
                 {accion === 'Desbloquear agenda' ? 'Desbloquear agenda' : accion}
               </SectionTitle>
 
+              {/* Desbloquear: pick the existing block to remove */}
               {accion === 'Desbloquear agenda' && (
-                <InfoBox>Indica la fecha y hora de inicio del bloqueo que quieres eliminar.</InfoBox>
+                <FormField label="Bloqueo a eliminar" required>
+                  <EventoSelect
+                    eventos={bloqueosActivos}
+                    value={eventoSeleccionadoId}
+                    onChange={setEventoSeleccionadoId}
+                    loading={loadingEventos}
+                    emptyText="Sin bloqueos activos para este psicólogo"
+                    placeholder="Selecciona el bloqueo"
+                    inputStyle={inputStyle}
+                    required
+                  />
+                </FormField>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <FormField label="Fecha de inicio">
-                  <input
-                    type="date"
-                    value={fechaInicio}
-                    onChange={(e) => setFechaInicio(e.target.value)}
-                    style={inputStyle}
-                  />
-                </FormField>
-                <FormField
-                  label={accion === 'Desbloquear agenda' ? 'Hora del bloqueo' : 'Hora inicio (opcional)'}
-                >
-                  <input
-                    type="time"
-                    value={horaInicio}
-                    onChange={(e) => setHoraInicio(e.target.value)}
-                    style={inputStyle}
-                  />
-                </FormField>
-              </div>
-
+              {/* Block-creation actions: manual start + period/duration */}
               {accion !== 'Desbloquear agenda' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <FormField label="Periodo">
-                    <select
-                      value={periodo}
-                      onChange={(e) => setPeriodo(e.target.value as PeriodoBloqueo)}
-                      style={{ ...inputStyle, cursor: 'pointer' }}
-                    >
-                      <option value="Horas">Horas</option>
-                      <option value="Dias">Días</option>
-                      <option value="Semanas">Semanas</option>
-                      <option value="Meses">Meses</option>
-                    </select>
-                  </FormField>
-                  <FormField label="Duración">
-                    <input
-                      type="number"
-                      value={duracion}
-                      onChange={(e) => setDuracion(e.target.value)}
-                      placeholder="Ej. 2"
-                      min={1}
-                      style={inputStyle}
-                    />
-                  </FormField>
-                </div>
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <FormField label="Fecha de inicio">
+                      <input
+                        type="date"
+                        value={fechaInicio}
+                        onChange={(e) => setFechaInicio(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Hora inicio (opcional)">
+                      <input
+                        type="time"
+                        value={horaInicio}
+                        onChange={(e) => setHoraInicio(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <FormField label="Periodo">
+                      <select
+                        value={periodo}
+                        onChange={(e) => setPeriodo(e.target.value as PeriodoBloqueo)}
+                        style={{ ...inputStyle, cursor: 'pointer' }}
+                      >
+                        <option value="Horas">Horas</option>
+                        <option value="Dias">Días</option>
+                        <option value="Semanas">Semanas</option>
+                        <option value="Meses">Meses</option>
+                      </select>
+                    </FormField>
+                    <FormField label="Duración">
+                      <input
+                        type="number"
+                        value={duracion}
+                        onChange={(e) => setDuracion(e.target.value)}
+                        placeholder="Ej. 2"
+                        min={1}
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+                </>
               )}
             </div>
           )}
 
           {/* Submit */}
           <div style={{ marginTop: 28 }}>
-            <button
-              type="submit"
-              disabled={loading || !accion}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: loading || !accion ? '#a0b0cc' : BRAND_BLUE,
-                color: '#fff',
-                border: 'none',
-                borderRadius: 30,
-                fontSize: 15,
-                fontWeight: 400,
-                cursor: loading || !accion ? 'not-allowed' : 'pointer',
-                fontFamily: "'Varela Round', sans-serif",
-                transition: 'background 0.2s, box-shadow 0.2s',
-                boxShadow: loading || !accion ? 'none' : `0 4px 14px rgba(47,90,174,0.30)`,
-                letterSpacing: '0.3px',
-              }}
-            >
-              {loading ? 'Enviando…' : accion ? LABEL_MAP[accion] : 'Selecciona una acción'}
-            </button>
+            {(() => {
+              const submitDisabled =
+                loading || !accion ||
+                ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId)
+              return (
+                <button
+                  type="submit"
+                  disabled={submitDisabled}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    background: submitDisabled ? '#a0b0cc' : BRAND_BLUE,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 30,
+                    fontSize: 15,
+                    fontWeight: 400,
+                    cursor: submitDisabled ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Varela Round', sans-serif",
+                    transition: 'background 0.2s, box-shadow 0.2s',
+                    boxShadow: submitDisabled ? 'none' : `0 4px 14px rgba(47,90,174,0.30)`,
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  {loading ? 'Enviando…' : accion ? LABEL_MAP[accion] : 'Selecciona una acción'}
+                </button>
+              )
+            })()}
           </div>
         </form>
       </div>

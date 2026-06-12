@@ -38,7 +38,11 @@ const ESTADO_STYLE: Record<EstadoPaciente, { bg: string; color: string }> = {
 function formatDate(dateStr: string) {
   if (!dateStr) return '—'
   try {
-    return new Date(dateStr).toLocaleDateString('es-ES', {
+    // Date-only strings ("YYYY-MM-DD") are parsed as UTC by `new Date`, which
+    // shifts the day back in timezones ahead of UTC (e.g. Europe/Madrid).
+    // Append a local midnight so the day is preserved.
+    const d = dateStr.length === 10 ? new Date(`${dateStr}T00:00:00`) : new Date(dateStr)
+    return d.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, Paciente, EstadoPaciente } from '@/types/database'
+import { getPerfilActual } from '@/lib/perfil'
 
 type AccionCallCenter =
   | 'He AGENDADO cita'
@@ -133,6 +134,12 @@ export default function CallCenterPage() {
   const [edad, setEdad] = useState('')
   const [comentarios, setComentarios] = useState('')
 
+  // Patient search (find an existing patient instead of typing everything)
+  const [pacienteQuery, setPacienteQuery] = useState('')
+  const [pacienteResults, setPacienteResults] = useState<Paciente[]>([])
+  const [searchingPacientes, setSearchingPacientes] = useState(false)
+  const [prefillPsicologoId, setPrefillPsicologoId] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -158,6 +165,56 @@ export default function CallCenterPage() {
     setPsicologoId('')
   }, [centroId, psicologos])
 
+  // Apply a pending psychologist prefill once its centro's list is loaded
+  // (selecting a patient sets centro + psicólogo, but the effect above clears it).
+  useEffect(() => {
+    if (prefillPsicologoId && filteredPsicologos.some((p) => p.id === prefillPsicologoId)) {
+      setPsicologoId(prefillPsicologoId)
+      setPrefillPsicologoId('')
+    }
+  }, [filteredPsicologos, prefillPsicologoId])
+
+  // Search existing patients by name or phone
+  useEffect(() => {
+    const q = pacienteQuery.trim()
+    if (q.length < 2) {
+      setPacienteResults([])
+      return
+    }
+    let cancelled = false
+    setSearchingPacientes(true)
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('pacientes')
+          .select('*')
+          .or(`nombre.ilike.%${q}%,telefono.ilike.%${q}%`)
+          .order('nombre')
+          .limit(8)
+        if (!cancelled) setPacienteResults((data ?? []) as Paciente[])
+      } catch {
+        if (!cancelled) setPacienteResults([])
+      } finally {
+        if (!cancelled) setSearchingPacientes(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [pacienteQuery])
+
+  function seleccionarPaciente(p: Paciente) {
+    setNombre(p.nombre ?? '')
+    setTelefono(p.telefono ?? '')
+    setEmail(p.email ?? '')
+    setEdad(p.edad != null ? String(p.edad) : '')
+    setEsMenor(!!p.es_menor)
+    if (p.centro_id) setCentroId(p.centro_id)
+    if (p.psicologo_id) setPrefillPsicologoId(p.psicologo_id)
+    setPacienteResults([])
+    setPacienteQuery('')
+  }
+
   const showFechaHora = accion !== '' && ACCIONES_CON_FECHA.includes(accion as AccionCallCenter)
   const isCambiarCita = accion === 'He CAMBIADO cita'
   const isAnularCita = accion === 'He ANULADO cita'
@@ -166,6 +223,10 @@ export default function CallCenterPage() {
     e.preventDefault()
     if (!nombre || !telefono || !centroId || !accion) {
       setError('Por favor, completa los campos obligatorios.')
+      return
+    }
+    if (accion === 'Otro' && !comentarios.trim()) {
+      setError('Cuando la acción es "Otro", indica el motivo en el campo Comentarios.')
       return
     }
 
@@ -177,7 +238,9 @@ export default function CallCenterPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      const agenteNombre = user?.email ?? 'Desconocido'
+      const perfil = await getPerfilActual()
+      const origen = perfil?.rol ?? 'call_center'
+      const agenteNombre = perfil?.nombre ?? user?.email ?? 'Desconocido'
       const accionValue = accion as AccionCallCenter
 
       // 1a. Search or create paciente
@@ -232,7 +295,9 @@ export default function CallCenterPage() {
         fecha_cita: showFechaHora && fecha ? fecha : null,
         hora_cita: showFechaHora && hora ? hora : null,
         comentario: comentarios,
-        created_by: 'call center',
+        created_by: agenteNombre,
+        created_by_id: user?.id ?? null,
+        origen: origen,
         marca_temporal: new Date().toISOString(),
       })
 
@@ -386,6 +451,69 @@ export default function CallCenterPage() {
         }}
       >
         <form onSubmit={handleSubmit}>
+          {/* Patient search */}
+          <FormField label="Buscar paciente existente">
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={pacienteQuery}
+                onChange={(e) => setPacienteQuery(e.target.value)}
+                placeholder="Busca por nombre o teléfono…"
+                style={inputStyle}
+                autoComplete="off"
+              />
+              {pacienteQuery.trim().length >= 2 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 20,
+                    background: '#fff',
+                    border: '1px solid rgba(47,90,174,0.25)',
+                    borderRadius: 8,
+                    marginTop: 4,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    maxHeight: 240,
+                    overflowY: 'auto',
+                  }}
+                >
+                  {searchingPacientes ? (
+                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#667799' }}>Buscando…</div>
+                  ) : pacienteResults.length === 0 ? (
+                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#667799' }}>
+                      Sin resultados — puedes registrarlo abajo
+                    </div>
+                  ) : (
+                    pacienteResults.map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        onClick={() => seleccionarPaciente(p)}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '10px 14px',
+                          border: 'none',
+                          borderBottom: '1px solid #f0f2f7',
+                          background: '#fff',
+                          cursor: 'pointer',
+                          fontSize: 13.5,
+                          color: '#272626',
+                        }}
+                      >
+                        <strong>{p.nombre}</strong> · {p.telefono ?? 's/tel'}
+                        {p.iniciales ? ` · ${p.iniciales}` : ''}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </FormField>
+
           {/* Row: nombre + telefono */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <FormField label="Nombre completo" required>

@@ -15,6 +15,17 @@ export const ESTADOS_PACIENTE = [
 
 export type EstadoPaciente = typeof ESTADOS_PACIENTE[number]
 
+export type Rol = 'agente' | 'psicologo' | 'call_center'
+
+export type Perfil = {
+  id: string
+  nombre: string
+  rol: Rol
+  psicologo_id: string | null
+  centro_id: string | null
+  creado_en: string | null
+}
+
 export type Centro = {
   id: string
   nombre: string
@@ -68,6 +79,9 @@ export type AccionCallCenter = {
   fecha_cita: string
   hora_cita: string
   comentario: string
+  created_by: string | null
+  created_by_id: string | null
+  origen: string | null
 }
 
 export type MotivoBloqueo = 'Asuntos propios' | 'Vacaciones' | 'Baja laboral' | 'Otros'
@@ -87,8 +101,11 @@ export type AccionPsicologo = {
   marca_temporal: string | null
   gcal_event_id: string | null
   created_by: string | null
+  created_by_id: string | null
+  origen: string | null
   es_paciente_recomendado: boolean | null
   recomendado_por: string | null
+  activo: boolean | null
 }
 
 export type HistorialEstado = {
@@ -142,6 +159,8 @@ export type AccionCallCenterInsert = {
   hora_cita?: string | null
   comentario?: string | null
   created_by?: string | null
+  created_by_id?: string | null
+  origen?: string | null
   marca_temporal?: string | null
 }
 
@@ -154,6 +173,8 @@ export type AccionPsicologoInsert = {
   fecha_cita?: string | null
   hora_cita?: string | null
   created_by?: string | null
+  created_by_id?: string | null
+  origen?: string | null
   marca_temporal?: string | null
 }
 
@@ -215,6 +236,12 @@ export type Database = {
         Row: Agente
         Insert: Omit<Agente, 'id' | 'creado_en'>
         Update: Partial<Omit<Agente, 'id' | 'creado_en'>>
+        Relationships: []
+      }
+      perfiles: {
+        Row: Perfil
+        Insert: Omit<Perfil, 'creado_en'>
+        Update: Partial<Omit<Perfil, 'id'>>
         Relationships: []
       }
     }

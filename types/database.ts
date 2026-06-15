@@ -43,6 +43,15 @@ export type Psicologo = {
   email: string | null
 }
 
+export type PsicologoInsert = {
+  nombre: string
+  email?: string | null
+  telefono?: string | null
+  centro_id?: string | null
+  calendar_id?: string | null
+  activo?: boolean
+}
+
 export type Agente = {
   id: string
   nombre: string
@@ -50,6 +59,8 @@ export type Agente = {
   activo: boolean
   centro_id: string | null
   creado_en: string
+  email: string | null
+  auth_user_id: string | null
 }
 
 export type Paciente = {
@@ -198,8 +209,8 @@ export type Database = {
       }
       psicologos: {
         Row: Psicologo
-        Insert: Omit<Psicologo, 'id'>
-        Update: Partial<Omit<Psicologo, 'id'>>
+        Insert: PsicologoInsert
+        Update: Partial<PsicologoInsert>
         Relationships: []
       }
       pacientes: {

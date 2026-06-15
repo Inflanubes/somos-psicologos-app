@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon, roles: ['agente'] },
   { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente'] },
+  { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo'] },
   { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon, roles: ['agente', 'call_center'] },
   { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, roles: ['agente'] },

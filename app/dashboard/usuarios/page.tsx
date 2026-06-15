@@ -31,6 +31,7 @@ export default function UsuariosPage() {
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
   const [agentes, setAgentes] = useState<Agente[]>([])
   const [centros, setCentros] = useState<Centro[]>([])
+  const [filtroCentro, setFiltroCentro] = useState<string>('todos')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -137,6 +138,17 @@ export default function UsuariosPage() {
     }
   }
 
+  const centroMap = Object.fromEntries(centros.map((c) => [c.id, c.nombre]))
+  const psicologosFiltrados =
+    filtroCentro === 'todos' ? psicologos : psicologos.filter((p) => p.centro_id === filtroCentro)
+
+  const pill = (activo: boolean): React.CSSProperties => ({
+    padding: '6px 14px', borderRadius: 20, border: '1.5px solid',
+    borderColor: activo ? '#2f5aae' : 'rgba(47,90,174,0.2)',
+    background: activo ? '#eef2fb' : '#fff', color: activo ? '#254d99' : '#4a5870',
+    fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+  })
+
   return (
     <div style={{ padding: '36px 40px', maxWidth: 960 }}>
       <div style={{ marginBottom: 28 }}>
@@ -187,15 +199,27 @@ export default function UsuariosPage() {
       ) : (
         <>
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#272626', margin: '0 0 12px' }}>Psicólogos</h2>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+            <button onClick={() => setFiltroCentro('todos')} style={pill(filtroCentro === 'todos')}>Todos los centros</button>
+            {centros.map((c) => (
+              <button key={c.id} onClick={() => setFiltroCentro(c.id)} style={pill(filtroCentro === c.id)}>{c.nombre}</button>
+            ))}
+          </div>
+          <p style={{ fontSize: 13, color: '#667799', margin: '0 0 12px' }}>
+            {psicologosFiltrados.filter((p) => p.activo).length} activo{psicologosFiltrados.filter((p) => p.activo).length !== 1 ? 's' : ''} de {psicologosFiltrados.length} psicólogo{psicologosFiltrados.length !== 1 ? 's' : ''}
+          </p>
           <div style={card}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Email', 'Calendario', 'Estado', 'Acciones'].map((h) => <th key={h} style={th}>{h}</th>)}
+                {['Nombre', 'Centro', 'Email', 'Calendario', 'Estado', 'Acciones'].map((h) => <th key={h} style={th}>{h}</th>)}
               </tr></thead>
               <tbody>
-                {psicologos.map((p) => (
+                {psicologosFiltrados.length === 0 ? (
+                  <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={6}>No hay psicólogos en este centro</td></tr>
+                ) : psicologosFiltrados.map((p) => (
                   <tr key={p.id} style={{ borderTop: '1px solid rgba(47,90,174,0.07)' }}>
                     <td style={{ ...td, fontWeight: 500, color: '#272626' }}>{p.nombre}</td>
+                    <td style={td}>{centroMap[p.centro_id ?? ''] ?? '—'}</td>
                     <td style={td}>{p.email ?? '—'}</td>
                     <td style={{ ...td, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.calendar_id ?? '—'}</td>
                     <td style={td}>{p.activo ? 'Activo' : 'Inactivo'}</td>

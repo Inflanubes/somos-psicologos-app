@@ -42,12 +42,18 @@ export default function UsuariosPage() {
 
   async function cargar() {
     setLoading(true)
-    const res = await fetch('/api/usuarios')
-    if (!res.ok) { setError((await res.json()).error ?? 'Error cargando'); setLoading(false); return }
-    const data = await res.json()
-    setPsicologos(data.psicologos)
-    setAgentes(data.agentes)
-    setLoading(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/usuarios')
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error ?? 'Error cargando'); return }
+      setPsicologos(data.psicologos)
+      setAgentes(data.agentes)
+    } catch {
+      setError('Error de conexión al cargar')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { cargar() }, [])
@@ -55,55 +61,74 @@ export default function UsuariosPage() {
   async function crear(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true); setError(null)
-    const res = await fetch('/api/usuarios', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tipo, nombre, email,
-        telefono: telefono || null,
-        calendar_id: tipo === 'psicologo' ? calendarId : null,
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) { setError(data.error ?? 'Error'); setBusy(false); return }
-    setNombre(''); setEmail(''); setTelefono(''); setCalendarId('')
-    setBusy(false)
-    await cargar()
+    try {
+      const res = await fetch('/api/usuarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo, nombre, email,
+          telefono: telefono || null,
+          calendar_id: tipo === 'psicologo' ? calendarId : null,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error ?? 'Error'); return }
+      setNombre(''); setEmail(''); setTelefono(''); setCalendarId('')
+      await cargar()
+    } catch {
+      setError('Error de conexión al crear')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // PATCH compartido para editar/desactivar: siempre limpia busy y muestra errores.
+  async function patchUsuario(id: string, body: Record<string, unknown>) {
+    setBusy(true); setError(null)
+    try {
+      const res = await fetch(`/api/usuarios/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error ?? 'No se pudo guardar el cambio')
+        return
+      }
+      await cargar()
+    } catch {
+      setError('Error de conexión al guardar')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function toggleActivo(t: Tipo, id: string, activo: boolean) {
-    setBusy(true)
-    await fetch(`/api/usuarios/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: t, activo: !activo }),
-    })
-    setBusy(false)
-    await cargar()
+    await patchUsuario(id, { tipo: t, activo: !activo })
   }
 
   async function editarCalendario(id: string, actual: string | null) {
     const nuevo = window.prompt('Nuevo calendar_id:', actual ?? '')
     if (nuevo === null) return
-    setBusy(true)
-    await fetch(`/api/usuarios/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: 'psicologo', calendar_id: nuevo }),
-    })
-    setBusy(false)
-    await cargar()
+    if (!nuevo.trim()) { setError('El calendar_id no puede quedar vacío'); return }
+    await patchUsuario(id, { tipo: 'psicologo', calendar_id: nuevo.trim() })
   }
 
   async function reenviar(t: Tipo, id: string) {
-    setBusy(true)
-    const res = await fetch(`/api/usuarios/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: t }),
-    })
-    setBusy(false)
-    alert(res.ok ? 'Email de acceso enviado' : 'No se pudo enviar el email')
+    setBusy(true); setError(null)
+    try {
+      const res = await fetch(`/api/usuarios/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: t }),
+      })
+      alert(res.ok ? 'Email de acceso enviado' : 'No se pudo enviar el email')
+    } catch {
+      alert('Error de conexión al enviar el email')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

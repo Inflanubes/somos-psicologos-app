@@ -10,6 +10,7 @@ type Agente = {
   id: string; nombre: string; email: string | null; telefono: string | null
   centro_id: string | null; activo: boolean; auth_user_id: string | null
 }
+type Centro = { id: string; nombre: string }
 type Tipo = 'psicologo' | 'agente'
 
 const card: React.CSSProperties = {
@@ -29,6 +30,7 @@ const input: React.CSSProperties = {
 export default function UsuariosPage() {
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
   const [agentes, setAgentes] = useState<Agente[]>([])
+  const [centros, setCentros] = useState<Centro[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -39,6 +41,7 @@ export default function UsuariosPage() {
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
   const [calendarId, setCalendarId] = useState('')
+  const [centroId, setCentroId] = useState('')
 
   async function cargar() {
     setLoading(true)
@@ -49,6 +52,7 @@ export default function UsuariosPage() {
       if (!res.ok) { setError(data.error ?? 'Error cargando'); return }
       setPsicologos(data.psicologos)
       setAgentes(data.agentes)
+      setCentros(data.centros ?? [])
     } catch {
       setError('Error de conexión al cargar')
     } finally {
@@ -60,6 +64,7 @@ export default function UsuariosPage() {
 
   async function crear(e: React.FormEvent) {
     e.preventDefault()
+    if (tipo === 'psicologo' && !centroId) { setError('Selecciona un centro para el psicólogo'); return }
     setBusy(true); setError(null)
     try {
       const res = await fetch('/api/usuarios', {
@@ -68,12 +73,13 @@ export default function UsuariosPage() {
         body: JSON.stringify({
           tipo, nombre, email,
           telefono: telefono || null,
+          centro_id: centroId || null,
           calendar_id: tipo === 'psicologo' ? calendarId : null,
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(data.error ?? 'Error'); return }
-      setNombre(''); setEmail(''); setTelefono(''); setCalendarId('')
+      setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId('')
       await cargar()
     } catch {
       setError('Error de conexión al crear')
@@ -161,6 +167,12 @@ export default function UsuariosPage() {
         <input style={input} placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
         <input style={input} placeholder="Email de acceso" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input style={input} placeholder="Teléfono (opcional)" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+        <select style={input} value={centroId} onChange={(e) => setCentroId(e.target.value)} required={tipo === 'psicologo'}>
+          <option value="">{tipo === 'psicologo' ? 'Centro (obligatorio)' : 'Centro (opcional)'}</option>
+          {centros.map((c) => (
+            <option key={c.id} value={c.id}>{c.nombre}</option>
+          ))}
+        </select>
         {tipo === 'psicologo' && (
           <input style={input} placeholder="calendar_id (Google Calendar)" value={calendarId} onChange={(e) => setCalendarId(e.target.value)} required />
         )}

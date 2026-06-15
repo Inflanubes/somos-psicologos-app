@@ -7,14 +7,16 @@ export async function GET() {
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status })
 
   const admin = createSupabaseAdmin()
-  const [psies, ags] = await Promise.all([
+  const [psies, ags, centros] = await Promise.all([
     admin.from('psicologos').select('id, nombre, email, telefono, centro_id, calendar_id, activo').order('nombre'),
     admin.from('agentes').select('id, nombre, email, telefono, centro_id, activo, auth_user_id').order('nombre'),
+    admin.from('centros').select('id, nombre').order('nombre'),
   ])
   if (psies.error) return NextResponse.json({ error: psies.error.message }, { status: 500 })
   if (ags.error) return NextResponse.json({ error: ags.error.message }, { status: 500 })
+  if (centros.error) return NextResponse.json({ error: centros.error.message }, { status: 500 })
 
-  return NextResponse.json({ psicologos: psies.data ?? [], agentes: ags.data ?? [] })
+  return NextResponse.json({ psicologos: psies.data ?? [], agentes: ags.data ?? [], centros: centros.data ?? [] })
 }
 
 type CrearBody = {

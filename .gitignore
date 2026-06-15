@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# one-off admin scripts that hardcode secrets (do NOT commit — keys in plaintext)
+create-agents.mjs
+
 # debug
 npm-debug.log*
 yarn-debug.log*

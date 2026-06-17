@@ -201,6 +201,12 @@ export default function PsicologosPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const esPsicologo = perfil?.rol === 'psicologo'
 
+  // For a psychologist the centro/psicólogo are fixed to their own profile.
+  // Use the profile as the source of truth so a successful action (which resets
+  // the form) or a slow auto-fill can never leave the next submit without them.
+  const effCentroId    = esPsicologo ? (perfil?.centro_id ?? centroId) : centroId
+  const effPsicologoId = esPsicologo ? (perfil?.psicologo_id ?? psicologoId) : psicologoId
+
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -328,11 +334,19 @@ export default function PsicologosPage() {
   }, [psicologoId, accion])
 
   function resetForm() {
-    setCentroId('')
-    setPsicologoId('')
+    // A psychologist's centro + psicólogo are locked to their profile and the
+    // auto-fill effects don't re-run on reset — so keep them (and their patient
+    // list) instead of clearing, or the next action submits with empty fields.
+    if (esPsicologo) {
+      setCentroId(perfil?.centro_id ?? '')
+      setPsicologoId(perfil?.psicologo_id ?? '')
+    } else {
+      setCentroId('')
+      setPsicologoId('')
+      setPacientes([])
+    }
     setAccion('')
     setPacienteIniciales('')
-    setPacientes([])
     setFecha('')
     setHora('')
     setFechaInicio('')
@@ -357,7 +371,7 @@ export default function PsicologosPage() {
     setError('')
     setSuccess(false)
 
-    if (!centroId || !psicologoId || !accion) {
+    if (!effCentroId || !effPsicologoId || !accion) {
       setError('Por favor, completa los campos obligatorios.')
       return
     }
@@ -380,8 +394,10 @@ export default function PsicologosPage() {
 
     setLoading(true)
     try {
-      const centroNombre    = centros.find((c) => c.id === centroId)?.nombre ?? ''
-      const psicologoNombre = filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? ''
+      const centroNombre    = centros.find((c) => c.id === effCentroId)?.nombre ?? ''
+      const psicologoNombre =
+        (filteredPsicologos.find((p) => p.id === effPsicologoId) ??
+          psicologos.find((p) => p.id === effPsicologoId))?.nombre ?? ''
 
       // ── AÑADIR NUEVO PACIENTE ─────────────────────────────────────────────
       if (isNuevoPaciente) {
@@ -395,7 +411,7 @@ export default function PsicologosPage() {
         if (existentes && existentes.length > 0) {
           const dup = existentes[0]
           // Same psicólogo: friendly notice, no agent alert.
-          if (dup.psicologo_id === psicologoId) {
+          if (dup.psicologo_id === effPsicologoId) {
             setError(
               `Este paciente ya está añadido en tu lista: ${dup.nombre} (${dup.iniciales}).`
             )
@@ -413,7 +429,7 @@ export default function PsicologosPage() {
               datosProcesados: {
                 accion: 'Paciente duplicado',
                 psicologo_solicitante_nombre: psicologoNombre,
-                psicologo_solicitante_id: psicologoId,
+                psicologo_solicitante_id: effPsicologoId,
                 paciente_existente_nombre: dup.nombre,
                 paciente_existente_iniciales: dup.iniciales,
                 paciente_existente_id: dup.id,
@@ -445,9 +461,9 @@ export default function PsicologosPage() {
           email:               npEmail.trim() || null,
           edad:                npEdad ? parseInt(npEdad, 10) : null,
           es_menor:            npEsMenor,
-          centro_id:           centroId,
-          psicologo_id:        psicologoId,
-          recomendado_por:     npEsRecomendado ? psicologoId : null,
+          centro_id:           effCentroId,
+          psicologo_id:        effPsicologoId,
+          recomendado_por:     npEsRecomendado ? effPsicologoId : null,
           estado:              'Nuevo paciente',
           fecha_incorporacion: new Date().toISOString().split('T')[0],
         })
@@ -470,7 +486,7 @@ export default function PsicologosPage() {
               edad:             npEdad ? parseInt(npEdad, 10) : null,
               es_menor:         npEsMenor,
               es_paciente_recomendado: npEsRecomendado,
-              recomendado_por:  npEsRecomendado ? psicologoId : null,
+              recomendado_por:  npEsRecomendado ? effPsicologoId : null,
             },
             respuestasFormulario: {
               'Selecciona tu centro': centroNombre,

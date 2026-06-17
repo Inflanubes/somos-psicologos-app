@@ -48,6 +48,7 @@ export type PsicologoInsert = {
   email?: string | null
   telefono?: string | null
   centro_id?: string | null
+  centro?: string | null
   calendar_id?: string | null
   activo?: boolean
 }

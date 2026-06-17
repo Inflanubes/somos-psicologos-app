@@ -35,6 +35,11 @@ export default function UsuariosPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Resultado de un alta o restablecimiento, para mostrarlo una vez.
+  // emailSent = se envió el email; password = contraseña temporal de respaldo.
+  const [resultado, setResultado] = useState<
+    { email: string; password?: string; emailSent?: boolean; contexto: 'alta' | 'reset' } | null
+  >(null)
 
   // Formulario de alta
   const [tipo, setTipo] = useState<Tipo>('psicologo')
@@ -80,6 +85,7 @@ export default function UsuariosPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(data.error ?? 'Error'); return }
+      setResultado({ email: data.email ?? email, password: data.password, emailSent: data.emailSent, contexto: 'alta' })
       setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId('')
       await cargar()
     } catch {
@@ -122,17 +128,23 @@ export default function UsuariosPage() {
     await patchUsuario(id, { tipo: 'psicologo', calendar_id: nuevo.trim() })
   }
 
-  async function reenviar(t: Tipo, id: string) {
+  async function restablecer(t: Tipo, id: string, metodo: 'email' | 'generar') {
+    const confirmMsg = metodo === 'email'
+      ? '¿Enviar a este usuario un email para que cree su contraseña?'
+      : '¿Generar una contraseña temporal? La anterior dejará de funcionar y tendrás que entregársela tú al usuario.'
+    if (!window.confirm(confirmMsg)) return
     setBusy(true); setError(null)
     try {
       const res = await fetch(`/api/usuarios/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: t }),
+        body: JSON.stringify({ tipo: t, metodo }),
       })
-      alert(res.ok ? 'Email de acceso enviado' : 'No se pudo enviar el email')
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error ?? 'No se pudo restablecer el acceso'); return }
+      setResultado({ email: data.email, password: data.password, emailSent: metodo === 'email', contexto: 'reset' })
     } catch {
-      alert('Error de conexión al enviar el email')
+      setError('Error de conexión al restablecer el acceso')
     } finally {
       setBusy(false)
     }
@@ -156,13 +168,64 @@ export default function UsuariosPage() {
           Usuarios
         </h1>
         <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
-          Crea accesos, gestiona calendarios y reenvía contraseñas
+          Crea accesos, gestiona calendarios y genera contraseñas
         </p>
       </div>
 
       {error && (
         <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 18, fontSize: 13 }}>
           {error}
+        </div>
+      )}
+
+      {resultado && (
+        <div style={{ background: '#eef2fb', border: '1.5px solid #2f5aae', borderRadius: 10, padding: '16px 18px', marginBottom: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#254d99', marginBottom: 8 }}>
+                {resultado.contexto === 'alta' ? 'Usuario creado' : 'Acceso restablecido'}
+              </div>
+              <div style={{ fontSize: 13, color: '#3a4a6b', marginBottom: 6 }}>
+                <strong>Email:</strong> <span style={{ fontFamily: 'monospace' }}>{resultado.email}</span>
+              </div>
+
+              {resultado.emailSent && (
+                <div style={{ fontSize: 13, color: '#1e7d4f', fontWeight: 600, marginBottom: 6 }}>
+                  📧 Le hemos enviado un email para que cree su propia contraseña.
+                </div>
+              )}
+
+              {resultado.password && (
+                <div style={{ fontSize: 13, color: '#3a4a6b' }}>
+                  <strong>{resultado.emailSent ? 'Contraseña temporal de respaldo' : 'Contraseña temporal'}:</strong>{' '}
+                  <span style={{ fontFamily: 'monospace', background: '#fff', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(47,90,174,0.25)' }}>
+                    {resultado.password}
+                  </span>
+                  {resultado.emailSent && (
+                    <div style={{ fontSize: 12, color: '#667799', marginTop: 6 }}>
+                      Úsala solo si el email no le llega. No volverá a mostrarse.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {resultado.password && (
+                <button
+                  onClick={() => navigator.clipboard?.writeText(`Email: ${resultado.email}\nContraseña: ${resultado.password}`)}
+                  style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid #2f5aae', background: '#fff', color: '#254d99', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Copiar
+                </button>
+              )}
+              <button
+                onClick={() => setResultado(null)}
+                style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#2f5aae', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Hecho
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -189,7 +252,7 @@ export default function UsuariosPage() {
           <input style={input} placeholder="calendar_id (Google Calendar)" value={calendarId} onChange={(e) => setCalendarId(e.target.value)} required />
         )}
         <button type="submit" disabled={busy} style={{ justifySelf: 'start', padding: '9px 20px', borderRadius: 8, border: 'none', background: '#2f5aae', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.6 : 1 }}>
-          {busy ? 'Creando...' : 'Crear y enviar invitación'}
+          {busy ? 'Creando...' : 'Crear y enviar acceso'}
         </button>
       </form>
 
@@ -225,7 +288,8 @@ export default function UsuariosPage() {
                     <td style={td}>{p.activo ? 'Activo' : 'Inactivo'}</td>
                     <td style={td}>
                       <button onClick={() => editarCalendario(p.id, p.calendar_id)} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }}>Calendario</button>
-                      <button onClick={() => reenviar('psicologo', p.id)} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }}>Reenviar</button>
+                      <button onClick={() => restablecer('psicologo', p.id, 'email')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</button>
+                      <button onClick={() => restablecer('psicologo', p.id, 'generar')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Generar una contraseña temporal para entregar tú">Generar</button>
                       <button onClick={() => toggleActivo('psicologo', p.id, p.activo)} disabled={busy} style={{ cursor: 'pointer' }}>{p.activo ? 'Desactivar' : 'Activar'}</button>
                     </td>
                   </tr>
@@ -248,7 +312,8 @@ export default function UsuariosPage() {
                     <td style={td}>{a.telefono ?? '—'}</td>
                     <td style={td}>{a.activo ? 'Activo' : 'Inactivo'}</td>
                     <td style={td}>
-                      <button onClick={() => reenviar('agente', a.id)} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }}>Reenviar</button>
+                      <button onClick={() => restablecer('agente', a.id, 'email')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</button>
+                      <button onClick={() => restablecer('agente', a.id, 'generar')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Generar una contraseña temporal para entregar tú">Generar</button>
                       <button onClick={() => toggleActivo('agente', a.id, a.activo)} disabled={busy} style={{ cursor: 'pointer' }}>{a.activo ? 'Desactivar' : 'Activar'}</button>
                     </td>
                   </tr>

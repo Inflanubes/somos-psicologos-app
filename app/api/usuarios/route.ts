@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAgente } from '@/lib/require-agente'
+import { generateTempPassword } from '@/lib/temp-password'
 
 export async function GET() {
   const guard = await requireAgente()
@@ -47,18 +48,38 @@ export async function POST(req: NextRequest) {
 
   const admin = createSupabaseAdmin()
 
-  // Paso 1: invitar (crea cuenta auth + envía email para fijar contraseña)
-  const invite = await admin.auth.admin.inviteUserByEmail(email)
-  if (invite.error || !invite.data?.user) {
-    const msg = /already|registered|exists/i.test(invite.error?.message ?? '')
+  // Paso 1: crear cuenta auth con email confirmado y una contraseña temporal.
+  // La temporal es un RESPALDO (el agente la ve y puede entregarla si el email
+  // no llega); el flujo normal es que el usuario reciba el email y elija la suya.
+  const password = generateTempPassword()
+  const created = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+  if (created.error || !created.data?.user) {
+    const msg = /already|registered|exists/i.test(created.error?.message ?? '')
       ? 'Ya hay un usuario con ese email'
-      : invite.error?.message ?? 'No se pudo crear la cuenta'
+      : created.error?.message ?? 'No se pudo crear la cuenta'
     return NextResponse.json({ error: msg }, { status: 400 })
   }
-  const userId = invite.data.user.id
+  const userId = created.data.user.id
+
+  // Paso 2: enviar email para que el usuario fije su propia contraseña.
+  // Si el SMTP no está configurado o se supera el límite, emailSent = false y
+  // el agente puede usar la contraseña temporal como alternativa.
+  const { error: mailError } = await admin.auth.resetPasswordForEmail(email)
+  const emailSent = !mailError
 
   if (body.tipo === 'psicologo') {
-    // Paso 2: registro en psicologos
+    // El nombre del centro en texto es obligatorio: las automatizaciones (Make)
+    // buscan al psicólogo en `psicologos` por el campo `centro`, no por centro_id.
+    let centroNombre: string | null = null
+    if (body.centro_id) {
+      const c = await admin.from('centros').select('nombre').eq('id', body.centro_id).maybeSingle()
+      centroNombre = c.data?.nombre ?? null
+    }
+    // Paso 3: registro en psicologos
     const psi = await admin
       .from('psicologos')
       .insert({
@@ -66,6 +87,7 @@ export async function POST(req: NextRequest) {
         email,
         telefono: body.telefono ?? null,
         centro_id: body.centro_id ?? null,
+        centro: centroNombre,
         calendar_id: body.calendar_id!.trim(),
         activo: true,
       })
@@ -75,7 +97,7 @@ export async function POST(req: NextRequest) {
       await admin.auth.admin.deleteUser(userId) // limpieza
       return NextResponse.json({ error: psi.error?.message ?? 'Error creando psicólogo' }, { status: 500 })
     }
-    // Paso 3: perfil
+    // Paso 4: perfil
     const perfil = await admin.from('perfiles').insert({
       id: userId,
       nombre,
@@ -88,7 +110,7 @@ export async function POST(req: NextRequest) {
       await admin.auth.admin.deleteUser(userId)
       return NextResponse.json({ error: perfil.error.message }, { status: 500 })
     }
-    return NextResponse.json({ ok: true, id: psi.data.id }, { status: 201 })
+    return NextResponse.json({ ok: true, id: psi.data.id, email, password, emailSent }, { status: 201 })
   }
 
   // tipo === 'agente'
@@ -120,5 +142,5 @@ export async function POST(req: NextRequest) {
     await admin.auth.admin.deleteUser(userId)
     return NextResponse.json({ error: perfil.error.message }, { status: 500 })
   }
-  return NextResponse.json({ ok: true, id: ag.data.id }, { status: 201 })
+  return NextResponse.json({ ok: true, id: ag.data.id, email, password, emailSent }, { status: 201 })
 }

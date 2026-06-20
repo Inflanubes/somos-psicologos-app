@@ -13,7 +13,7 @@ type AccionPsicologo =
   | 'Cambiar cita'
   | 'Bloquear agenda'
   | 'Desbloquear agenda'
-  | 'Modificar bloqueo'
+  | 'Modificar bloqueo personal'
   | 'Añadir nuevo paciente'
   | 'Asuntos propios'
   | 'Vacaciones'
@@ -28,7 +28,7 @@ const ACCIONES: AccionPsicologo[] = [
   'Cancelar cita',
   'Bloquear agenda',
   'Desbloquear agenda',
-  'Modificar bloqueo',
+  'Modificar bloqueo personal',
   'Asuntos propios',
   'Vacaciones',
   'Baja laboral',
@@ -38,7 +38,7 @@ const ACCIONES_CITA: AccionPsicologo[] = ['Agendar cita', 'Cancelar cita', 'Camb
 const ACCIONES_BLOQUEO: AccionPsicologo[] = [
   'Bloquear agenda',
   'Desbloquear agenda',
-  'Modificar bloqueo',
+  'Modificar bloqueo personal',
   'Asuntos propios',
   'Vacaciones',
   'Baja laboral',
@@ -48,7 +48,7 @@ const LABEL_MAP: Record<AccionPsicologo, string> = {
   'Agendar cita':          'Confirmar cita',
   'Bloquear agenda':       'Bloquear agenda',
   'Desbloquear agenda':    'Desbloquear agenda',
-  'Modificar bloqueo':     'Modificar bloqueo',
+  'Modificar bloqueo personal':     'Modificar bloqueo personal',
   'Cambiar cita':          'Cambiar cita',
   'Cancelar cita':         'Cancelar cita',
   'Añadir nuevo paciente': 'Añadir paciente',
@@ -263,7 +263,7 @@ export default function PsicologosPage() {
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
-  const esModificarBloqueo = accion === 'Modificar bloqueo'
+  const esModificarBloqueo = accion === 'Modificar bloqueo personal'
   const requiereSelectorBloqueo = accion === 'Desbloquear agenda' || esModificarBloqueo
   const eventoActual = [...citasActivas, ...bloqueosActivos].find((e) => e.id === eventoSeleccionadoId)
 
@@ -504,7 +504,7 @@ export default function PsicologosPage() {
       // Block-creation actions still collect a manual start date; modify/cancel
       // actions identify the event via gcal_event_id from the selector instead.
       const isBloqueoCreacion =
-        isBloqueoAction && accion !== 'Desbloquear agenda' && accion !== 'Modificar bloqueo'
+        isBloqueoAction && accion !== 'Desbloquear agenda' && accion !== 'Modificar bloqueo personal'
       const origen = perfil?.rol ?? 'agente'
       const quienNombre = perfil?.nombre ?? psicologoNombre
 

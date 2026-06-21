@@ -868,6 +868,123 @@ export default function PsicologosPage() {
                   </span>
                 </span>
               </label>
+
+              {npEsMenor && (
+                <div>
+                  <SectionTitle>Datos de los tutores legales</SectionTitle>
+                  <InfoBox>
+                    Para menores se requieren dos consentimientos. Si solo hay un tutor,
+                    marca la casilla de circunstancia especial y explica el motivo.
+                  </InfoBox>
+
+                  <FormField label="Tutor 1 · Nombre completo" required>
+                    <input
+                      type="text"
+                      value={npT1Nombre}
+                      onChange={(e) => setNpT1Nombre(e.target.value)}
+                      placeholder="Ej. Juan García Pérez"
+                      style={inputStyle}
+                    />
+                  </FormField>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <FormField label="Tutor 1 · Teléfono" required>
+                      <input
+                        type="tel"
+                        value={npT1Telefono}
+                        onChange={(e) => setNpT1Telefono(e.target.value)}
+                        placeholder="Ej. 612 345 678"
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Tutor 1 · Email">
+                      <input
+                        type="email"
+                        value={npT1Mail}
+                        onChange={(e) => setNpT1Mail(e.target.value)}
+                        placeholder="Ej. juan@email.com"
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+
+                  {!npSoloUnTutor && (
+                    <>
+                      <FormField label="Tutor 2 · Nombre completo" required>
+                        <input
+                          type="text"
+                          value={npT2Nombre}
+                          onChange={(e) => setNpT2Nombre(e.target.value)}
+                          placeholder="Ej. Ana López Ruiz"
+                          style={inputStyle}
+                        />
+                      </FormField>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <FormField label="Tutor 2 · Teléfono" required>
+                          <input
+                            type="tel"
+                            value={npT2Telefono}
+                            onChange={(e) => setNpT2Telefono(e.target.value)}
+                            placeholder="Ej. 612 345 678"
+                            style={inputStyle}
+                          />
+                        </FormField>
+                        <FormField label="Tutor 2 · Email">
+                          <input
+                            type="email"
+                            value={npT2Mail}
+                            onChange={(e) => setNpT2Mail(e.target.value)}
+                            placeholder="Ej. ana@email.com"
+                            style={inputStyle}
+                          />
+                        </FormField>
+                      </div>
+                    </>
+                  )}
+
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '12px 14px',
+                      border: `1.5px solid ${npSoloUnTutor ? BRAND_BLUE : '#dde1ea'}`,
+                      background: npSoloUnTutor ? '#eef2fb' : '#fafbfc',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      transition: 'background 0.12s, border 0.12s',
+                      fontSize: 14,
+                      color: '#272626',
+                      fontWeight: 500,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={npSoloUnTutor}
+                      onChange={(e) => setNpSoloUnTutor(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: BRAND_BLUE, cursor: 'pointer' }}
+                    />
+                    <span>
+                      No es posible aportar un segundo tutor{' '}
+                      <span style={{ fontWeight: 400, color: '#888', fontSize: 13 }}>
+                        — circunstancia especial (fallecimiento, adopción, divorcio…)
+                      </span>
+                    </span>
+                  </label>
+
+                  {npSoloUnTutor && (
+                    <FormField label="Otros · Explica la circunstancia" required>
+                      <textarea
+                        value={npOtros}
+                        onChange={(e) => setNpOtros(e.target.value)}
+                        placeholder="Ej. El otro progenitor ha fallecido / adopción con tutor único / divorcio con sentencia de custodia…"
+                        rows={3}
+                        style={{ ...inputStyle, resize: 'vertical', fontFamily: "'Montserrat', inherit" }}
+                      />
+                    </FormField>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

@@ -486,20 +486,45 @@ export default function PsicologosPage() {
 
         // 2) No duplicate — proceed with the standard insert + Make notification.
         const iniciales = generarIniciales(npNombre)
-        const { error: supaError } = await supabase.from('pacientes').insert({
-          nombre:              npNombre.trim(),
-          iniciales,
-          telefono:            telefonoNorm,
-          email:               npEmail.trim() || null,
-          edad:                npEdad ? parseInt(npEdad, 10) : null,
-          es_menor:            npEsMenor,
-          centro_id:           effCentroId,
-          psicologo_id:        effPsicologoId,
-          recomendado_por:     npEsRecomendado ? effPsicologoId : null,
-          estado:              'Nuevo paciente',
-          fecha_incorporacion: new Date().toISOString().split('T')[0],
-        })
+        const { data: nuevoPaciente, error: supaError } = await supabase
+          .from('pacientes')
+          .insert({
+            nombre:              npNombre.trim(),
+            iniciales,
+            telefono:            telefonoNorm,
+            email:               npEmail.trim() || null,
+            edad:                npEdad ? parseInt(npEdad, 10) : null,
+            es_menor:            npEsMenor,
+            centro_id:           effCentroId,
+            psicologo_id:        effPsicologoId,
+            recomendado_por:     npEsRecomendado ? effPsicologoId : null,
+            estado:              'Nuevo paciente',
+            fecha_incorporacion: new Date().toISOString().split('T')[0],
+          })
+          .select('id')
+          .single()
         if (supaError) throw new Error('Error al añadir paciente: ' + supaError.message)
+        if (!nuevoPaciente) throw new Error('No se pudo recuperar el identificador del nuevo paciente. Inténtalo de nuevo.')
+
+        // Paciente menor: guardar los datos de los tutores legales.
+        if (npEsMenor) {
+          const { error: menorError } = await supabase.from('asociados_menores').insert({
+            id_menor:           nuevoPaciente.id,
+            T1_nombre_completo: npT1Nombre.trim(),
+            'T1_teléfono':      npT1Telefono.trim(),
+            T1_mail:            npT1Mail.trim() || null,
+            T2_nombre_completo: npSoloUnTutor ? null : npT2Nombre.trim(),
+            'T2_teléfono':      npSoloUnTutor ? null : npT2Telefono.trim(),
+            T2_mail:            npSoloUnTutor ? null : (npT2Mail.trim() || null),
+            Otros:              npSoloUnTutor ? npOtros.trim() : null,
+          })
+          if (menorError) {
+            throw new Error(
+              'El paciente se creó, pero no se pudieron guardar los datos de los tutores: ' +
+              menorError.message + '. Avisa al equipo para completarlos.'
+            )
+          }
+        }
 
         await fetch('/api/webhook/psicologos', {
           method: 'POST',
@@ -513,12 +538,21 @@ export default function PsicologosPage() {
               accion:           'Añadir nuevo paciente',
               paciente_nombre:  npNombre.trim(),
               paciente_iniciales: iniciales,
+              paciente_id:      nuevoPaciente.id,
               telefono:         npTelefono.trim(),
               email:            npEmail.trim() || null,
               edad:             npEdad ? parseInt(npEdad, 10) : null,
-              es_menor:         npEsMenor,
               es_paciente_recomendado: npEsRecomendado,
               recomendado_por:  npEsRecomendado ? effPsicologoId : null,
+              es_menor:         npEsMenor,
+              tutor1_nombre:    npEsMenor ? npT1Nombre.trim() : null,
+              tutor1_telefono:  npEsMenor ? npT1Telefono.trim() : null,
+              tutor1_mail:      npEsMenor ? (npT1Mail.trim() || null) : null,
+              tutor2_nombre:    npEsMenor && !npSoloUnTutor ? npT2Nombre.trim() : null,
+              tutor2_telefono:  npEsMenor && !npSoloUnTutor ? npT2Telefono.trim() : null,
+              tutor2_mail:      npEsMenor && !npSoloUnTutor ? (npT2Mail.trim() || null) : null,
+              solo_un_tutor:    npEsMenor ? npSoloUnTutor : null,
+              otros:            npEsMenor && npSoloUnTutor ? npOtros.trim() : null,
             },
             respuestasFormulario: {
               'Selecciona tu centro': centroNombre,

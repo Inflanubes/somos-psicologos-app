@@ -400,6 +400,21 @@ export default function PsicologosPage() {
       setError('El nombre y el teléfono son obligatorios.')
       return
     }
+    if (isNuevoPaciente && npEsMenor) {
+      if (!npT1Nombre.trim() || !npT1Telefono.trim()) {
+        setError('Para un paciente menor, el nombre y el teléfono del Tutor 1 son obligatorios.')
+        return
+      }
+      if (npSoloUnTutor) {
+        if (!npOtros.trim()) {
+          setError('Explica la circunstancia especial en el campo "Otros".')
+          return
+        }
+      } else if (!npT2Nombre.trim() || !npT2Telefono.trim()) {
+        setError('Indica el Tutor 2 (nombre y teléfono) o marca la casilla de circunstancia especial.')
+        return
+      }
+    }
     if ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId) {
       setError('Debes seleccionar el evento sobre el que actuar.')
       return

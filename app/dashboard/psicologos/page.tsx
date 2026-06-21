@@ -189,6 +189,15 @@ export default function PsicologosPage() {
   const [npEdad, setNpEdad] = useState('')
   const [npEsMenor, setNpEsMenor] = useState(false)
   const [npEsRecomendado, setNpEsRecomendado] = useState(false)
+  // Tutores (paciente menor)
+  const [npT1Nombre, setNpT1Nombre] = useState('')
+  const [npT1Telefono, setNpT1Telefono] = useState('')
+  const [npT1Mail, setNpT1Mail] = useState('')
+  const [npT2Nombre, setNpT2Nombre] = useState('')
+  const [npT2Telefono, setNpT2Telefono] = useState('')
+  const [npT2Mail, setNpT2Mail] = useState('')
+  const [npSoloUnTutor, setNpSoloUnTutor] = useState(false)
+  const [npOtros, setNpOtros] = useState('')
 
   // Event selector (Cambiar/Cancelar cita, Desbloquear agenda)
   const [citasActivas, setCitasActivas] = useState<EventoActivo[]>([])
@@ -364,6 +373,14 @@ export default function PsicologosPage() {
     setNpEdad('')
     setNpEsMenor(false)
     setNpEsRecomendado(false)
+    setNpT1Nombre('')
+    setNpT1Telefono('')
+    setNpT1Mail('')
+    setNpT2Nombre('')
+    setNpT2Telefono('')
+    setNpT2Mail('')
+    setNpSoloUnTutor(false)
+    setNpOtros('')
   }
 
   async function handleSubmit(e: React.FormEvent) {

@@ -199,6 +199,34 @@ export type HistorialEstadoInsert = {
   comentario?: string | null
 }
 
+export type AsociadoMenor = {
+  id: number
+  created_at: string
+  id_menor: string
+  T1_nombre_completo: string | null
+  'T1_teléfono': string | null
+  T1_mail: string | null
+  T1_consentimiento: boolean | null
+  T2_nombre_completo: string | null
+  'T2_teléfono': string | null
+  T2_mail: string | null
+  T2_consentimiento: boolean | null
+  Otros: string | null
+}
+
+export type AsociadoMenorInsert = {
+  id_menor: string
+  T1_nombre_completo?: string | null
+  'T1_teléfono'?: string | null
+  T1_mail?: string | null
+  T1_consentimiento?: boolean | null
+  T2_nombre_completo?: string | null
+  'T2_teléfono'?: string | null
+  T2_mail?: string | null
+  T2_consentimiento?: boolean | null
+  Otros?: string | null
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -254,6 +282,12 @@ export type Database = {
         Row: Perfil
         Insert: Omit<Perfil, 'creado_en'>
         Update: Partial<Omit<Perfil, 'id'>>
+        Relationships: []
+      }
+      asociados_menores: {
+        Row: AsociadoMenor
+        Insert: AsociadoMenorInsert
+        Update: Partial<AsociadoMenorInsert>
         Relationships: []
       }
     }

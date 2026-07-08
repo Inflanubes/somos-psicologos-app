@@ -37,6 +37,9 @@ const ACCIONES: AccionPsicologo[] = [
 ]
 
 const ACCIONES_CITA: AccionPsicologo[] = ['Agendar cita', 'Cancelar cita', 'Cambiar cita']
+// Bloqueo general de agenda: solo para psicólogos con puede_bloquear = true
+// (los agentes no tienen restricción). Vacaciones/asuntos/baja son para todos.
+const ACCIONES_BLOQUEO_GENERAL: AccionPsicologo[] = ['Bloquear agenda', 'Desbloquear agenda']
 const ACCIONES_BLOQUEO: AccionPsicologo[] = [
   'Bloquear agenda',
   'Desbloquear agenda',
@@ -295,6 +298,15 @@ export default function PsicologosPage() {
 
   const psicologoSeleccionado = filteredPsicologos.find((p) => p.id === psicologoId) ?? null
 
+  // Un usuario psicólogo solo ve Bloquear/Desbloquear agenda si su ficha lo permite;
+  // los agentes gestionan cualquier agenda sin restricción.
+  const accionesDisponibles = ACCIONES.filter(
+    (a) =>
+      !ACCIONES_BLOQUEO_GENERAL.includes(a) ||
+      !esPsicologo ||
+      (psicologoSeleccionado?.puede_bloquear ?? false)
+  )
+
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
   const isCambiarCita = accion === 'Cambiar cita'
@@ -458,6 +470,14 @@ export default function PsicologosPage() {
 
     if (!effCentroId || !effPsicologoId || !accion) {
       setError('Por favor, completa los campos obligatorios.')
+      return
+    }
+    if (
+      esPsicologo &&
+      ACCIONES_BLOQUEO_GENERAL.includes(accion as AccionPsicologo) &&
+      !(psicologoSeleccionado?.puede_bloquear ?? false)
+    ) {
+      setError('No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.')
       return
     }
     if (isCitaAction && !pacienteIniciales) {
@@ -1007,7 +1027,7 @@ export default function PsicologosPage() {
               <option value="">
                 {psicologoId ? 'Selecciona una acción' : 'Primero selecciona psicólogo'}
               </option>
-              {ACCIONES.map((a) => (
+              {accionesDisponibles.map((a) => (
                 <option key={a} value={a}>
                   {a}
                 </option>

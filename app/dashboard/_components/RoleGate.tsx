@@ -8,13 +8,14 @@ import type { Rol } from '@/types/database'
 const HOME: Record<Rol, string> = {
   agente: '/dashboard',
   psicologo: '/dashboard/psicologos',
-  call_center: '/dashboard/call-center',
+  // El formulario de call center se eliminó; su home pasa a ser el panel general.
+  call_center: '/dashboard',
 }
 
 function isAllowed(rol: Rol, path: string): boolean {
   if (rol === 'agente') return true
   if (rol === 'psicologo') return path === '/dashboard/psicologos'
-  if (rol === 'call_center') return path === '/dashboard/call-center'
+  if (rol === 'call_center') return path === '/dashboard'
   return false
 }
 

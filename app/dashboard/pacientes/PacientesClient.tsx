@@ -15,6 +15,7 @@ export interface PacienteTableRow {
   hora_cita: string | null
   es_menor: boolean
   edad: number | null
+  consentimiento: boolean | null
   fecha_incorporacion: string | null
 }
 
@@ -123,7 +124,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr>
-              {['Nombre', 'Teléfono', 'Centro', 'Psicólogo', 'Estado', 'Fecha cita'].map((col) => (
+              {['Nombre', 'Teléfono', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita'].map((col) => (
                 <th
                   key={col}
                   style={{
@@ -147,7 +148,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   style={{ textAlign: 'center', padding: '48px 0', color: '#8899bb', fontSize: 14 }}
                 >
                   No se encontraron pacientes
@@ -202,6 +203,23 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       }}
                     >
                       {p.estado}
+                    </span>
+                  </td>
+                  <td style={{ padding: '13px 14px', whiteSpace: 'nowrap' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 10px',
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        background: p.consentimiento ? '#dcfce7' : '#fef3c7',
+                        color: p.consentimiento ? '#166534' : '#92400e',
+                        border: `1px solid ${p.consentimiento ? '#bbf7d0' : '#fde68a'}`,
+                      }}
+                    >
+                      {p.consentimiento ? '✓ Firmado' : 'Pendiente'}
                     </span>
                   </td>
                   <td style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>

@@ -224,6 +224,8 @@ export default async function DashboardPage() {
     hora_cita: p.hora_cita,
     es_menor: p.es_menor,
     edad: p.edad,
+    fecha_nacimiento: p.fecha_nacimiento,
+    consentimiento: p.consentimiento,
     fecha_incorporacion: p.fecha_incorporacion,
   }))
 

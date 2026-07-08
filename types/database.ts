@@ -70,7 +70,9 @@ export type Paciente = {
   telefono: string
   email: string
   edad: number
+  fecha_nacimiento: string | null
   es_menor: boolean
+  consentimiento: boolean | null
   centro_id: string
   psicologo_id: string
   estado: EstadoPaciente
@@ -79,6 +81,7 @@ export type Paciente = {
   fecha_incorporacion: string | null
   fecha_cambio_estado: string | null
   iniciales: string | null
+  gcal_event_id: string | null
 }
 
 export type AccionCallCenter = {
@@ -98,6 +101,8 @@ export type AccionCallCenter = {
 
 export type MotivoBloqueo = 'Asuntos propios' | 'Vacaciones' | 'Baja laboral' | 'Otros'
 
+export type TipoCita = 'adulto' | 'pareja' | 'menor'
+
 export type AccionPsicologo = {
   id: string
   psicologo_id: string | null
@@ -108,6 +113,7 @@ export type AccionPsicologo = {
   motivo_bloqueo: MotivoBloqueo | null
   fecha_cita: string | null
   hora_cita: string | null
+  tipo_cita: TipoCita | null
   comentario: string | null
   creado_en: string | null
   marca_temporal: string | null
@@ -135,6 +141,7 @@ export type PacienteInsert = {
   telefono: string
   email?: string | null
   edad?: number | null
+  fecha_nacimiento?: string | null
   es_menor?: boolean | null
   centro_id: string
   psicologo_id?: string | null
@@ -157,6 +164,7 @@ export type FormularioCitasPsicologosInsert = {
   duracion?: number | null
   fecha_cita?: string | null
   hora_cita?: string | null
+  tipo_cita?: string | null
   response_id?: string | null
   timestamp_envio?: string | null
 }
@@ -184,6 +192,7 @@ export type AccionPsicologoInsert = {
   fecha_bloqueo_fin?: string | null
   fecha_cita?: string | null
   hora_cita?: string | null
+  tipo_cita?: TipoCita | null
   created_by?: string | null
   created_by_id?: string | null
   origen?: string | null

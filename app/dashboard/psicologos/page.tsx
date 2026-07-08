@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Centro, Psicologo, Paciente, Perfil } from '@/types/database'
+import type { Centro, Psicologo, Paciente, Perfil, TipoCita } from '@/types/database'
 import EventoSelect from '@/components/EventoSelect'
+import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
+import { getCentroActivo, setCentroActivo, clearCentroActivo, type CentroActivo } from '@/lib/centro-activo'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -156,6 +158,19 @@ function generarIniciales(nombre: string): string {
   return `${initials} (${firstName})`
 }
 
+// Para las terapias, menor = hasta 15 años; con 16+ se trata como adulto
+// (sin tutores y con consentimiento propio).
+const EDAD_MAXIMA_MENOR = 15
+
+function calcularEdad(fechaNacimiento: string): number {
+  const hoy = new Date()
+  const nac = new Date(fechaNacimiento + 'T00:00:00')
+  let edad = hoy.getFullYear() - nac.getFullYear()
+  const m = hoy.getMonth() - nac.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--
+  return edad
+}
+
 export default function PsicologosPage() {
   const [centros, setCentros] = useState<Centro[]>([])
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
@@ -171,6 +186,7 @@ export default function PsicologosPage() {
   const [pacienteIniciales, setPacienteIniciales] = useState('')
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
+  const [tipoCita, setTipoCita] = useState<TipoCita | ''>('')
 
   // Bloqueo fields
   const [fechaInicio, setFechaInicio] = useState('')
@@ -186,9 +202,11 @@ export default function PsicologosPage() {
   const [npNombre, setNpNombre] = useState('')
   const [npTelefono, setNpTelefono] = useState('')
   const [npEmail, setNpEmail] = useState('')
-  const [npEdad, setNpEdad] = useState('')
-  const [npEsMenor, setNpEsMenor] = useState(false)
+  const [npFechaNacimiento, setNpFechaNacimiento] = useState('')
   const [npEsRecomendado, setNpEsRecomendado] = useState(false)
+  // Edad y es_menor se derivan de la fecha de nacimiento (menor = <= 15 años).
+  const npEdadCalc = npFechaNacimiento ? calcularEdad(npFechaNacimiento) : null
+  const npEsMenor = npEdadCalc !== null && npEdadCalc >= 0 && npEdadCalc <= EDAD_MAXIMA_MENOR
   // Tutores (paciente menor)
   const [npT1Nombre, setNpT1Nombre] = useState('')
   const [npT1Telefono, setNpT1Telefono] = useState('')
@@ -208,13 +226,25 @@ export default function PsicologosPage() {
   // Logged-in identity (to fix the form to a psychologist and stamp who acted)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const esPsicologo = perfil?.rol === 'psicologo'
 
-  // For a psychologist the centro/psicólogo are fixed to their own profile.
-  // Use the profile as the source of truth so a successful action (which resets
-  // the form) or a slow auto-fill can never leave the next submit without them.
-  const effCentroId    = esPsicologo ? (perfil?.centro_id ?? centroId) : centroId
-  const effPsicologoId = esPsicologo ? (perfil?.psicologo_id ?? psicologoId) : psicologoId
+  // Multi-centro: un psicólogo que trabaja en varios centros tiene una fila en
+  // `psicologos` por centro (mismo email). Si hay más de una, debe elegir centro.
+  const [misVariantes, setMisVariantes] = useState<Psicologo[]>([])
+  const [variantesCargadas, setVariantesCargadas] = useState(false)
+  const [centroActivo, setCentroActivoState] = useState<CentroActivo | null>(null)
+  const esMultiCentro = esPsicologo && misVariantes.length > 1
+  const necesitaElegirCentro = esMultiCentro && !centroActivo
+
+  // For a psychologist the centro/psicólogo are fixed to their own profile (or
+  // to the chosen center when they work in several). Use these as the source of
+  // truth so a successful action (which resets the form) or a slow auto-fill
+  // can never leave the next submit without them.
+  const psiPsicologoId = centroActivo?.psicologoId ?? perfil?.psicologo_id ?? null
+  const psiCentroId    = centroActivo?.centroId ?? perfil?.centro_id ?? null
+  const effCentroId    = esPsicologo ? (psiCentroId ?? centroId) : centroId
+  const effPsicologoId = esPsicologo ? (psiPsicologoId ?? psicologoId) : psicologoId
 
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -253,7 +283,7 @@ export default function PsicologosPage() {
     setLoadingPacientes(true)
     supabase
       .from('pacientes')
-      .select('id, nombre, iniciales, psicologo_id')
+      .select('id, nombre, iniciales, psicologo_id, es_menor, consentimiento')
       .eq('psicologo_id', psicologoId)
       .not('iniciales', 'is', null)
       .order('iniciales')
@@ -269,6 +299,9 @@ export default function PsicologosPage() {
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
   const isCambiarCita = accion === 'Cambiar cita'
   const isNuevoPaciente = accion === 'Añadir nuevo paciente'
+  // Agendar/Cambiar piden fecha, hora y tipo de cita (adulto/pareja/menor)
+  const pideTipoCita = accion === 'Agendar cita' || isCambiarCita
+  const pacienteSeleccionado = pacientes.find((p) => p.iniciales === pacienteIniciales) ?? null
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
@@ -278,25 +311,60 @@ export default function PsicologosPage() {
 
   // Load logged-in identity
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null))
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null)
+      setUserEmail(user?.email ?? null)
+    })
     getPerfilActual().then(setPerfil)
   }, [])
 
-  // Psychologist user: lock the form to their own centro + psychologist record.
+  // Multi-centro: load every psicologos row sharing the logged-in email and
+  // restore the previously chosen center (if it still exists).
   useEffect(() => {
-    if (esPsicologo && perfil?.centro_id) setCentroId(perfil.centro_id)
-  }, [esPsicologo, perfil])
+    if (!esPsicologo || !userEmail || !userId) return
+    let cancelled = false
+    supabase
+      .from('psicologos')
+      .select('id, nombre, centro_id, centro')
+      .eq('email', userEmail)
+      .eq('activo', true)
+      .then(({ data }) => {
+        if (cancelled) return
+        const rows = (data ?? []) as Psicologo[]
+        setMisVariantes(rows)
+        const guardada = getCentroActivo(userId)
+        if (guardada && rows.some((r) => r.id === guardada.psicologoId)) {
+          setCentroActivoState(guardada)
+        }
+        setVariantesCargadas(true)
+      })
+    return () => { cancelled = true }
+  }, [esPsicologo, userEmail, userId])
+
+  // Pre-select the appointment type from the patient (menor → 'menor'), still
+  // overridable to 'pareja' by hand. Re-runs only when the patient changes.
+  useEffect(() => {
+    if (!pideTipoCita || !pacienteSeleccionado) return
+    setTipoCita(pacienteSeleccionado.es_menor ? 'menor' : 'adulto')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pacienteSeleccionado?.id, pideTipoCita])
+
+  // Psychologist user: lock the form to their own centro + psychologist record
+  // (the chosen center when they work in several).
+  useEffect(() => {
+    if (esPsicologo && psiCentroId) setCentroId(psiCentroId)
+  }, [esPsicologo, psiCentroId])
 
   useEffect(() => {
     if (
       esPsicologo &&
-      perfil?.psicologo_id &&
-      filteredPsicologos.some((p) => p.id === perfil.psicologo_id) &&
-      psicologoId !== perfil.psicologo_id
+      psiPsicologoId &&
+      filteredPsicologos.some((p) => p.id === psiPsicologoId) &&
+      psicologoId !== psiPsicologoId
     ) {
-      setPsicologoId(perfil.psicologo_id)
+      setPsicologoId(psiPsicologoId)
     }
-  }, [esPsicologo, perfil, filteredPsicologos, psicologoId])
+  }, [esPsicologo, psiPsicologoId, filteredPsicologos, psicologoId])
 
   // Load active appointments of the selected patient (for Cancelar/Cambiar cita)
   useEffect(() => {
@@ -347,8 +415,8 @@ export default function PsicologosPage() {
     // auto-fill effects don't re-run on reset — so keep them (and their patient
     // list) instead of clearing, or the next action submits with empty fields.
     if (esPsicologo) {
-      setCentroId(perfil?.centro_id ?? '')
-      setPsicologoId(perfil?.psicologo_id ?? '')
+      setCentroId(psiCentroId ?? '')
+      setPsicologoId(psiPsicologoId ?? '')
     } else {
       setCentroId('')
       setPsicologoId('')
@@ -358,6 +426,7 @@ export default function PsicologosPage() {
     setPacienteIniciales('')
     setFecha('')
     setHora('')
+    setTipoCita('')
     setFechaInicio('')
     setHoraInicio('')
     setPeriodo('Dias')
@@ -370,8 +439,7 @@ export default function PsicologosPage() {
     setNpNombre('')
     setNpTelefono('')
     setNpEmail('')
-    setNpEdad('')
-    setNpEsMenor(false)
+    setNpFechaNacimiento('')
     setNpEsRecomendado(false)
     setNpT1Nombre('')
     setNpT1Telefono('')
@@ -396,8 +464,20 @@ export default function PsicologosPage() {
       setError('Debes seleccionar un paciente para esta acción.')
       return
     }
+    if (pideTipoCita && !tipoCita) {
+      setError('Selecciona el tipo de cita (adulto, pareja o menor).')
+      return
+    }
     if (isNuevoPaciente && (!npNombre.trim() || !npTelefono.trim())) {
       setError('El nombre y el teléfono son obligatorios.')
+      return
+    }
+    if (isNuevoPaciente && !npFechaNacimiento) {
+      setError('La fecha de nacimiento es obligatoria.')
+      return
+    }
+    if (isNuevoPaciente && (npEdadCalc === null || npEdadCalc < 0 || npEdadCalc > 120)) {
+      setError('La fecha de nacimiento no es válida.')
       return
     }
     if (isNuevoPaciente && npEsMenor) {
@@ -493,7 +573,8 @@ export default function PsicologosPage() {
             iniciales,
             telefono:            telefonoNorm,
             email:               npEmail.trim() || null,
-            edad:                npEdad ? parseInt(npEdad, 10) : null,
+            fecha_nacimiento:    npFechaNacimiento,
+            edad:                npEdadCalc,
             es_menor:            npEsMenor,
             centro_id:           effCentroId,
             psicologo_id:        effPsicologoId,
@@ -541,7 +622,8 @@ export default function PsicologosPage() {
               paciente_id:      nuevoPaciente.id,
               telefono:         npTelefono.trim(),
               email:            npEmail.trim() || null,
-              edad:             npEdad ? parseInt(npEdad, 10) : null,
+              fecha_nacimiento: npFechaNacimiento,
+              edad:             npEdadCalc,
               es_paciente_recomendado: npEsRecomendado,
               recomendado_por:  npEsRecomendado ? effPsicologoId : null,
               es_menor:         npEsMenor,
@@ -580,6 +662,7 @@ export default function PsicologosPage() {
         paciente_iniciales:   isCitaAction ? pacienteIniciales : null,
         fecha_cita:           isCitaAction ? fecha || null : null,
         hora_cita:            isCitaAction ? formatTime(hora) : null,
+        tipo_cita:            pideTipoCita ? tipoCita || null : null,
         // Exact event to act on (Cambiar/Cancelar cita, Desbloquear/Modificar bloqueo).
         // Make uses this gcal_event_id instead of searching by date.
         gcal_event_id:        (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.gcalEventId ?? null : null,
@@ -628,6 +711,7 @@ export default function PsicologosPage() {
         duracion:        datosProcesados.duracion,
         fecha_cita:      datosProcesados.fecha_cita,
         hora_cita:       datosProcesados.hora_cita,
+        tipo_cita:       datosProcesados.tipo_cita,
         response_id:     payload.responseId,
         timestamp_envio: payload.timestampFormulario,
       })
@@ -639,6 +723,100 @@ export default function PsicologosPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function elegirCentro(variante: Psicologo) {
+    const seleccion: CentroActivo = { psicologoId: variante.id, centroId: variante.centro_id }
+    setCentroActivoState(seleccion)
+    if (userId) setCentroActivo(userId, seleccion)
+  }
+
+  function cambiarDeCentro() {
+    setCentroActivoState(null)
+    if (userId) clearCentroActivo(userId)
+    setAccion('')
+    setPacienteIniciales('')
+    setEventoSeleccionadoId('')
+  }
+
+  function nombreCentro(variante: Psicologo): string {
+    return centros.find((c) => c.id === variante.centro_id)?.nombre ?? variante.centro ?? 'Centro'
+  }
+
+  // Psicólogo multi-centro sin centro elegido: pedir el centro antes del formulario.
+  // (El psicólogo nunca se elige: cada centro apunta a su propia fila de la misma persona.)
+  if (necesitaElegirCentro) {
+    return (
+      <div style={{ padding: '36px 40px', maxWidth: 560 }}>
+        <h1
+          style={{
+            fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
+            fontSize: 26,
+            fontWeight: 600,
+            color: '#272626',
+            margin: '0 0 6px',
+          }}
+        >
+          Citas
+        </h1>
+        <p style={{ fontSize: 13.5, color: '#888', margin: '0 0 28px' }}>
+          Trabajas en más de un centro
+        </p>
+        <div
+          style={{
+            background: '#ffffff',
+            borderRadius: 16,
+            padding: '36px 40px',
+            boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
+          }}
+        >
+          <div style={{ ...labelStyle, marginBottom: 16 }}>¿En qué centro vas a trabajar hoy?</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {misVariantes.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => elegirCentro(v)}
+                style={{
+                  padding: '16px 18px',
+                  border: '1.5px solid #dde1ea',
+                  borderRadius: 10,
+                  background: '#fafbfc',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: BRAND_BLUE,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.15s, border 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#eef2fb'
+                  e.currentTarget.style.borderColor = BRAND_BLUE
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#fafbfc'
+                  e.currentTarget.style.borderColor = '#dde1ea'
+                }}
+              >
+                {nombreCentro(v)}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 12.5, color: '#888', marginTop: 16, marginBottom: 0 }}>
+            Podrás cambiar de centro en cualquier momento desde el formulario.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Evitar mostrar el formulario con el centro por defecto mientras aún no
+  // sabemos si el psicólogo es multi-centro.
+  if (esPsicologo && !variantesCargadas) {
+    return (
+      <div style={{ padding: '36px 40px', fontSize: 14, color: '#888' }}>Cargando…</div>
+    )
   }
 
   return (
@@ -748,7 +926,33 @@ export default function PsicologosPage() {
               }}
             >
               Estás gestionando tu propia agenda como{' '}
-              <strong>{filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? perfil?.nombre}</strong>.
+              <strong>{filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? perfil?.nombre}</strong>
+              {esMultiCentro && (
+                <>
+                  {' '}en <strong>{centros.find((c) => c.id === effCentroId)?.nombre ?? ''}</strong>
+                </>
+              )}
+              .
+              {esMultiCentro && (
+                <button
+                  type="button"
+                  onClick={cambiarDeCentro}
+                  style={{
+                    marginLeft: 10,
+                    padding: '3px 10px',
+                    border: `1px solid ${BRAND_BLUE}`,
+                    borderRadius: 16,
+                    background: '#fff',
+                    color: BRAND_BLUE,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Cambiar de centro
+                </button>
+              )}
             </div>
           ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -854,29 +1058,29 @@ export default function PsicologosPage() {
               </FormField>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <FormField label="Edad">
+                <FormField label="Fecha de nacimiento" required>
                   <input
-                    type="number"
-                    value={npEdad}
-                    onChange={(e) => {
-                      setNpEdad(e.target.value)
-                      setNpEsMenor(parseInt(e.target.value, 10) < 18)
-                    }}
-                    placeholder="Ej. 34"
-                    min={0}
-                    max={120}
+                    type="date"
+                    value={npFechaNacimiento}
+                    onChange={(e) => setNpFechaNacimiento(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
                     style={inputStyle}
+                    required
                   />
                 </FormField>
 
-                <FormField label="¿Es menor de edad?">
+                <FormField label={`¿Es menor? (hasta ${EDAD_MAXIMA_MENOR} años)`}>
                   <select
                     value={npEsMenor ? 'si' : 'no'}
-                    onChange={(e) => setNpEsMenor(e.target.value === 'si')}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
+                    disabled
+                    style={inputStyle}
                   >
-                    <option value="no">No</option>
-                    <option value="si">Sí</option>
+                    <option value="no">
+                      {npEdadCalc !== null ? `No — ${npEdadCalc} años` : 'No'}
+                    </option>
+                    <option value="si">
+                      {npEdadCalc !== null ? `Sí — ${npEdadCalc} años` : 'Sí'}
+                    </option>
                   </select>
                 </FormField>
               </div>
@@ -1070,6 +1274,28 @@ export default function PsicologosPage() {
                 </select>
               </FormField>
 
+              {/* Estado del consentimiento informado (lo actualiza Make al recibir el formulario firmado) */}
+              {pacienteSeleccionado && (
+                <div style={{ marginTop: -10, marginBottom: 18 }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      background: pacienteSeleccionado.consentimiento ? '#e8f4e8' : '#fef3c7',
+                      color: pacienteSeleccionado.consentimiento ? '#2a7a2a' : '#92400e',
+                      border: `1px solid ${pacienteSeleccionado.consentimiento ? '#b5d9b5' : '#fde68a'}`,
+                    }}
+                  >
+                    {pacienteSeleccionado.consentimiento
+                      ? '✓ Consentimiento firmado'
+                      : '⏳ Consentimiento pendiente'}
+                  </span>
+                </div>
+              )}
+
               {/* Event selector: pick the existing appointment to change/cancel */}
               {requiereSelectorCita && (
                 <FormField label={isCambiarCita ? 'Cita a cambiar' : 'Cita a cancelar'} required>
@@ -1090,6 +1316,19 @@ export default function PsicologosPage() {
               {/* New date/time — only for scheduling or changing an appointment */}
               {(accion === 'Agendar cita' || isCambiarCita) && (
                 <>
+                  <FormField label="Tipo de cita" required>
+                    <select
+                      value={tipoCita}
+                      onChange={(e) => setTipoCita(e.target.value as TipoCita | '')}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
+                      required
+                    >
+                      <option value="">Selecciona el tipo</option>
+                      <option value="adulto">Adulto</option>
+                      <option value="pareja">Pareja</option>
+                      <option value="menor">Menor</option>
+                    </select>
+                  </FormField>
                   {isCambiarCita && <InfoBox>Nueva fecha y hora:</InfoBox>}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'}>
@@ -1101,12 +1340,7 @@ export default function PsicologosPage() {
                       />
                     </FormField>
                     <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'}>
-                      <input
-                        type="time"
-                        value={hora}
-                        onChange={(e) => setHora(e.target.value)}
-                        style={inputStyle}
-                      />
+                      <TimeSelect value={hora} onChange={setHora} style={inputStyle} />
                     </FormField>
                   </div>
                 </>
@@ -1189,12 +1423,7 @@ export default function PsicologosPage() {
                       />
                     </FormField>
                     <FormField label="Hora inicio (opcional)">
-                      <input
-                        type="time"
-                        value={horaInicio}
-                        onChange={(e) => setHoraInicio(e.target.value)}
-                        style={inputStyle}
-                      />
+                      <TimeSelect value={horaInicio} onChange={setHoraInicio} style={inputStyle} />
                     </FormField>
                   </div>
 

@@ -13,7 +13,21 @@ export interface PacienteRow {
   hora_cita: string | null
   es_menor: boolean
   edad: number | null
+  fecha_nacimiento: string | null
+  consentimiento: boolean | null
   fecha_incorporacion: string | null
+}
+
+// La edad actual se calcula de fecha_nacimiento; los pacientes antiguos solo
+// tienen la edad registrada en su día (columna edad).
+export function edadActual(p: Pick<PacienteRow, 'edad' | 'fecha_nacimiento'>): number | null {
+  if (!p.fecha_nacimiento) return p.edad
+  const hoy = new Date()
+  const nac = new Date(p.fecha_nacimiento + 'T00:00:00')
+  let edad = hoy.getFullYear() - nac.getFullYear()
+  const m = hoy.getMonth() - nac.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--
+  return edad
 }
 
 interface Props {
@@ -143,7 +157,7 @@ export default function PacientesTable({ pacientes }: Props) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid rgba(47,90,174,0.12)' }}>
-              {['Nombre', 'Estado', 'Psicólogo', 'Fecha Cita', 'Edad', 'Teléfono'].map((h) => (
+              {['Nombre', 'Estado', 'Psicólogo', 'Fecha Cita', 'Edad', 'Consent.', 'Teléfono'].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -165,7 +179,7 @@ export default function PacientesTable({ pacientes }: Props) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '40px 12px', textAlign: 'center', color: '#a0b0cc', fontSize: 14 }}>
+                <td colSpan={7} style={{ padding: '40px 12px', textAlign: 'center', color: '#a0b0cc', fontSize: 14 }}>
                   No se encontraron pacientes
                 </td>
               </tr>
@@ -225,7 +239,23 @@ export default function PacientesTable({ pacientes }: Props) {
                       {p.fecha_cita ? `${formatDate(p.fecha_cita)} ${p.hora_cita ?? ''}`.trim() : '—'}
                     </td>
                     <td style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
-                      {p.edad ?? '—'}
+                      {edadActual(p) ?? '—'}
+                    </td>
+                    <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                      <span
+                        title={p.consentimiento ? 'Consentimiento firmado' : 'Consentimiento pendiente'}
+                        style={{
+                          display: 'inline-block',
+                          padding: '2px 8px',
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: p.consentimiento ? '#d1fae5' : '#fef3c7',
+                          color: p.consentimiento ? '#065f46' : '#92400e',
+                        }}
+                      >
+                        {p.consentimiento ? '✓' : 'Pendiente'}
+                      </span>
                     </td>
                     <td style={{ padding: '12px', fontSize: 13, color: '#667799', whiteSpace: 'nowrap' }}>
                       {p.telefono || '—'}

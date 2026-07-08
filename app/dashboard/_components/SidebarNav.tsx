@@ -35,13 +35,6 @@ function PersonIcon() {
     </svg>
   )
 }
-function PhoneIcon() {
-  return (
-    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.62 5.09 2 2 0 0 1 3.6 2.87h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.5a16 16 0 0 0 6 6l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.62 17z" />
-    </svg>
-  )
-}
 function ChatIcon() {
   return (
     <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -66,7 +59,6 @@ const navItems: NavItem[] = [
   { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo'] },
-  { href: '/dashboard/call-center', label: 'Gestiones', Icon: PhoneIcon, roles: ['agente', 'call_center'] },
   { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, roles: ['agente'] },
 ]
 

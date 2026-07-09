@@ -6,15 +6,46 @@ import type { PacienteTableRow } from './PacientesClient'
 export default async function PacientesPage() {
   const supabase = await createSupabaseServerClient()
 
-  const [{ data: pacientes }, { data: psicologos }, { data: centros }] = await Promise.all([
-    supabase.from('pacientes').select('*').order('fecha_incorporacion', { ascending: false }),
+  // Un psicólogo solo ve sus propios pacientes; un agente los ve todos.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: perfil } = user
+    ? await supabase.from('perfiles').select('rol, psicologo_id').eq('id', user.id).maybeSingle()
+    : { data: null }
+  const esPsicologo = perfil?.rol === 'psicologo'
+
+  const [{ data: psicologos }, { data: centros }] = await Promise.all([
     supabase.from('psicologos').select('*'),
     supabase.from('centros').select('*'),
   ])
-
-  const pac = (pacientes ?? []) as Paciente[]
   const psi = (psicologos ?? []) as Psicologo[]
   const cen = (centros ?? []) as Centro[]
+
+  // Multi-centro: la misma persona puede tener una fila de psicólogo por centro
+  // (mismo email). Reunimos todas sus filas para no ocultar pacientes de un centro.
+  let misPsicologoIds: string[] = []
+  if (esPsicologo) {
+    const porEmail = user?.email
+      ? psi.filter((p) => p.email === user.email).map((p) => p.id)
+      : []
+    misPsicologoIds = porEmail.length
+      ? porEmail
+      : perfil?.psicologo_id
+        ? [perfil.psicologo_id]
+        : []
+  }
+
+  let pacientesQuery = supabase
+    .from('pacientes')
+    .select('*')
+    .order('fecha_incorporacion', { ascending: false })
+  if (esPsicologo) {
+    pacientesQuery = pacientesQuery.in('psicologo_id', misPsicologoIds)
+  }
+  const { data: pacientes } = await pacientesQuery
+
+  const pac = (pacientes ?? []) as Paciente[]
 
   const psicologoMap = Object.fromEntries(psi.map((p) => [p.id, p.nombre]))
   const centroMap = Object.fromEntries(cen.map((c) => [c.id, c.nombre]))
@@ -52,7 +83,9 @@ export default async function PacientesPage() {
           Pacientes
         </h1>
         <p style={{ fontSize: 13.5, color: '#7a9090', margin: 0 }}>
-          {rows.length} paciente{rows.length !== 1 ? 's' : ''} registrado{rows.length !== 1 ? 's' : ''}
+          {esPsicologo
+            ? `${rows.length} paciente${rows.length !== 1 ? 's' : ''} asignado${rows.length !== 1 ? 's' : ''} a ti`
+            : `${rows.length} paciente${rows.length !== 1 ? 's' : ''} registrado${rows.length !== 1 ? 's' : ''}`}
         </p>
       </div>
 

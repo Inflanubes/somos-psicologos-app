@@ -54,7 +54,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true, roles: ['agente'] },
   { href: '/dashboard/psicologos/stats', label: 'Estadísticas', Icon: GridIcon, roles: ['agente'] },
-  { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente'] },
+  { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente', 'psicologo'] },
   { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon, roles: ['agente'] },
   { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente'] },

@@ -67,7 +67,57 @@ export default async function PsicologosStatsPage({
   const psicologos = selectedCentroId
     ? allPsicologos.filter((p) => p.centro_id === selectedCentroId)
     : allPsicologos
-  const psicologoIdsInScope = selectedCentroId ? psicologos.map((p) => p.id) : null
+
+  // ── Agrupación por persona ───────────────────────────────────────────────────
+  // Un psicólogo que trabaja en varios centros tiene una fila en `psicologos` por
+  // centro. Las estadísticas son de la persona, no de la ficha: si no se agrupara,
+  // saldría dos veces en la tabla, contaría doble en los KPIs y sus bloqueos
+  // (que afectan a un calendario compartido) aparecerían partidos entre centros.
+  // Se agrupa por email, la misma clave que usa el resto de la app, con el nombre
+  // de respaldo para las fichas antiguas creadas a mano sin email.
+  const personaKey = (p: Psicologo) =>
+    p.email?.trim().toLowerCase() || `nombre:${p.nombre.trim().toLowerCase()}`
+
+  type Persona = {
+    key: string
+    id: string // ficha principal: la que se usa como valor en la URL
+    nombre: string
+    ids: string[]
+    centros: string[]
+    activo: boolean
+    calendarId: string | null
+  }
+  const personasMap = new Map<string, Persona>()
+  for (const p of psicologos) {
+    const key = personaKey(p)
+    let persona = personasMap.get(key)
+    if (!persona) {
+      persona = { key, id: p.id, nombre: p.nombre, ids: [], centros: [], activo: false, calendarId: null }
+      personasMap.set(key, persona)
+    }
+    persona.ids.push(p.id)
+    const nombreCentro = p.centro_id ? centroMap[p.centro_id] : null
+    if (nombreCentro && !persona.centros.includes(nombreCentro)) persona.centros.push(nombreCentro)
+    if (p.activo) persona.activo = true
+    if (!persona.calendarId && p.calendar_id) persona.calendarId = p.calendar_id
+  }
+  const personas = Array.from(personasMap.values())
+  for (const persona of personas) persona.centros.sort((a, b) => a.localeCompare(b))
+  const centrosDePersona = (persona: Persona) => persona.centros.join(' · ') || '—'
+
+  // La URL lleva el id de UNA ficha; se expande a todas las de esa persona para que
+  // el detalle sume sus centros. Se resuelve sobre la lista completa para que un
+  // enlace antiguo (o de otro centro) siga identificando a la persona.
+  const selectedRow = selectedPsicologoId
+    ? allPsicologos.find((p) => p.id === selectedPsicologoId) ?? null
+    : null
+  const selectedPersona = selectedRow ? personasMap.get(personaKey(selectedRow)) ?? null : null
+  const idsSeleccionados = selectedPersona?.ids ?? (selectedRow ? [selectedRow.id] : null)
+
+  // Ids que acotan las consultas: la persona elegida o, si no hay, el centro filtrado.
+  // `[]` = centro sin psicólogos → no debe devolver ninguna fila; `null` = sin filtro.
+  const idsFiltro = idsSeleccionados ?? (selectedCentroId ? psicologos.map((p) => p.id) : null)
+  const SIN_RESULTADOS = '00000000-0000-0000-0000-000000000000'
 
   // KEY QUERY 1: bloqueos in period (for KPIs, motivos chart, per-psi table)
   let bloqueosQ = supabase
@@ -75,12 +125,11 @@ export default async function PsicologosStatsPage({
     .select('*')
     .eq('accion', 'Bloquear agenda')
   if (periodStart) bloqueosQ = bloqueosQ.gte('creado_en', periodStart)
-  if (selectedPsicologoId) bloqueosQ = bloqueosQ.eq('psicologo_id', selectedPsicologoId)
-  else if (psicologoIdsInScope)
+  if (idsFiltro)
     bloqueosQ =
-      psicologoIdsInScope.length > 0
-        ? bloqueosQ.in('psicologo_id', psicologoIdsInScope)
-        : bloqueosQ.eq('psicologo_id', '00000000-0000-0000-0000-000000000000') // empty centro → no rows
+      idsFiltro.length > 0
+        ? bloqueosQ.in('psicologo_id', idsFiltro)
+        : bloqueosQ.eq('psicologo_id', SIN_RESULTADOS)
   const { data: bloqueosRows } = await bloqueosQ
 
   // KEY QUERY 2: citas agendadas in period (for KPIs and per-psi table)
@@ -89,21 +138,21 @@ export default async function PsicologosStatsPage({
     .select('*')
     .eq('accion', 'Agendar cita')
   if (periodStart) citasQ = citasQ.gte('creado_en', periodStart)
-  if (selectedPsicologoId) citasQ = citasQ.eq('psicologo_id', selectedPsicologoId)
-  else if (psicologoIdsInScope)
+  if (idsFiltro)
     citasQ =
-      psicologoIdsInScope.length > 0
-        ? citasQ.in('psicologo_id', psicologoIdsInScope)
-        : citasQ.eq('psicologo_id', '00000000-0000-0000-0000-000000000000')
+      idsFiltro.length > 0
+        ? citasQ.in('psicologo_id', idsFiltro)
+        : citasQ.eq('psicologo_id', SIN_RESULTADOS)
   const { data: citasRows } = await citasQ
 
-  // KEY QUERY 3: last 10 actions for selected psicólogo (only when one is picked)
+  // KEY QUERY 3: last 10 actions for selected psicólogo (only when one is picked).
+  // Se consultan todas sus fichas para que el historial no salga partido por centro.
   let recentActions: AccionRecent[] = []
-  if (selectedPsicologoId) {
+  if (idsSeleccionados) {
     const { data: recentRows } = await supabase
       .from('acciones_psicologos')
       .select('*')
-      .eq('psicologo_id', selectedPsicologoId)
+      .in('psicologo_id', idsSeleccionados)
       .order('creado_en', { ascending: false })
       .limit(10)
     const rows = (recentRows ?? []) as AccionPsicologo[]
@@ -151,15 +200,18 @@ export default async function PsicologosStatsPage({
       motivoCounts[r.motivo_bloqueo as Motivo] += 1
     }
   }
-  const psicologosActivos = psicologos.filter((p) => p.activo).length
+  const psicologosActivos = personas.filter((p) => p.activo).length
 
-  // Per psicólogo aggregates (only meaningful for "all" view)
+  // Per psicólogo aggregates — una fila por persona, sumando todas sus fichas.
+  const idAPersona = new Map<string, string>()
+  for (const persona of personas) for (const id of persona.ids) idAPersona.set(id, persona.key)
+
   const perPsi: Record<string, PerPsicologoRow> = {}
-  for (const p of psicologos) {
-    perPsi[p.id] = {
-      id: p.id,
-      nombre: p.nombre,
-      centro: p.centro_id ? centroMap[p.centro_id] ?? '—' : '—',
+  for (const persona of personas) {
+    perPsi[persona.key] = {
+      id: persona.id,
+      nombre: persona.nombre,
+      centro: centrosDePersona(persona),
       citas: 0,
       bloqueos: 0,
       vacaciones: 0,
@@ -168,16 +220,18 @@ export default async function PsicologosStatsPage({
     }
   }
   for (const r of bloq) {
-    if (!r.psicologo_id || !perPsi[r.psicologo_id]) continue
-    const row = perPsi[r.psicologo_id]
+    const key = r.psicologo_id ? idAPersona.get(r.psicologo_id) : undefined
+    if (!key) continue
+    const row = perPsi[key]
     row.bloqueos += 1
     if (r.motivo_bloqueo === 'Vacaciones') row.vacaciones += 1
     if (r.motivo_bloqueo === 'Asuntos propios') row.asuntos_propios += 1
     if (r.motivo_bloqueo === 'Baja laboral') row.baja_laboral += 1
   }
   for (const r of cit) {
-    if (!r.psicologo_id || !perPsi[r.psicologo_id]) continue
-    perPsi[r.psicologo_id].citas += 1
+    const key = r.psicologo_id ? idAPersona.get(r.psicologo_id) : undefined
+    if (!key) continue
+    perPsi[key].citas += 1
   }
   const perPsicologoRows = Object.values(perPsi).sort((a, b) => b.bloqueos - a.bloqueos || b.citas - a.citas)
 
@@ -187,9 +241,10 @@ export default async function PsicologosStatsPage({
     .slice(0, 10)
     .map((r) => ({ nombre: r.nombre, count: r.bloqueos }))
 
-  // Build psicólogo lite list for dropdown — already narrowed by centro if one is selected.
-  const psicologosLite: PsicologoLite[] = psicologos
-    .map((p) => ({ id: p.id, nombre: p.nombre, centro: p.centro_id ? centroMap[p.centro_id] ?? '' : '' }))
+  // Build psicólogo lite list for dropdown — una entrada por persona, ya acotada por
+  // centro si hay uno seleccionado.
+  const psicologosLite: PsicologoLite[] = personas
+    .map((persona) => ({ id: persona.id, nombre: persona.nombre, centro: persona.centros.join(' · ') }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
 
   // Build centro lite list for dropdown
@@ -197,21 +252,25 @@ export default async function PsicologosStatsPage({
     .map((c) => ({ id: c.id, nombre: c.nombre }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
 
-  // Selected psicólogo detail card — search the FULL list so a stale URL still resolves the name.
-  const selectedPsicologo = selectedPsicologoId
-    ? allPsicologos.find((p) => p.id === selectedPsicologoId) ?? null
-    : null
-  const selectedDetail = selectedPsicologo
+  // Selected psicólogo detail card — la persona si está en el ámbito actual; si no
+  // (enlace antiguo o ficha de un centro filtrado fuera), la ficha suelta.
+  const selectedDetail = selectedPersona
     ? {
-        id: selectedPsicologo.id,
-        nombre: selectedPsicologo.nombre,
-        centro: selectedPsicologo.centro_id
-          ? centroMap[selectedPsicologo.centro_id] ?? '—'
-          : '—',
-        calendar_id: selectedPsicologo.calendar_id,
-        activo: !!selectedPsicologo.activo,
+        id: selectedPersona.id,
+        nombre: selectedPersona.nombre,
+        centro: centrosDePersona(selectedPersona),
+        calendar_id: selectedPersona.calendarId,
+        activo: selectedPersona.activo,
       }
-    : null
+    : selectedRow
+      ? {
+          id: selectedRow.id,
+          nombre: selectedRow.nombre,
+          centro: selectedRow.centro_id ? centroMap[selectedRow.centro_id] ?? '—' : '—',
+          calendar_id: selectedRow.calendar_id,
+          activo: !!selectedRow.activo,
+        }
+      : null
 
   return (
     <StatsDashboard
@@ -224,7 +283,7 @@ export default async function PsicologosStatsPage({
       selectedDetail={selectedDetail}
       kpis={{
         psicologosActivos,
-        psicologosTotal: psicologos.length,
+        psicologosTotal: personas.length,
         bloqueosTotal,
         vacaciones: motivoCounts['Vacaciones'],
         asuntosPropios: motivoCounts['Asuntos propios'],

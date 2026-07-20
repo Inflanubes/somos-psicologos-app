@@ -48,6 +48,13 @@ export default function UsuariosPage() {
   const [telefono, setTelefono] = useState('')
   const [calendarId, setCalendarId] = useState('')
   const [centroId, setCentroId] = useState('')
+  // Un psicólogo puede trabajar en varios centros (mismo calendario): se crea una fila
+  // en `psicologos` por cada uno. Los agentes siguen teniendo un solo centro.
+  const [centroIds, setCentroIds] = useState<string[]>([])
+
+  function toggleCentroAlta(id: string) {
+    setCentroIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]))
+  }
 
   async function cargar() {
     setLoading(true)
@@ -70,7 +77,7 @@ export default function UsuariosPage() {
 
   async function crear(e: React.FormEvent) {
     e.preventDefault()
-    if (tipo === 'psicologo' && !centroId) { setError('Selecciona un centro para el psicólogo'); return }
+    if (tipo === 'psicologo' && centroIds.length === 0) { setError('Selecciona al menos un centro para el psicólogo'); return }
     setBusy(true); setError(null)
     try {
       const res = await fetch('/api/usuarios', {
@@ -79,14 +86,15 @@ export default function UsuariosPage() {
         body: JSON.stringify({
           tipo, nombre, email,
           telefono: telefono || null,
-          centro_id: centroId || null,
+          centro_id: tipo === 'psicologo' ? centroIds[0] ?? null : centroId || null,
+          centro_ids: tipo === 'psicologo' ? centroIds : null,
           calendar_id: tipo === 'psicologo' ? calendarId : null,
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(data.error ?? 'Error'); return }
       setResultado({ email: data.email ?? email, password: data.password, emailSent: data.emailSent, contexto: 'alta' })
-      setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId('')
+      setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId(''); setCentroIds([])
       await cargar()
     } catch {
       setError('Error de conexión al crear')
@@ -242,12 +250,31 @@ export default function UsuariosPage() {
         <input style={input} placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
         <input style={input} placeholder="Email de acceso" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input style={input} placeholder="Teléfono (opcional)" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-        <select style={input} value={centroId} onChange={(e) => setCentroId(e.target.value)} required={tipo === 'psicologo'}>
-          <option value="">{tipo === 'psicologo' ? 'Centro (obligatorio)' : 'Centro (opcional)'}</option>
-          {centros.map((c) => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
-          ))}
-        </select>
+        {tipo === 'psicologo' ? (
+          <div style={{ border: '1px solid rgba(47,90,174,0.25)', borderRadius: 8, padding: '10px 12px' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', marginBottom: 8 }}>
+              Centros (uno o varios)
+            </div>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              {centros.map((c) => (
+                <label key={c.id} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={centroIds.includes(c.id)} onChange={() => toggleCentroAlta(c.id)} />
+                  {c.nombre}
+                </label>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, color: '#8899bb', marginTop: 8 }}>
+              Si trabaja en más de un centro se crea una ficha por centro, todas con el mismo email y el mismo calendario.
+            </div>
+          </div>
+        ) : (
+          <select style={input} value={centroId} onChange={(e) => setCentroId(e.target.value)}>
+            <option value="">Centro (opcional)</option>
+            {centros.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        )}
         {tipo === 'psicologo' && (
           <input style={input} placeholder="calendar_id (Google Calendar)" value={calendarId} onChange={(e) => setCalendarId(e.target.value)} required />
         )}

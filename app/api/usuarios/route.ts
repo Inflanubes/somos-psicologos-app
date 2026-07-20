@@ -26,6 +26,10 @@ type CrearBody = {
   email: string
   telefono?: string | null
   centro_id?: string | null
+  // Un psicólogo puede trabajar en varios centros: se crea una fila en `psicologos`
+  // por centro (mismo nombre, email y calendario). `centro_id` se mantiene por
+  // compatibilidad y para los agentes, que solo tienen un centro.
+  centro_ids?: string[] | null
   calendar_id?: string | null
 }
 
@@ -46,7 +50,27 @@ export async function POST(req: NextRequest) {
   if (body.tipo === 'psicologo' && !body.calendar_id?.trim())
     return NextResponse.json({ error: 'El calendar_id es obligatorio para un psicólogo' }, { status: 400 })
 
+  // Centros del psicólogo: se acepta la lista nueva o el campo antiguo, sin duplicados.
+  const centroIds = Array.from(
+    new Set(((body.centro_ids?.length ? body.centro_ids : [body.centro_id]) ?? []).filter((c): c is string => !!c))
+  )
+  if (body.tipo === 'psicologo' && centroIds.length === 0)
+    return NextResponse.json({ error: 'Selecciona al menos un centro para el psicólogo' }, { status: 400 })
+
   const admin = createSupabaseAdmin()
+
+  // El nombre del centro en texto es obligatorio: las automatizaciones (Make) buscan al
+  // psicólogo en `psicologos` por el campo `centro`, no por centro_id. Se resuelven todos
+  // antes de crear nada para no dejar filas con `centro` a null si un id no existe.
+  const centroNombres = new Map<string, string>()
+  if (body.tipo === 'psicologo') {
+    const cs = await admin.from('centros').select('id, nombre').in('id', centroIds)
+    if (cs.error) return NextResponse.json({ error: cs.error.message }, { status: 500 })
+    for (const c of cs.data ?? []) centroNombres.set(c.id, c.nombre)
+    const faltan = centroIds.filter((id) => !centroNombres.has(id))
+    if (faltan.length)
+      return NextResponse.json({ error: 'Alguno de los centros seleccionados no existe' }, { status: 400 })
+  }
 
   // Paso 1: crear cuenta auth con email confirmado y una contraseña temporal.
   // La temporal es un RESPALDO (el agente la ve y puede entregarla si el email
@@ -72,45 +96,43 @@ export async function POST(req: NextRequest) {
   const emailSent = !mailError
 
   if (body.tipo === 'psicologo') {
-    // El nombre del centro en texto es obligatorio: las automatizaciones (Make)
-    // buscan al psicólogo en `psicologos` por el campo `centro`, no por centro_id.
-    let centroNombre: string | null = null
-    if (body.centro_id) {
-      const c = await admin.from('centros').select('nombre').eq('id', body.centro_id).maybeSingle()
-      centroNombre = c.data?.nombre ?? null
-    }
-    // Paso 3: registro en psicologos
+    // Paso 3: una fila en `psicologos` por centro, todas con el mismo calendario.
     const psi = await admin
       .from('psicologos')
-      .insert({
-        nombre,
-        email,
-        telefono: body.telefono ?? null,
-        centro_id: body.centro_id ?? null,
-        centro: centroNombre,
-        calendar_id: body.calendar_id!.trim(),
-        activo: true,
-      })
-      .select('id')
-      .single()
-    if (psi.error || !psi.data) {
+      .insert(
+        centroIds.map((centroId) => ({
+          nombre,
+          email,
+          telefono: body.telefono ?? null,
+          centro_id: centroId,
+          centro: centroNombres.get(centroId) ?? null,
+          calendar_id: body.calendar_id!.trim(),
+          activo: true,
+        }))
+      )
+      .select('id, centro_id')
+    if (psi.error || !psi.data?.length) {
       await admin.auth.admin.deleteUser(userId) // limpieza
       return NextResponse.json({ error: psi.error?.message ?? 'Error creando psicólogo' }, { status: 500 })
     }
+    const creados = psi.data
+    // El perfil apunta a la fila del primer centro marcado. Las demás filas se resuelven
+    // por email (selector "Cambiar de centro" y pantalla de Pacientes).
+    const principal = creados.find((p) => p.centro_id === centroIds[0]) ?? creados[0]
     // Paso 4: perfil
     const perfil = await admin.from('perfiles').insert({
       id: userId,
       nombre,
       rol: 'psicologo',
-      psicologo_id: psi.data.id,
-      centro_id: body.centro_id ?? null,
+      psicologo_id: principal.id,
+      centro_id: principal.centro_id,
     })
     if (perfil.error) {
-      await admin.from('psicologos').delete().eq('id', psi.data.id) // limpieza
+      await admin.from('psicologos').delete().in('id', creados.map((p) => p.id)) // limpieza
       await admin.auth.admin.deleteUser(userId)
       return NextResponse.json({ error: perfil.error.message }, { status: 500 })
     }
-    return NextResponse.json({ ok: true, id: psi.data.id, email, password, emailSent }, { status: 201 })
+    return NextResponse.json({ ok: true, id: principal.id, email, password, emailSent }, { status: 201 })
   }
 
   // tipo === 'agente'

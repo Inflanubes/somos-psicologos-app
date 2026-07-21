@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import type { EmailOtpType } from '@supabase/supabase-js'
 
 export default function CambiarPasswordPage() {
   const router = useRouter()
@@ -11,11 +12,27 @@ export default function CambiarPasswordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [ok, setOk] = useState(false)
-  // null = comprobando, true = hay sesión de recuperación, false = enlace inválido/caducado
-  const [sesion, setSesion] = useState<boolean | null>(null)
+  // Token del enlace del email. Se guarda al cargar pero se CANJEA al enviar el
+  // formulario, no antes, para que el escaneo de enlaces de Gmail no lo gaste.
+  const [tokenHash, setTokenHash] = useState<string | null>(null)
+  const [tokenType, setTokenType] = useState<EmailOtpType | null>(null)
+  // null = comprobando, true = hay enlace o sesión válidos, false = nada válido
+  const [listo, setListo] = useState<boolean | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSesion(!!data.session))
+    // Leemos el token de la URL (viene reenviado desde /auth/confirm).
+    const params = new URLSearchParams(window.location.search)
+    const th = params.get('token_hash')
+    const ty = params.get('type') as EmailOtpType | null
+    if (th && ty) {
+      setTokenHash(th)
+      setTokenType(ty)
+      setListo(true)
+      return
+    }
+    // Sin token en la URL: solo es válido si ya hay una sesión abierta
+    // (p. ej. un usuario que ya ha entrado y quiere cambiar su contraseña).
+    supabase.auth.getSession().then(({ data }) => setListo(!!data.session))
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -25,6 +42,17 @@ export default function CambiarPasswordPage() {
     if (password !== password2) { setError('Las contraseñas no coinciden.'); return }
 
     setLoading(true)
+
+    // Si venimos del email, canjeamos el token AHORA (al enviar), no al cargar.
+    if (tokenHash && tokenType) {
+      const { error: otpError } = await supabase.auth.verifyOtp({ type: tokenType, token_hash: tokenHash })
+      if (otpError) {
+        setError('El enlace no es válido o ha caducado. Pide a tu administrador que te envíe uno nuevo.')
+        setLoading(false)
+        return
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setError('No se pudo guardar la contraseña. El enlace puede haber caducado; pide uno nuevo.')
@@ -57,11 +85,11 @@ export default function CambiarPasswordPage() {
           </div>
         </div>
 
-        {sesion === null && (
+        {listo === null && (
           <p style={{ fontSize: 14, color: '#667799' }}>Comprobando el enlace...</p>
         )}
 
-        {sesion === false && (
+        {listo === false && (
           <>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#272626', marginBottom: 6 }}>Enlace no válido</h1>
             <p style={{ fontSize: 14, color: '#667799', marginBottom: 24 }}>
@@ -73,7 +101,7 @@ export default function CambiarPasswordPage() {
           </>
         )}
 
-        {sesion === true && !ok && (
+        {listo === true && !ok && (
           <>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#272626', marginBottom: 6 }}>Crea tu contraseña</h1>
             <p style={{ fontSize: 14, color: '#667799', marginBottom: 28 }}>Elige una contraseña para acceder a tu cuenta.</p>

@@ -52,6 +52,7 @@ export type PsicologoInsert = {
   centro?: string | null
   calendar_id?: string | null
   activo?: boolean
+  puede_bloquear?: boolean | null
 }
 
 export type Agente = {

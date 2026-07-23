@@ -1,10 +1,56 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
+
+// Tabla con scroll horizontal y una segunda barra de scroll ARRIBA sincronizada,
+// para poder desplazarse aunque haya muchas filas (la barra de abajo queda fuera de pantalla).
+function ScrollBox({ children }: { children: React.ReactNode }) {
+  const topRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const spacerRef = useRef<HTMLDivElement>(null)
+  const activo = useRef<'top' | 'bottom' | null>(null)
+
+  useEffect(() => {
+    const bottom = bottomRef.current
+    const spacer = spacerRef.current
+    if (!bottom || !spacer) return
+    const update = () => { spacer.style.width = bottom.scrollWidth + 'px' }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(bottom)
+    if (bottom.firstElementChild) ro.observe(bottom.firstElementChild)
+    return () => ro.disconnect()
+  })
+
+  const onTop = () => {
+    if (activo.current === 'bottom') return
+    activo.current = 'top'
+    if (topRef.current && bottomRef.current) bottomRef.current.scrollLeft = topRef.current.scrollLeft
+    activo.current = null
+  }
+  const onBottom = () => {
+    if (activo.current === 'top') return
+    activo.current = 'bottom'
+    if (topRef.current && bottomRef.current) topRef.current.scrollLeft = bottomRef.current.scrollLeft
+    activo.current = null
+  }
+
+  return (
+    <>
+      <div ref={topRef} onScroll={onTop} style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+        <div ref={spacerRef} style={{ height: 1 }} />
+      </div>
+      <div ref={bottomRef} onScroll={onBottom} style={{ overflowX: 'auto' }}>
+        {children}
+      </div>
+    </>
+  )
+}
 
 type Psicologo = {
   id: string; nombre: string; email: string | null; telefono: string | null
   centro_id: string | null; calendar_id: string | null; activo: boolean
+  puede_bloquear: boolean | null
 }
 type Agente = {
   id: string; nombre: string; email: string | null; telefono: string | null
@@ -25,6 +71,56 @@ const td: React.CSSProperties = { padding: '14px 20px', fontSize: 13, color: '#4
 const input: React.CSSProperties = {
   width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13,
   border: '1px solid rgba(47,90,174,0.25)', fontFamily: 'inherit',
+}
+
+// Botones de acción con aspecto de botón real y transición al pasar el ratón.
+const btnBase: React.CSSProperties = {
+  padding: '7px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+  fontFamily: 'inherit', border: '1.5px solid', whiteSpace: 'nowrap',
+  transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+}
+const btnVariants = {
+  default: {
+    normal: { borderColor: 'rgba(47,90,174,0.3)', background: '#fff', color: '#2f5aae' },
+    hover:  { borderColor: '#2f5aae', background: '#eef2fb', color: '#254d99' },
+  },
+  success: {
+    normal: { borderColor: 'rgba(30,125,79,0.4)', background: '#fff', color: '#1e7d4f' },
+    hover:  { borderColor: '#1e7d4f', background: '#eafaf1', color: '#155f3b' },
+  },
+  danger: {
+    normal: { borderColor: 'rgba(185,28,28,0.3)', background: '#fff', color: '#b91c1c' },
+    hover:  { borderColor: '#b91c1c', background: '#fef2f2', color: '#991b1b' },
+  },
+} as const
+
+function ActionButton({ children, onClick, disabled, variant = 'default', title }: {
+  children: React.ReactNode
+  onClick: () => void
+  disabled?: boolean
+  variant?: keyof typeof btnVariants
+  title?: string
+}) {
+  const [hover, setHover] = useState(false)
+  const v = btnVariants[variant]
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        ...btnBase,
+        ...(hover && !disabled ? v.hover : v.normal),
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  )
 }
 
 export default function UsuariosPage() {
@@ -127,6 +223,12 @@ export default function UsuariosPage() {
 
   async function toggleActivo(t: Tipo, id: string, activo: boolean) {
     await patchUsuario(id, { tipo: t, activo: !activo })
+  }
+
+  // Permite / quita que el psicólogo pueda bloquear y desbloquear su agenda.
+  // Se aplica a todas sus fichas de centro en el servidor.
+  async function toggleBloqueo(id: string, actual: boolean) {
+    await patchUsuario(id, { tipo: 'psicologo', puede_bloquear: !actual })
   }
 
   async function editarCalendario(id: string, actual: string | null) {
@@ -299,54 +401,76 @@ export default function UsuariosPage() {
             {psicologosFiltrados.filter((p) => p.activo).length} activo{psicologosFiltrados.filter((p) => p.activo).length !== 1 ? 's' : ''} de {psicologosFiltrados.length} psicólogo{psicologosFiltrados.length !== 1 ? 's' : ''}
           </p>
           <div style={card}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ScrollBox>
+            <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse' }}>
               <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Centro', 'Email', 'Calendario', 'Estado', 'Acciones'].map((h) => <th key={h} style={th}>{h}</th>)}
+                {['Nombre', 'Centro', 'Email', 'Calendario', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {psicologosFiltrados.length === 0 ? (
-                  <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={6}>No hay psicólogos en este centro</td></tr>
+                  <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={5}>No hay psicólogos en este centro</td></tr>
                 ) : psicologosFiltrados.map((p) => (
-                  <tr key={p.id} style={{ borderTop: '1px solid rgba(47,90,174,0.07)' }}>
-                    <td style={{ ...td, fontWeight: 500, color: '#272626' }}>{p.nombre}</td>
-                    <td style={td}>{centroMap[p.centro_id ?? ''] ?? '—'}</td>
-                    <td style={td}>{p.email ?? '—'}</td>
-                    <td style={{ ...td, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.calendar_id ?? '—'}</td>
-                    <td style={td}>{p.activo ? 'Activo' : 'Inactivo'}</td>
-                    <td style={td}>
-                      <button onClick={() => editarCalendario(p.id, p.calendar_id)} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }}>Calendario</button>
-                      <button onClick={() => restablecer('psicologo', p.id, 'email')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</button>
-                      <button onClick={() => restablecer('psicologo', p.id, 'generar')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Generar una contraseña temporal para entregar tú">Generar</button>
-                      <button onClick={() => toggleActivo('psicologo', p.id, p.activo)} disabled={busy} style={{ cursor: 'pointer' }}>{p.activo ? 'Desactivar' : 'Activar'}</button>
-                    </td>
-                  </tr>
+                  <Fragment key={p.id}>
+                    <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
+                      <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{p.nombre}</td>
+                      <td style={{ ...td, paddingBottom: 6 }}>{centroMap[p.centro_id ?? ''] ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6 }}>{p.email ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.calendar_id ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6, whiteSpace: 'nowrap' }}>
+                        <div>{p.activo ? 'Activo' : 'Inactivo'}</div>
+                        <div style={{ fontSize: 11.5, color: p.puede_bloquear ? '#1e7d4f' : '#8899bb', marginTop: 2 }}>
+                          {p.puede_bloquear ? '✓ Puede bloquear agenda' : 'Sin bloqueo de agenda'}
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={5} style={{ padding: '0 20px 16px' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <ActionButton onClick={() => editarCalendario(p.id, p.calendar_id)} disabled={busy} title="Cambiar el calendario de Google del psicólogo">Calendario</ActionButton>
+                          <ActionButton onClick={() => restablecer('psicologo', p.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
+                          <ActionButton onClick={() => restablecer('psicologo', p.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
+                          <ActionButton onClick={() => toggleBloqueo(p.id, !!p.puede_bloquear)} disabled={busy} variant={p.puede_bloquear ? 'default' : 'success'} title="Permitir o quitar que este psicólogo pueda bloquear y desbloquear su agenda">{p.puede_bloquear ? 'Quitar bloqueo' : 'Permitir bloqueo'}</ActionButton>
+                          <ActionButton onClick={() => toggleActivo('psicologo', p.id, p.activo)} disabled={busy} variant={p.activo ? 'danger' : 'success'}>{p.activo ? 'Desactivar' : 'Activar'}</ActionButton>
+                        </div>
+                      </td>
+                    </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
+            </ScrollBox>
           </div>
 
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#272626', margin: '0 0 12px' }}>Agentes</h2>
           <div style={card}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ScrollBox>
+            <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
               <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Email', 'Teléfono', 'Estado', 'Acciones'].map((h) => <th key={h} style={th}>{h}</th>)}
+                {['Nombre', 'Email', 'Teléfono', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {agentes.map((a) => (
-                  <tr key={a.id} style={{ borderTop: '1px solid rgba(47,90,174,0.07)' }}>
-                    <td style={{ ...td, fontWeight: 500, color: '#272626' }}>{a.nombre}</td>
-                    <td style={td}>{a.email ?? '—'}</td>
-                    <td style={td}>{a.telefono ?? '—'}</td>
-                    <td style={td}>{a.activo ? 'Activo' : 'Inactivo'}</td>
-                    <td style={td}>
-                      <button onClick={() => restablecer('agente', a.id, 'email')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</button>
-                      <button onClick={() => restablecer('agente', a.id, 'generar')} disabled={busy} style={{ marginRight: 8, cursor: 'pointer' }} title="Generar una contraseña temporal para entregar tú">Generar</button>
-                      <button onClick={() => toggleActivo('agente', a.id, a.activo)} disabled={busy} style={{ cursor: 'pointer' }}>{a.activo ? 'Desactivar' : 'Activar'}</button>
-                    </td>
-                  </tr>
+                  <Fragment key={a.id}>
+                    <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
+                      <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{a.nombre}</td>
+                      <td style={{ ...td, paddingBottom: 6 }}>{a.email ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6 }}>{a.telefono ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6 }}>{a.activo ? 'Activo' : 'Inactivo'}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={4} style={{ padding: '0 20px 16px' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <ActionButton onClick={() => restablecer('agente', a.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
+                          <ActionButton onClick={() => restablecer('agente', a.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
+                          <ActionButton onClick={() => toggleActivo('agente', a.id, a.activo)} disabled={busy} variant={a.activo ? 'danger' : 'success'}>{a.activo ? 'Desactivar' : 'Activar'}</ActionButton>
+                        </div>
+                      </td>
+                    </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
+            </ScrollBox>
           </div>
         </>
       )}

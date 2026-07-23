@@ -11,6 +11,7 @@ type EditarBody = {
   centro_id?: string | null
   calendar_id?: string | null
   activo?: boolean
+  puede_bloquear?: boolean   // permiso para bloquear/desbloquear la agenda
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -39,8 +40,22 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (body.calendar_id !== undefined) campos.calendar_id = body.calendar_id
     if (body.activo !== undefined) campos.activo = body.activo
 
-    const upd = await admin.from('psicologos').update(campos).eq('id', id)
-    if (upd.error) return NextResponse.json({ error: upd.error.message }, { status: 500 })
+    if (Object.keys(campos).length > 0) {
+      const upd = await admin.from('psicologos').update(campos).eq('id', id)
+      if (upd.error) return NextResponse.json({ error: upd.error.message }, { status: 500 })
+    }
+
+    // El permiso de bloqueo de agenda pertenece a la persona, no a un centro concreto.
+    // Un psicólogo multi-centro tiene una ficha por centro (mismo email): se aplica a
+    // todas para que el permiso sea coherente entre sus centros.
+    if (body.puede_bloquear !== undefined) {
+      const row = await admin.from('psicologos').select('email').eq('id', id).maybeSingle()
+      const email = row.data?.email ?? null
+      const updBloqueo = email
+        ? await admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('email', email)
+        : await admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('id', id)
+      if (updBloqueo.error) return NextResponse.json({ error: updBloqueo.error.message }, { status: 500 })
+    }
 
     // Sincronizar nombre en perfiles (atribución coherente)
     if (body.nombre !== undefined) {

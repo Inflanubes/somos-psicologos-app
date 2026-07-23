@@ -9,7 +9,7 @@ export async function GET() {
 
   const admin = createSupabaseAdmin()
   const [psies, ags, centros] = await Promise.all([
-    admin.from('psicologos').select('id, nombre, email, telefono, centro_id, calendar_id, activo').order('nombre'),
+    admin.from('psicologos').select('id, nombre, email, telefono, centro_id, calendar_id, activo, puede_bloquear').order('nombre'),
     admin.from('agentes').select('id, nombre, email, telefono, centro_id, activo, auth_user_id').order('nombre'),
     admin.from('centros').select('id, nombre').order('nombre'),
   ])

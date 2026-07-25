@@ -38,7 +38,7 @@ export default function AgentesPage() {
   const activos = agentes.filter(a => a.activo).length
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 800 }}>
+    <div className="page-pad" style={{ maxWidth: 800 }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{
@@ -80,7 +80,7 @@ export default function AgentesPage() {
             No hay agentes registrados
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
                 {['Nombre', 'Teléfono', 'Estado', 'Acción'].map(h => (
@@ -107,13 +107,13 @@ export default function AgentesPage() {
                     background: i % 2 === 0 ? '#fff' : '#fafcfc',
                   }}
                 >
-                  <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 500, color: '#272626' }}>
+                  <td data-label="Nombre" style={{ padding: '14px 20px', fontSize: 14, fontWeight: 500, color: '#272626' }}>
                     {a.nombre}
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#4a5870' }}>
+                  <td data-label="Teléfono" style={{ padding: '14px 20px', fontSize: 13, color: '#4a5870' }}>
                     {a.telefono ?? '—'}
                   </td>
-                  <td style={{ padding: '14px 20px' }}>
+                  <td data-label="Estado" style={{ padding: '14px 20px' }}>
                     <span style={{
                       display: 'inline-block',
                       padding: '3px 10px',
@@ -126,7 +126,7 @@ export default function AgentesPage() {
                       {a.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td style={{ padding: '14px 20px' }}>
+                  <td data-label="" style={{ padding: '14px 20px' }}>
                     <button
                       onClick={() => toggleActivo(a.id, a.activo)}
                       disabled={toggling === a.id}

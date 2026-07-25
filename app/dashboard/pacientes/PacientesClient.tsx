@@ -121,7 +121,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
 
       {/* Table */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+        <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr>
               {['Nombre', 'Teléfono', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita'].map((col) => (
@@ -163,7 +163,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       i < filtered.length - 1 ? '1px solid rgba(47,90,174,0.07)' : 'none',
                   }}
                 >
-                  <td style={{ padding: '13px 14px', color: '#272626', fontWeight: 500 }}>
+                  <td data-label="Nombre" style={{ padding: '13px 14px', color: '#272626', fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {p.nombre}
                       {p.es_menor && (
@@ -186,10 +186,10 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       <div style={{ fontSize: 12, color: '#8899bb', marginTop: 2 }}>{p.email}</div>
                     )}
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#4a5870' }}>{p.telefono || '—'}</td>
-                  <td style={{ padding: '13px 14px', color: '#4a5870' }}>{p.centro_nombre || '—'}</td>
-                  <td style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
-                  <td style={{ padding: '13px 14px' }}>
+                  <td data-label="Teléfono" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.telefono || '—'}</td>
+                  <td data-label="Centro" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.centro_nombre || '—'}</td>
+                  <td data-label="Psicólogo" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
+                  <td data-label="Estado" style={{ padding: '13px 14px' }}>
                     <span
                       style={{
                         display: 'inline-flex',
@@ -205,7 +205,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       {p.estado}
                     </span>
                   </td>
-                  <td style={{ padding: '13px 14px', whiteSpace: 'nowrap' }}>
+                  <td data-label="Consentimiento" style={{ padding: '13px 14px', whiteSpace: 'nowrap' }}>
                     <span
                       style={{
                         display: 'inline-flex',
@@ -222,7 +222,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                       {p.consentimiento ? '✓ Firmado' : 'Pendiente'}
                     </span>
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
+                  <td data-label="Fecha cita" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
                     {formatFecha(p.fecha_cita)}
                     {p.hora_cita && (
                       <span style={{ marginLeft: 6, color: '#8899bb', fontSize: 12 }}>

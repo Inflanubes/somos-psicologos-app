@@ -767,7 +767,7 @@ export default function PsicologosPage() {
   // (El psicólogo nunca se elige: cada centro apunta a su propia fila de la misma persona.)
   if (necesitaElegirCentro) {
     return (
-      <div style={{ padding: '36px 40px', maxWidth: 560 }}>
+      <div className="page-pad" style={{ maxWidth: 560 }}>
         <h1
           style={{
             fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
@@ -783,10 +783,10 @@ export default function PsicologosPage() {
           Trabajas en más de un centro
         </p>
         <div
+          className="page-pad"
           style={{
             background: '#ffffff',
             borderRadius: 16,
-            padding: '36px 40px',
             boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
           }}
         >
@@ -835,7 +835,7 @@ export default function PsicologosPage() {
   // sabemos si el psicólogo es multi-centro.
   if (esPsicologo && !variantesCargadas) {
     return (
-      <div style={{ padding: '36px 40px', fontSize: 14, color: '#888' }}>Cargando…</div>
+      <div className="page-pad" style={{ fontSize: 14, color: '#888' }}>Cargando…</div>
     )
   }
 
@@ -862,7 +862,7 @@ export default function PsicologosPage() {
           }
         }
       `}</style>
-    <div style={{ padding: '36px 40px', maxWidth: 1320 }}>
+    <div className="page-pad" style={{ maxWidth: 1320 }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1
@@ -923,11 +923,10 @@ export default function PsicologosPage() {
 
       {/* Form card */}
       <div
-        className="form-card"
+        className="form-card page-pad"
         style={{
           background: '#ffffff',
           borderRadius: 16,
-          padding: '36px 40px',
           boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
         }}
       >
@@ -975,7 +974,7 @@ export default function PsicologosPage() {
               )}
             </div>
           ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="r-grid-2" style={{ gap: 16 }}>
             <FormField label="Centro" required>
               <select
                 value={centroId}
@@ -1077,7 +1076,7 @@ export default function PsicologosPage() {
                 />
               </FormField>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="r-grid-2" style={{ gap: 16 }}>
                 <FormField label="Fecha de nacimiento" required>
                   <input
                     type="date"
@@ -1159,7 +1158,7 @@ export default function PsicologosPage() {
                       style={inputStyle}
                     />
                   </FormField>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="r-grid-2" style={{ gap: 16 }}>
                     <FormField label="Tutor 1 · Teléfono" required>
                       <input
                         type="tel"
@@ -1191,7 +1190,7 @@ export default function PsicologosPage() {
                           style={inputStyle}
                         />
                       </FormField>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div className="r-grid-2" style={{ gap: 16 }}>
                         <FormField label="Tutor 2 · Teléfono" required>
                           <input
                             type="tel"
@@ -1350,7 +1349,7 @@ export default function PsicologosPage() {
                     </select>
                   </FormField>
                   {isCambiarCita && <InfoBox>Nueva fecha y hora:</InfoBox>}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="r-grid-2" style={{ gap: 16 }}>
                     <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'}>
                       <input
                         type="date"
@@ -1409,7 +1408,7 @@ export default function PsicologosPage() {
                   <InfoBox>
                     Cambia solo lo que necesites. <strong>Lo que dejes vacío se mantiene como está.</strong>
                   </InfoBox>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="r-grid-2" style={{ gap: 16 }}>
                     <FormField label="Nueva fecha de inicio">
                       <input
                         type="date"
@@ -1433,7 +1432,7 @@ export default function PsicologosPage() {
               {/* Block-creation actions: manual start + period/duration */}
               {!requiereSelectorBloqueo && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="r-grid-2" style={{ gap: 16 }}>
                     <FormField label="Fecha de inicio">
                       <input
                         type="date"
@@ -1447,7 +1446,7 @@ export default function PsicologosPage() {
                     </FormField>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="r-grid-2" style={{ gap: 16 }}>
                     <FormField label="Periodo">
                       <select
                         value={periodo}
@@ -1524,9 +1523,18 @@ export default function PsicologosPage() {
           }}>
             Calendario — {psicologoSeleccionado.nombre}
           </div>
+          {/* Escritorio: vista semana */}
           <iframe
+            className="cal-desktop"
             src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(psicologoSeleccionado.calendar_id)}&ctz=Europe%2FMadrid&mode=WEEK&showTitle=0&showNav=1&showPrint=0&showTabs=0&showCalendars=0&hl=es`}
-            style={{ width: '100%', height: 600, border: 0, borderRadius: 8, display: 'block' }}
+            style={{ width: '100%', height: 600, border: 0, borderRadius: 8 }}
+            scrolling="no"
+          />
+          {/* Móvil: vista agenda (lista), más usable en pantalla estrecha */}
+          <iframe
+            className="cal-mobile"
+            src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(psicologoSeleccionado.calendar_id)}&ctz=Europe%2FMadrid&mode=AGENDA&showTitle=0&showNav=1&showPrint=0&showTabs=0&showCalendars=0&hl=es`}
+            style={{ width: '100%', height: 520, border: 0, borderRadius: 8 }}
             scrolling="no"
           />
         </div>

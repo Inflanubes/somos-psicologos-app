@@ -272,7 +272,7 @@ export default function UsuariosPage() {
   })
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 960 }}>
+    <div className="page-pad" style={{ maxWidth: 960 }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontFamily: 'var(--font-lora, "Lora", Georgia, serif)', fontSize: 26, fontWeight: 600, color: '#272626', margin: 0, marginBottom: 6 }}>
           Usuarios

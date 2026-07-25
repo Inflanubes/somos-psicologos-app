@@ -308,7 +308,7 @@ export default function StatsDashboard({
   const selectedNombreSplit = selectedDetail ? splitNombreModalidad(selectedDetail.nombre) : null
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 1400, opacity: isPending ? 0.7 : 1, transition: 'opacity 0.15s' }}>
+    <div className="page-pad" style={{ maxWidth: 1400, opacity: isPending ? 0.7 : 1, transition: 'opacity 0.15s' }}>
       {/* ── Header ── */}
       <div style={{ marginBottom: 28 }}>
         <h1
@@ -525,9 +525,9 @@ export default function StatsDashboard({
 
       {/* ── Charts row ── */}
       <div
+        className={isAll ? 'r-grid-side' : undefined}
         style={{
           display: 'grid',
-          gridTemplateColumns: isAll ? '1fr 1.6fr' : '1fr',
           gap: 18,
           marginBottom: 24,
         }}
@@ -553,7 +553,7 @@ export default function StatsDashboard({
           }
         >
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid rgba(47,90,174,0.12)' }}>
                   {['Psicólogo', 'Centro', 'Citas', 'Bloqueos', 'Vacaciones', 'Asuntos propios', 'Baja laboral'].map(
@@ -614,6 +614,7 @@ export default function StatsDashboard({
                         }
                       >
                         <td
+                          data-label="Psicólogo"
                           style={{
                             padding: '12px',
                             fontSize: 13.5,
@@ -640,10 +641,11 @@ export default function StatsDashboard({
                             </span>
                           )}
                         </td>
-                        <td style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
+                        <td data-label="Centro" style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
                           {r.centro}
                         </td>
                         <td
+                          data-label="Citas"
                           style={{
                             padding: '12px',
                             fontSize: 13.5,
@@ -656,6 +658,7 @@ export default function StatsDashboard({
                           {r.citas}
                         </td>
                         <td
+                          data-label="Bloqueos"
                           style={{
                             padding: '12px',
                             fontSize: 13.5,
@@ -668,6 +671,7 @@ export default function StatsDashboard({
                           {r.bloqueos}
                         </td>
                         <td
+                          data-label="Vacaciones"
                           style={{
                             padding: '12px',
                             fontSize: 13,
@@ -679,6 +683,7 @@ export default function StatsDashboard({
                           {r.vacaciones}
                         </td>
                         <td
+                          data-label="Asuntos propios"
                           style={{
                             padding: '12px',
                             fontSize: 13,
@@ -690,6 +695,7 @@ export default function StatsDashboard({
                           {r.asuntos_propios}
                         </td>
                         <td
+                          data-label="Baja laboral"
                           style={{
                             padding: '12px',
                             fontSize: 13,
@@ -711,9 +717,8 @@ export default function StatsDashboard({
       ) : (
         selectedDetail && (
           <div
+            className="r-grid-side"
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1.6fr',
               gap: 18,
             }}
           >

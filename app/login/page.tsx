@@ -39,6 +39,8 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: '20px',
+        boxSizing: 'border-box',
         fontFamily: '"Montserrat", system-ui, sans-serif',
       }}
     >
@@ -46,7 +48,7 @@ export default function LoginPage() {
         style={{
           background: '#ffffff',
           borderRadius: 16,
-          padding: '40px 36px',
+          padding: '36px 28px',
           width: '100%',
           maxWidth: 400,
           boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
@@ -101,7 +103,7 @@ export default function LoginPage() {
                 padding: '11px 14px',
                 borderRadius: 8,
                 border: '1.5px solid #dde1ea',
-                fontSize: 14,
+                fontSize: 16,
                 color: '#272626',
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -126,7 +128,7 @@ export default function LoginPage() {
                 padding: '11px 14px',
                 borderRadius: 8,
                 border: '1.5px solid #dde1ea',
-                fontSize: 14,
+                fontSize: 16,
                 color: '#272626',
                 outline: 'none',
                 boxSizing: 'border-box',

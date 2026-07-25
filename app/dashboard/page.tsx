@@ -232,7 +232,7 @@ export default async function DashboardPage() {
   const today = formatDateES(new Date('2026-03-15'))
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 1400 }}>
+    <div className="page-pad" style={{ maxWidth: 1400 }}>
       {/* ── Header ── */}
       <div style={{ marginBottom: 32 }}>
         <h1
@@ -274,9 +274,8 @@ export default async function DashboardPage() {
 
       {/* ── KPI Grid ── */}
       <div
+        className="r-grid-kpi"
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 18,
           marginBottom: 24,
         }}
@@ -331,9 +330,8 @@ export default async function DashboardPage() {
 
       {/* ── Charts ── */}
       <div
+        className="r-grid-side"
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1.6fr',
           gap: 18,
           marginBottom: 24,
         }}

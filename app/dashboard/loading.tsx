@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <div style={{ padding: '36px 40px', minHeight: '100vh' }}>
+    <div className="page-pad" style={{ minHeight: '100vh' }}>
       {/* Header skeleton */}
       <div style={{ marginBottom: 32 }}>
         <div className="skeleton" style={{ width: 220, height: 28, borderRadius: 6, marginBottom: 8 }} />
@@ -9,9 +9,8 @@ export default function DashboardLoading() {
 
       {/* KPI grid skeleton */}
       <div
+        className="r-grid-kpi"
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 20,
           marginBottom: 28,
         }}
@@ -34,7 +33,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Charts skeleton */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 20, marginBottom: 28 }}>
+      <div className="r-grid-side" style={{ gap: 20, marginBottom: 28 }}>
         <div
           style={{
             background: '#fff',

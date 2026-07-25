@@ -1,6 +1,6 @@
 export default function PacientesLoading() {
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 1400 }}>
+    <div className="page-pad" style={{ maxWidth: 1400 }}>
       {/* Header skeleton */}
       <div style={{ marginBottom: 28 }}>
         <div className="skeleton" style={{ width: 160, height: 28, borderRadius: 6, marginBottom: 8 }} />

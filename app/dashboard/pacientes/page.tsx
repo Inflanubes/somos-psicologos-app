@@ -67,7 +67,7 @@ export default async function PacientesPage() {
   }))
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 1400 }}>
+    <div className="page-pad" style={{ maxWidth: 1400 }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1

@@ -154,7 +154,7 @@ export default function PacientesTable({ pacientes }: Props) {
 
       {/* Table */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid rgba(47,90,174,0.12)' }}>
               {['Nombre', 'Estado', 'Psicólogo', 'Fecha Cita', 'Edad', 'Consent.', 'Teléfono'].map((h) => (
@@ -197,7 +197,7 @@ export default function PacientesTable({ pacientes }: Props) {
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(47,90,174,0.05)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(47,90,174,0.018)')}
                   >
-                    <td style={{ padding: '12px', fontSize: 13.5, fontWeight: 500, color: '#272626', whiteSpace: 'nowrap' }}>
+                    <td data-label="Nombre" style={{ padding: '12px', fontSize: 13.5, fontWeight: 500, color: '#272626', whiteSpace: 'nowrap' }}>
                       {p.nombre}
                       {p.es_menor && (
                         <span
@@ -216,7 +216,7 @@ export default function PacientesTable({ pacientes }: Props) {
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '12px' }}>
+                    <td data-label="Estado" style={{ padding: '12px' }}>
                       <span
                         style={{
                           display: 'inline-block',
@@ -232,16 +232,16 @@ export default function PacientesTable({ pacientes }: Props) {
                         {p.estado}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
+                    <td data-label="Psicólogo" style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
                       {p.psicologo_nombre || '—'}
                     </td>
-                    <td style={{ padding: '12px', fontSize: 13, color: '#4a5870', whiteSpace: 'nowrap' }}>
+                    <td data-label="Fecha Cita" style={{ padding: '12px', fontSize: 13, color: '#4a5870', whiteSpace: 'nowrap' }}>
                       {p.fecha_cita ? `${formatDate(p.fecha_cita)} ${p.hora_cita ?? ''}`.trim() : '—'}
                     </td>
-                    <td style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
+                    <td data-label="Edad" style={{ padding: '12px', fontSize: 13, color: '#4a5870' }}>
                       {edadActual(p) ?? '—'}
                     </td>
-                    <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                    <td data-label="Consent." style={{ padding: '12px', whiteSpace: 'nowrap' }}>
                       <span
                         title={p.consentimiento ? 'Consentimiento firmado' : 'Consentimiento pendiente'}
                         style={{
@@ -257,7 +257,7 @@ export default function PacientesTable({ pacientes }: Props) {
                         {p.consentimiento ? '✓' : 'Pendiente'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', fontSize: 13, color: '#667799', whiteSpace: 'nowrap' }}>
+                    <td data-label="Teléfono" style={{ padding: '12px', fontSize: 13, color: '#667799', whiteSpace: 'nowrap' }}>
                       {p.telefono || '—'}
                     </td>
                   </tr>

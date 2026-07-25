@@ -236,7 +236,7 @@ export default function MensajesPage() {
   ]
 
   return (
-    <div style={{ padding: '36px 40px', maxWidth: 1100 }}>
+    <div className="page-pad" style={{ maxWidth: 1100 }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{
@@ -258,6 +258,7 @@ export default function MensajesPage() {
       <div style={{
         display: 'flex',
         gap: 4,
+        flexWrap: 'wrap',
         borderBottom: '2px solid rgba(47,90,174,0.1)',
         marginBottom: 28,
       }}>

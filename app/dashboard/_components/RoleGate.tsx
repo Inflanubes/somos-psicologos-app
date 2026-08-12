@@ -14,9 +14,14 @@ const HOME: Record<Rol, string> = {
 
 function isAllowed(rol: Rol, path: string): boolean {
   if (rol === 'agente') return true
-  // Psicólogo: su formulario de citas y la lista de sus pacientes
-  // (la página de pacientes ya filtra por el psicólogo logueado).
-  if (rol === 'psicologo') return path === '/dashboard/psicologos' || path === '/dashboard/pacientes'
+  // Psicólogo: su formulario de citas, la lista de sus pacientes y su página
+  // de mensajes (ambas filtran ya por el psicólogo logueado).
+  if (rol === 'psicologo')
+    return (
+      path === '/dashboard/psicologos' ||
+      path === '/dashboard/pacientes' ||
+      path === '/dashboard/mensajes-psicologo'
+    )
   if (rol === 'call_center') return path === '/dashboard'
   return false
 }

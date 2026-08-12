@@ -59,7 +59,9 @@ const navItems: NavItem[] = [
   { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente'] },
   { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo'] },
-  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, roles: ['agente'] },
+  // exact: '/dashboard/mensajes-psicologo' también empieza por '/dashboard/mensajes'
+  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, exact: true, roles: ['agente'] },
+  { href: '/dashboard/mensajes-psicologo', label: 'Mensajes', Icon: ChatIcon, roles: ['psicologo'] },
 ]
 
 export default function SidebarNav() {

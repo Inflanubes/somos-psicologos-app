@@ -202,7 +202,7 @@ export default function MensajesPage() {
       // Update Supabase after successful send
       if (pacienteId) {
         const tipo = payload.tipo === 'mensaje_dudoso' ? 'dudoso'
-          : payload.tipo === 'notificar_psicólogo' ? 'psicologo'
+          : payload.tipo === 'notificar_psicologo' ? 'psicologo'
           : payload.tipo === 'mensaje_sin_disponibilidad' ? 'sin-disp'
           : 'espera'
         await actualizarPaciente(pacienteId, tipo)
@@ -333,7 +333,8 @@ export default function MensajesPage() {
                               onClick={() => {
                                 const psi = psicologos.find(ps => ps.id === p.psicologo_id)
                                 enviar(p.id, {
-                                  tipo: 'notificar_psicólogo',
+                                  // sin tilde: el filtro del router de Make compara texto exacto
+                                  tipo: 'notificar_psicologo',
                                   paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
                                   psicologo: { nombre: p.psicologo_nombre, telefono: psi?.telefono ?? null },
                                   centro: p.centro_nombre,

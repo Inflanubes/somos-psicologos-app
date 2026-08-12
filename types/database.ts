@@ -30,6 +30,7 @@ export type Centro = {
   id: string
   nombre: string
   creado_en: string
+  google_review_url: string | null
 }
 
 export type Psicologo = {

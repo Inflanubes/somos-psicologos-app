@@ -8,8 +8,8 @@ import type { Rol } from '@/types/database'
 const HOME: Record<Rol, string> = {
   agente: '/dashboard',
   psicologo: '/dashboard/psicologos',
-  // El formulario de call center se eliminó; su home pasa a ser el panel general.
-  call_center: '/dashboard',
+  // El call center trabaja desde el formulario de Citas (cualquier centro y psicólogo).
+  call_center: '/dashboard/psicologos',
 }
 
 function isAllowed(rol: Rol, path: string): boolean {
@@ -22,7 +22,8 @@ function isAllowed(rol: Rol, path: string): boolean {
       path === '/dashboard/pacientes' ||
       path === '/dashboard/mensajes-psicologo'
     )
-  if (rol === 'call_center') return path === '/dashboard'
+  // Call center: agenda citas para cualquier psicólogo y ve el panel general.
+  if (rol === 'call_center') return path === '/dashboard' || path === '/dashboard/psicologos'
   return false
 }
 

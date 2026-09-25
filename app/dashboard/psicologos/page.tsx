@@ -231,6 +231,7 @@ export default function PsicologosPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const esPsicologo = perfil?.rol === 'psicologo'
+  const esCallCenter = perfil?.rol === 'call_center'
 
   // Multi-centro: un psicólogo que trabaja en varios centros tiene una fila en
   // `psicologos` por centro (mismo email). Si hay más de una, debe elegir centro.
@@ -299,13 +300,16 @@ export default function PsicologosPage() {
   const psicologoSeleccionado = filteredPsicologos.find((p) => p.id === psicologoId) ?? null
 
   // Un usuario psicólogo solo ve Bloquear/Desbloquear agenda si su ficha lo permite;
-  // los agentes gestionan cualquier agenda sin restricción.
-  const accionesDisponibles = ACCIONES.filter(
-    (a) =>
+  // los agentes gestionan cualquier agenda sin restricción. El call center solo
+  // gestiona citas (agendar, cambiar, cancelar) y altas de paciente, sin bloqueos.
+  const accionesDisponibles = ACCIONES.filter((a) => {
+    if (esCallCenter) return ACCIONES_CITA.includes(a) || a === 'Añadir nuevo paciente'
+    return (
       !ACCIONES_BLOQUEO_GENERAL.includes(a) ||
       !esPsicologo ||
       (psicologoSeleccionado?.puede_bloquear ?? false)
-  )
+    )
+  })
 
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)

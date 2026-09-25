@@ -57,7 +57,7 @@ type Agente = {
   centro_id: string | null; activo: boolean; auth_user_id: string | null
 }
 type Centro = { id: string; nombre: string }
-type Tipo = 'psicologo' | 'agente'
+type Tipo = 'psicologo' | 'agente' | 'call_center'
 
 const card: React.CSSProperties = {
   background: '#fff', borderRadius: 12, border: '1px solid rgba(47,90,174,0.13)',
@@ -126,6 +126,7 @@ function ActionButton({ children, onClick, disabled, variant = 'default', title 
 export default function UsuariosPage() {
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
   const [agentes, setAgentes] = useState<Agente[]>([])
+  const [callCenter, setCallCenter] = useState<Agente[]>([])
   const [centros, setCentros] = useState<Centro[]>([])
   const [filtroCentro, setFiltroCentro] = useState<string>('todos')
   const [loading, setLoading] = useState(true)
@@ -161,6 +162,7 @@ export default function UsuariosPage() {
       if (!res.ok) { setError(data.error ?? 'Error cargando'); return }
       setPsicologos(data.psicologos)
       setAgentes(data.agentes)
+      setCallCenter(data.call_center ?? [])
       setCentros(data.centros ?? [])
     } catch {
       setError('Error de conexión al cargar')
@@ -348,7 +350,16 @@ export default function UsuariosPage() {
           <label style={{ fontSize: 13, fontWeight: 600, color: '#4a5870' }}>
             <input type="radio" checked={tipo === 'agente'} onChange={() => setTipo('agente')} /> Agente
           </label>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#4a5870' }}>
+            <input type="radio" checked={tipo === 'call_center'} onChange={() => setTipo('call_center')} /> Call center
+          </label>
         </div>
+        {tipo === 'call_center' && (
+          <div style={{ fontSize: 12, color: '#667799', background: '#eef2fb', borderRadius: 8, padding: '8px 12px' }}>
+            Un usuario de call center solo ve el formulario de Citas y puede agendar, cambiar o cancelar
+            citas de cualquier centro y psicólogo. Crea un acceso por persona para saber quién hizo cada cita.
+          </div>
+        )}
         <input style={input} placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
         <input style={input} placeholder="Email de acceso" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input style={input} placeholder="Teléfono (opcional)" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
@@ -441,37 +452,49 @@ export default function UsuariosPage() {
             </ScrollBox>
           </div>
 
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#272626', margin: '0 0 12px' }}>Agentes</h2>
-          <div style={card}>
-            <ScrollBox>
-            <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
-              <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Email', 'Teléfono', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
-              </tr></thead>
-              <tbody>
-                {agentes.map((a) => (
-                  <Fragment key={a.id}>
-                    <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
-                      <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{a.nombre}</td>
-                      <td style={{ ...td, paddingBottom: 6 }}>{a.email ?? '—'}</td>
-                      <td style={{ ...td, paddingBottom: 6 }}>{a.telefono ?? '—'}</td>
-                      <td style={{ ...td, paddingBottom: 6 }}>{a.activo ? 'Activo' : 'Inactivo'}</td>
-                    </tr>
-                    <tr>
-                      <td colSpan={4} style={{ padding: '0 20px 16px' }}>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <ActionButton onClick={() => restablecer('agente', a.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
-                          <ActionButton onClick={() => restablecer('agente', a.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
-                          <ActionButton onClick={() => toggleActivo('agente', a.id, a.activo)} disabled={busy} variant={a.activo ? 'danger' : 'success'}>{a.activo ? 'Desactivar' : 'Activar'}</ActionButton>
-                        </div>
-                      </td>
-                    </tr>
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-            </ScrollBox>
-          </div>
+          {/* Agentes y call center comparten ficha (tabla `agentes`); solo cambia el rol. */}
+          {(
+            [
+              { titulo: 'Agentes', tipoLista: 'agente' as const, lista: agentes, vacio: 'No hay agentes' },
+              { titulo: 'Call center', tipoLista: 'call_center' as const, lista: callCenter, vacio: 'Todavía no hay usuarios de call center' },
+            ]
+          ).map(({ titulo, tipoLista, lista, vacio }) => (
+            <Fragment key={tipoLista}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#272626', margin: '0 0 12px' }}>{titulo}</h2>
+              <div style={card}>
+                <ScrollBox>
+                <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
+                  <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
+                    {['Nombre', 'Email', 'Teléfono', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {lista.length === 0 ? (
+                      <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={4}>{vacio}</td></tr>
+                    ) : lista.map((a) => (
+                      <Fragment key={a.id}>
+                        <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
+                          <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{a.nombre}</td>
+                          <td style={{ ...td, paddingBottom: 6 }}>{a.email ?? '—'}</td>
+                          <td style={{ ...td, paddingBottom: 6 }}>{a.telefono ?? '—'}</td>
+                          <td style={{ ...td, paddingBottom: 6 }}>{a.activo ? 'Activo' : 'Inactivo'}</td>
+                        </tr>
+                        <tr>
+                          <td colSpan={4} style={{ padding: '0 20px 16px' }}>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <ActionButton onClick={() => restablecer(tipoLista, a.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
+                              <ActionButton onClick={() => restablecer(tipoLista, a.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
+                              <ActionButton onClick={() => toggleActivo(tipoLista, a.id, a.activo)} disabled={busy} variant={a.activo ? 'danger' : 'success'}>{a.activo ? 'Desactivar' : 'Activar'}</ActionButton>
+                            </div>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+                </ScrollBox>
+              </div>
+            </Fragment>
+          ))}
         </>
       )}
     </div>

@@ -17,11 +17,28 @@ export async function GET() {
   if (ags.error) return NextResponse.json({ error: ags.error.message }, { status: 500 })
   if (centros.error) return NextResponse.json({ error: centros.error.message }, { status: 500 })
 
-  return NextResponse.json({ psicologos: psies.data ?? [], agentes: ags.data ?? [], centros: centros.data ?? [] })
+  // Agentes y call center comparten la tabla `agentes`; el rol lo da `perfiles`.
+  const staff = ags.data ?? []
+  const authIds = staff.map((a) => a.auth_user_id).filter((id): id is string => !!id)
+  const rolPorAuthId = new Map<string, string>()
+  if (authIds.length) {
+    const perfiles = await admin.from('perfiles').select('id, rol').in('id', authIds)
+    if (perfiles.error) return NextResponse.json({ error: perfiles.error.message }, { status: 500 })
+    for (const p of perfiles.data ?? []) rolPorAuthId.set(p.id, p.rol)
+  }
+  const esCallCenter = (a: { auth_user_id: string | null }) =>
+    !!a.auth_user_id && rolPorAuthId.get(a.auth_user_id) === 'call_center'
+
+  return NextResponse.json({
+    psicologos: psies.data ?? [],
+    agentes: staff.filter((a) => !esCallCenter(a)),
+    call_center: staff.filter(esCallCenter),
+    centros: centros.data ?? [],
+  })
 }
 
 type CrearBody = {
-  tipo: 'psicologo' | 'agente'
+  tipo: 'psicologo' | 'agente' | 'call_center'
   nombre: string
   email: string
   telefono?: string | null
@@ -42,7 +59,7 @@ export async function POST(req: NextRequest) {
   const email = body.email?.trim().toLowerCase()
 
   // Validación de servidor
-  if (body.tipo !== 'psicologo' && body.tipo !== 'agente')
+  if (body.tipo !== 'psicologo' && body.tipo !== 'agente' && body.tipo !== 'call_center')
     return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
   if (!nombre) return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 })
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
@@ -135,7 +152,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, id: principal.id, email, password, emailSent }, { status: 201 })
   }
 
-  // tipo === 'agente'
+  // tipo === 'agente' | 'call_center': ambos son personal interno con ficha en
+  // `agentes`; solo cambia el rol del perfil, que es lo que limita el acceso.
   const ag = await admin
     .from('agentes')
     .insert({
@@ -155,7 +173,7 @@ export async function POST(req: NextRequest) {
   const perfil = await admin.from('perfiles').insert({
     id: userId,
     nombre,
-    rol: 'agente',
+    rol: body.tipo,
     psicologo_id: null,
     centro_id: body.centro_id ?? null,
   })

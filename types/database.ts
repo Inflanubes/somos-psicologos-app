@@ -130,7 +130,42 @@ export type AccionPsicologo = {
   es_paciente_recomendado: boolean | null
   recomendado_por: string | null
   activo: boolean | null
+  /** Quién hizo la última acción sobre la fila (cancelar/cambiar/desbloquear). Lo rellena Make. */
+  ultima_accion_por_id: string | null
+  ultima_accion_por: string | null
+  ultima_accion_en: string | null
 }
+
+/**
+ * Historial de acciones (migración 011). Una fila por acción realizada:
+ * 'Agendar cita' | 'Cambiar cita' | 'Cancelar cita' | 'Bloquear agenda' |
+ * 'Desbloquear agenda' | 'Modificar bloqueo personal'.
+ * Se rellena sola por trigger desde acciones_psicologos; es la fuente de las estadísticas.
+ */
+export type AccionHistorial = {
+  id: string
+  accion_id: string | null
+  accion: string
+  psicologo_id: string | null
+  paciente_id: string | null
+  gcal_event_id: string | null
+  tipo_cita: TipoCita | null
+  fecha_cita: string | null
+  hora_cita: string | null
+  fecha_cita_anterior: string | null
+  hora_cita_anterior: string | null
+  fecha_bloqueo_inicio: string | null
+  fecha_bloqueo_fin: string | null
+  fecha_bloqueo_inicio_anterior: string | null
+  fecha_bloqueo_fin_anterior: string | null
+  motivo_bloqueo: MotivoBloqueo | null
+  realizado_por_id: string | null
+  realizado_por: string | null
+  origen: string | null
+  creado_en: string
+}
+
+export type AccionHistorialInsert = Omit<AccionHistorial, 'id' | 'creado_en'>
 
 export type HistorialEstado = {
   id: string
@@ -276,6 +311,12 @@ export type Database = {
         Row: AccionPsicologo
         Insert: AccionPsicologoInsert
         Update: Partial<AccionPsicologoInsert>
+        Relationships: []
+      }
+      acciones_historial: {
+        Row: AccionHistorial
+        Insert: AccionHistorialInsert
+        Update: Partial<AccionHistorialInsert>
         Relationships: []
       }
       historial_estados: {

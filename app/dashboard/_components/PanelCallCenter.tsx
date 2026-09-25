@@ -144,10 +144,12 @@ export default async function PanelCallCenter({
   const desdeIso = sumarDias(inicio, -1) + 'T00:00:00Z'
 
   const [accionesRes, psicologosRes, centrosRes] = await Promise.all([
+    // Historial (migración 011): una fila por acción, atribuida a quien la hizo
+    // y con la fecha real, aunque la cita se haya anulado o cambiado después.
     supabase
-      .from('acciones_psicologos')
+      .from('acciones_historial')
       .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, creado_en')
-      .eq('created_by_id', userId)
+      .eq('realizado_por_id', userId)
       .gte('creado_en', desdeIso)
       .order('creado_en', { ascending: false }),
     supabase.from('psicologos').select('id, nombre, centro_id'),

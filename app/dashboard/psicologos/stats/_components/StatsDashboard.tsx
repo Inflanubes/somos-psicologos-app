@@ -23,6 +23,8 @@ export type PerPsicologoRow = {
   nombre: string
   centro: string
   citas: number
+  cambiadas: number
+  canceladas: number
   bloqueos: number
   vacaciones: number
   asuntos_propios: number
@@ -49,6 +51,8 @@ type Kpis = {
   asuntosPropios: number
   bajaLaboral: number
   citasTotal: number
+  citasCambiadas: number
+  citasCanceladas: number
 }
 
 interface Props {
@@ -112,6 +116,20 @@ const icons = {
     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  swap: (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path d="M17 1l4 4-4 4" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="M7 23l-4-4 4-4" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  ),
+  xCircle: (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M15 9l-6 6M9 9l6 6" />
     </svg>
   ),
 }
@@ -521,6 +539,22 @@ export default function StatsDashboard({
           accent="#0ea5e9"
           accentBg="#e0f2fe"
         />
+        <KpiCard
+          label="Citas cambiadas"
+          value={kpis.citasCambiadas}
+          sub={periodLabel}
+          icon={icons.swap}
+          accent="#8b5cf6"
+          accentBg="#f3e8ff"
+        />
+        <KpiCard
+          label="Citas anuladas"
+          value={kpis.citasCanceladas}
+          sub={periodLabel}
+          icon={icons.xCircle}
+          accent="#dc2626"
+          accentBg="#fee2e2"
+        />
       </div>
 
       {/* ── Charts row ── */}
@@ -556,7 +590,7 @@ export default function StatsDashboard({
             <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid rgba(47,90,174,0.12)' }}>
-                  {['Psicólogo', 'Centro', 'Citas', 'Bloqueos', 'Vacaciones', 'Asuntos propios', 'Baja laboral'].map(
+                  {['Psicólogo', 'Centro', 'Citas', 'Cambiadas', 'Anuladas', 'Bloqueos', 'Vacaciones', 'Asuntos propios', 'Baja laboral'].map(
                     (h, i) => (
                       <th
                         key={h}
@@ -581,7 +615,7 @@ export default function StatsDashboard({
                 {perPsicologoRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={9}
                       style={{
                         padding: '40px 12px',
                         textAlign: 'center',
@@ -656,6 +690,31 @@ export default function StatsDashboard({
                           }}
                         >
                           {r.citas}
+                        </td>
+                        <td
+                          data-label="Cambiadas"
+                          style={{
+                            padding: '12px',
+                            fontSize: 13,
+                            color: '#4a5870',
+                            textAlign: 'right',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
+                          {r.cambiadas}
+                        </td>
+                        <td
+                          data-label="Anuladas"
+                          style={{
+                            padding: '12px',
+                            fontSize: 13.5,
+                            fontWeight: 600,
+                            color: r.canceladas > 0 ? '#dc2626' : '#4a5870',
+                            textAlign: 'right',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
+                          {r.canceladas}
                         </td>
                         <td
                           data-label="Bloqueos"

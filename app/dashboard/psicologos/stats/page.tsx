@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import type { Psicologo, Centro, AccionPsicologo, Paciente } from '@/types/database'
+import type { Psicologo, Centro, AccionPsicologo, AccionHistorial, Paciente } from '@/types/database'
 import StatsDashboard from './_components/StatsDashboard'
 import type {
   PeriodKey,
@@ -132,11 +132,13 @@ export default async function PsicologosStatsPage({
         : bloqueosQ.eq('psicologo_id', SIN_RESULTADOS)
   const { data: bloqueosRows } = await bloqueosQ
 
-  // KEY QUERY 2: citas agendadas in period (for KPIs and per-psi table)
+  // KEY QUERY 2: acciones sobre citas en el periodo (agendar / cambiar / anular),
+  // leídas del historial para que una cita anulada siga contando como agendada
+  // y la anulación se atribuya a quien la hizo y a la fecha real.
   let citasQ = supabase
-    .from('acciones_psicologos')
+    .from('acciones_historial')
     .select('*')
-    .eq('accion', 'Agendar cita')
+    .in('accion', ['Agendar cita', 'Cambiar cita', 'Cancelar cita'])
   if (periodStart) citasQ = citasQ.gte('creado_en', periodStart)
   if (idsFiltro)
     citasQ =
@@ -150,12 +152,12 @@ export default async function PsicologosStatsPage({
   let recentActions: AccionRecent[] = []
   if (idsSeleccionados) {
     const { data: recentRows } = await supabase
-      .from('acciones_psicologos')
+      .from('acciones_historial')
       .select('*')
       .in('psicologo_id', idsSeleccionados)
       .order('creado_en', { ascending: false })
       .limit(10)
-    const rows = (recentRows ?? []) as AccionPsicologo[]
+    const rows = (recentRows ?? []) as AccionHistorial[]
 
     // resolve paciente iniciales for any with paciente_id
     const pacIds = Array.from(new Set(rows.map((r) => r.paciente_id).filter((x): x is string => !!x)))
@@ -189,11 +191,13 @@ export default async function PsicologosStatsPage({
 
   // ── Aggregate (server side) ──
   const bloq = (bloqueosRows ?? []) as AccionPsicologo[]
-  const cit = (citasRows ?? []) as AccionPsicologo[]
+  const cit = (citasRows ?? []) as AccionHistorial[]
 
   // KPI counts
   const bloqueosTotal = bloq.length
-  const citasTotal = cit.length
+  const citasTotal = cit.filter((r) => r.accion === 'Agendar cita').length
+  const citasCambiadas = cit.filter((r) => r.accion === 'Cambiar cita').length
+  const citasCanceladas = cit.filter((r) => r.accion === 'Cancelar cita').length
   const motivoCounts: MotivoCounts = { 'Asuntos propios': 0, Vacaciones: 0, 'Baja laboral': 0, Otros: 0 }
   for (const r of bloq) {
     if (r.motivo_bloqueo && r.motivo_bloqueo in motivoCounts) {
@@ -213,6 +217,8 @@ export default async function PsicologosStatsPage({
       nombre: persona.nombre,
       centro: centrosDePersona(persona),
       citas: 0,
+      cambiadas: 0,
+      canceladas: 0,
       bloqueos: 0,
       vacaciones: 0,
       asuntos_propios: 0,
@@ -231,7 +237,9 @@ export default async function PsicologosStatsPage({
   for (const r of cit) {
     const key = r.psicologo_id ? idAPersona.get(r.psicologo_id) : undefined
     if (!key) continue
-    perPsi[key].citas += 1
+    if (r.accion === 'Agendar cita') perPsi[key].citas += 1
+    if (r.accion === 'Cambiar cita') perPsi[key].cambiadas += 1
+    if (r.accion === 'Cancelar cita') perPsi[key].canceladas += 1
   }
   const perPsicologoRows = Object.values(perPsi).sort((a, b) => b.bloqueos - a.bloqueos || b.citas - a.citas)
 
@@ -289,6 +297,8 @@ export default async function PsicologosStatsPage({
         asuntosPropios: motivoCounts['Asuntos propios'],
         bajaLaboral: motivoCounts['Baja laboral'],
         citasTotal,
+        citasCambiadas,
+        citasCanceladas,
       }}
       motivoCounts={motivoCounts}
       topBloqueosChart={topBloqueosChart}

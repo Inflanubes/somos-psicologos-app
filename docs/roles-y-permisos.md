@@ -1,6 +1,6 @@
 # Roles y permisos de la app Somos Psicología
 
-Última revisión: 25-09-2026.
+Última revisión: 25-09-2026 (panel personal del call center y atribución de pacientes).
 
 ## Una sola app
 
@@ -24,7 +24,7 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 
 | Pantalla | Ruta | Agente | Psicólogo | Call center |
 |---|---|:-:|:-:|:-:|
-| Panel General | `/dashboard` | Sí | No | Sí |
+| Panel General | `/dashboard` | Sí (datos globales) | No | Sí, pero solo **su actividad** ("Mi actividad") |
 | Estadísticas | `/dashboard/psicologos/stats` | Sí | No | No |
 | Pacientes | `/dashboard/pacientes` | Todos los pacientes | Solo los suyos (todas sus filas de psicólogo, por email) | No |
 | Psicólogos (equipo) | `/dashboard/equipo` | Sí | No | No |
@@ -56,10 +56,20 @@ baja y modificar bloqueo personal están siempre disponibles.
 Al entrar aterriza en Citas. Puede elegir **cualquier centro y cualquier psicólogo** y usar las
 acciones **Agendar cita, Cambiar cita, Cancelar cita y Añadir nuevo paciente**. No ve las acciones
 de bloqueo de agenda (bloquear, desbloquear, vacaciones, asuntos propios, baja, modificar bloqueo).
-También puede abrir el Panel General. No ve pacientes, equipo, usuarios ni comunicaciones.
+En el Panel General ve **solo su propia actividad** ("Mi actividad", componente `PanelCallCenter`): citas agendadas, cambiadas y canceladas y pacientes añadidos por él, con filtro hoy / esta semana / este mes, gráfico de citas por día, reparto por centro y psicólogo y sus últimas acciones. Nunca ve los datos globales de la clínica ni la tabla de pacientes. No ve pacientes, equipo, usuarios ni comunicaciones.
 
 Cada cita que registra queda atribuida a su usuario (`created_by` con su nombre y
 `origen = 'call_center'` en `acciones_psicologos`), así que conviene **un acceso por persona**.
+
+## Quién ha añadido cada paciente
+
+Desde la migración `Supabase/migrations/011_pacientes_atribucion.sql`, la tabla `pacientes` guarda
+`created_by` (nombre), `created_by_id` (usuario de Auth) y `origen` (`psicologo` | `agente` | `call_center`)
+de quien dio de alta al paciente desde el formulario de Citas. La pantalla de Pacientes muestra la
+columna **Añadido por** con ese dato, así se sabe si un paciente lo añadió un psicólogo concreto, un
+agente o el call center. Los pacientes anteriores a la migración quedan sin dato. Si la migración
+no se ha ejecutado, el alta sigue funcionando (reintenta sin atribución) y el panel del call center
+muestra "—" en Pacientes añadidos.
 
 #### Cuántos usuarios de call center pueden estar conectados a la vez
 

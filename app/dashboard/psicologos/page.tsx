@@ -590,24 +590,38 @@ export default function PsicologosPage() {
 
         // 2) No duplicate — proceed with the standard insert + Make notification.
         const iniciales = generarIniciales(npNombre)
-        const { data: nuevoPaciente, error: supaError } = await supabase
+        const nuevoPacienteBase = {
+          nombre:              npNombre.trim(),
+          iniciales,
+          telefono:            telefonoNorm,
+          email:               npEmail.trim() || null,
+          fecha_nacimiento:    npFechaNacimiento,
+          edad:                npEdadCalc,
+          es_menor:            npEsMenor,
+          centro_id:           effCentroId,
+          psicologo_id:        effPsicologoId,
+          recomendado_por:     npEsRecomendado ? effPsicologoId : null,
+          estado:              'Nuevo paciente' as const,
+          fecha_incorporacion: new Date().toISOString().split('T')[0],
+        }
+        // Quién ha añadido al paciente (login): alimenta "Añadido por" en Pacientes
+        // y el panel personal del call center. Columnas de la migración 011.
+        const atribucion = {
+          created_by:    perfil?.nombre ?? psicologoNombre ?? null,
+          created_by_id: userId,
+          origen:        perfil?.rol ?? 'agente',
+        }
+        let insertado = await supabase
           .from('pacientes')
-          .insert({
-            nombre:              npNombre.trim(),
-            iniciales,
-            telefono:            telefonoNorm,
-            email:               npEmail.trim() || null,
-            fecha_nacimiento:    npFechaNacimiento,
-            edad:                npEdadCalc,
-            es_menor:            npEsMenor,
-            centro_id:           effCentroId,
-            psicologo_id:        effPsicologoId,
-            recomendado_por:     npEsRecomendado ? effPsicologoId : null,
-            estado:              'Nuevo paciente',
-            fecha_incorporacion: new Date().toISOString().split('T')[0],
-          })
+          .insert({ ...nuevoPacienteBase, ...atribucion })
           .select('id')
           .single()
+        // Si la migración 011 aún no se ha ejecutado, reintentar sin atribución
+        // para no bloquear el alta.
+        if (insertado.error && /created_by|origen/.test(insertado.error.message)) {
+          insertado = await supabase.from('pacientes').insert(nuevoPacienteBase).select('id').single()
+        }
+        const { data: nuevoPaciente, error: supaError } = insertado
         if (supaError) throw new Error('Error al añadir paciente: ' + supaError.message)
         if (!nuevoPaciente) throw new Error('No se pudo recuperar el identificador del nuevo paciente. Inténtalo de nuevo.')
 

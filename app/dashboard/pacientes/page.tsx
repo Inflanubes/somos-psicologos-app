@@ -57,6 +57,8 @@ export default async function PacientesPage() {
     email: p.email,
     centro_nombre: centroMap[p.centro_id] ?? '—',
     psicologo_nombre: psicologoMap[p.psicologo_id] ?? 'Sin asignar',
+    anadido_por: p.created_by ?? null,
+    origen: p.origen ?? null,
     estado: p.estado,
     fecha_cita: p.fecha_cita,
     hora_cita: p.hora_cita,

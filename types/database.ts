@@ -85,6 +85,9 @@ export type Paciente = {
   fecha_cambio_estado: string | null
   iniciales: string | null
   gcal_event_id: string | null
+  created_by: string | null
+  created_by_id: string | null
+  origen: string | null
 }
 
 export type AccionCallCenter = {
@@ -155,6 +158,9 @@ export type PacienteInsert = {
   fecha_cambio_estado?: string | null
   iniciales?: string | null
   recomendado_por?: string | null
+  created_by?: string | null
+  created_by_id?: string | null
+  origen?: string | null
 }
 
 export type FormularioCitasPsicologosInsert = {

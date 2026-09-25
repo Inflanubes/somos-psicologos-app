@@ -10,6 +10,8 @@ export interface PacienteTableRow {
   email: string
   centro_nombre: string
   psicologo_nombre: string
+  anadido_por: string | null
+  origen: string | null
   estado: EstadoPaciente
   fecha_cita: string | null
   hora_cita: string | null
@@ -124,7 +126,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
         <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr>
-              {['Nombre', 'Teléfono', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita'].map((col) => (
+              {['Nombre', 'Teléfono', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita', 'Añadido por'].map((col) => (
                 <th
                   key={col}
                   style={{
@@ -148,7 +150,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{ textAlign: 'center', padding: '48px 0', color: '#8899bb', fontSize: 14 }}
                 >
                   No se encontraron pacientes
@@ -227,6 +229,14 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                     {p.hora_cita && (
                       <span style={{ marginLeft: 6, color: '#8899bb', fontSize: 12 }}>
                         {p.hora_cita}
+                      </span>
+                    )}
+                  </td>
+                  <td data-label="Añadido por" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
+                    {p.anadido_por ?? '—'}
+                    {p.origen && (
+                      <span style={{ marginLeft: 6, color: '#8899bb', fontSize: 11.5 }}>
+                        {p.origen === 'call_center' ? 'call center' : p.origen}
                       </span>
                     )}
                   </td>

@@ -4,104 +4,9 @@ import EstadosChart from './_components/EstadosChart'
 import PsicologosChart from './_components/PsicologosChart'
 import PacientesTable from './_components/PacientesTable'
 import type { PacienteRow } from './_components/PacientesTable'
+import { KpiCard, Card } from './_components/Cards'
+import PanelCallCenter, { type Periodo } from './_components/PanelCallCenter'
 
-// ─── KPI Card ────────────────────────────────────────────────────────────────
-function KpiCard({
-  label,
-  value,
-  sub,
-  icon,
-  accent = '#2f5aae',
-  accentBg = '#eef2fb',
-}: {
-  label: string
-  value: string | number
-  sub?: string
-  icon: React.ReactNode
-  accent?: string
-  accentBg?: string
-}) {
-  return (
-    <div
-      style={{
-        background: '#ffffff',
-        borderRadius: 12,
-        padding: '22px 24px',
-        border: '1px solid rgba(47,90,174,0.13)',
-        boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
-        transition: 'box-shadow 0.2s, transform 0.2s',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 10,
-            background: accentBg,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: accent,
-            flexShrink: 0,
-          }}
-        >
-          {icon}
-        </div>
-      </div>
-      <div>
-        <div
-          style={{
-            fontSize: 30,
-            fontWeight: 700,
-            color: '#272626',
-            lineHeight: 1,
-            marginBottom: 6,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {value}
-        </div>
-        <div style={{ fontSize: 13, color: '#4a5870', fontWeight: 500 }}>{label}</div>
-        {sub && (
-          <div style={{ fontSize: 11.5, color: '#8899bb', marginTop: 4 }}>{sub}</div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Section card wrapper ─────────────────────────────────────────────────────
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        background: '#ffffff',
-        borderRadius: 12,
-        padding: '24px',
-        border: '1px solid rgba(47,90,174,0.13)',
-        boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
-      }}
-    >
-      <h3
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#3a4a6b',
-          marginBottom: 20,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {title}
-      </h3>
-      {children}
-    </div>
-  )
-}
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const icons = {
@@ -166,8 +71,25 @@ function formatDateES(date: Date) {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodo?: string }>
+}) {
   const supabase = await createSupabaseServerClient()
+
+  // El call center no ve los datos globales de la clínica: solo su actividad.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: perfil } = user
+    ? await supabase.from('perfiles').select('nombre, rol').eq('id', user.id).maybeSingle()
+    : { data: null }
+  if (user && perfil?.rol === 'call_center') {
+    const { periodo } = await searchParams
+    const p: Periodo = periodo === 'hoy' || periodo === 'semana' ? periodo : 'mes'
+    return <PanelCallCenter userId={user.id} nombre={perfil.nombre} periodo={p} />
+  }
 
   const [{ data: pacientes }, { data: psicologos }, { data: centros }] =
     await Promise.all([
@@ -188,7 +110,7 @@ export default async function DashboardPage() {
   const menores = pac.filter((p) => p.es_menor).length
   const psicologosActivos = psi.filter((p) => p.activo).length
 
-  const oneWeekAgo = new Date('2026-03-15')
+  const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
   const nuevosEstaSemana = pac.filter((p) => {
     if (!p.fecha_incorporacion) return false
@@ -229,7 +151,7 @@ export default async function DashboardPage() {
     fecha_incorporacion: p.fecha_incorporacion,
   }))
 
-  const today = formatDateES(new Date('2026-03-15'))
+  const today = formatDateES(new Date())
 
   return (
     <div className="page-pad" style={{ maxWidth: 1400 }}>

@@ -41,6 +41,24 @@ Es el único rol que puede crear, activar, desactivar y restablecer el acceso de
 En el formulario de Citas puede elegir cualquier centro y psicólogo y usar todas las acciones,
 incluido Bloquear/Desbloquear agenda sin restricción.
 
+#### Restablecer la contraseña de un usuario (psicólogo, agente o call center)
+
+Cuando alguien olvida su contraseña, un agente puede restablecerla desde dos sitios:
+
+- **Usuarios** (`/dashboard/usuarios`): en cada fila de psicólogo, agente o call center.
+- **Agentes** (`/dashboard/agentes`): en cada fila de agente (añadido el 25-09-2026, antes solo se podía activar/desactivar).
+
+En ambos hay los mismos dos botones, que llaman a `POST /api/usuarios/[id]`:
+
+| Botón | Qué hace | Cuándo usarlo |
+|---|---|---|
+| **Enviar acceso** | Supabase envía al email del usuario un enlace para crear una contraseña nueva. La actual sigue funcionando hasta que la cambie. | Lo normal. El usuario se la pone él mismo. |
+| **Generar contraseña** | Crea una contraseña temporal y la muestra en pantalla una sola vez (con botón Copiar). La anterior deja de funcionar. | Si el email no le llega o hay prisa. Hay que entregársela a mano. |
+
+Los botones se desactivan si la ficha no tiene cuenta de acceso (`auth_user_id` vacío); en ese caso hay que
+crear el usuario desde Usuarios. Ojo con las personas que tienen dos fichas (una de agente y otra de call center):
+cada ficha tiene su propia cuenta y su propio email.
+
 ### Psicólogo
 
 Al entrar aterriza en Citas. Su centro y su psicólogo vienen fijados por el email del login

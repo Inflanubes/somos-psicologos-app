@@ -100,6 +100,46 @@ export function tramoCubreCelda(tramos: Tramo[], fecha: string, filaHora: string
   return tramos.some((t) => t.dia_semana === dia && aMinutos(t.hora_inicio) <= m && m + 30 <= aMinutos(t.hora_fin))
 }
 
+/** Filas de media hora que ocupa una cita (60 minutos). */
+export const FILAS_POR_CITA = 2
+
+/**
+ * Reparte en columnas las citas de un mismo día que se solapan en el tiempo
+ * (cada cita ocupa FILAS_POR_CITA filas desde `fila`). Devuelve, por id, la
+ * columna asignada y el total de columnas de su grupo de solapamiento, para
+ * pintarlas lado a lado a ancho `1/total` como hace un calendario.
+ */
+export function distribuirColumnas(
+  citas: { id: string; fila: number }[],
+  filasPorCita = FILAS_POR_CITA,
+): Map<string, { col: number; total: number }> {
+  const resultado = new Map<string, { col: number; total: number }>()
+  const orden = [...citas].sort((a, b) => a.fila - b.fila || a.id.localeCompare(b.id))
+  let finColumnas: number[] = [] // fila en la que queda libre cada columna del grupo actual
+  let grupo: { id: string; col: number }[] = []
+  let finGrupo = -Infinity
+
+  const cerrarGrupo = () => {
+    for (const g of grupo) resultado.set(g.id, { col: g.col, total: finColumnas.length })
+    grupo = []
+    finColumnas = []
+  }
+
+  for (const c of orden) {
+    if (c.fila >= finGrupo) cerrarGrupo()
+    let col = finColumnas.findIndex((fin) => fin <= c.fila)
+    if (col === -1) {
+      col = finColumnas.length
+      finColumnas.push(0)
+    }
+    finColumnas[col] = c.fila + filasPorCita
+    finGrupo = Math.max(finGrupo, c.fila + filasPorCita)
+    grupo.push({ id: c.id, col })
+  }
+  cerrarGrupo()
+  return resultado
+}
+
 /** Un color suave por centro (fondo, borde izquierdo y texto). */
 export const PALETA_CENTROS = [
   { fondo: '#e3edff', borde: '#2f5aae', texto: '#1f3f80' },

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   sumarDias, lunesDeSemana, diasDeSemana, etiquetaRangoSemana, etiquetaDia,
   FILAS_HORA, filaDeHora, filtrarEventos, bloqueoCubreDia, tramoCubreCelda, colorCentro, etiquetaTipoCita,
+  distribuirColumnas,
   type EventoCalendario,
 } from './calendario'
 
@@ -93,6 +94,29 @@ describe('bloqueoCubreDia / tramoCubreCelda', () => {
     expect(tramoCubreCelda(tramos, '2026-09-28', '13:30')).toBe(true)
     expect(tramoCubreCelda(tramos, '2026-09-28', '14:00')).toBe(false)
     expect(tramoCubreCelda(tramos, '2026-09-29', '10:00')).toBe(false) // martes
+  })
+})
+
+describe('distribuirColumnas (citas de una hora que se solapan en un día)', () => {
+  it('una cita sola ocupa toda la columna', () => {
+    const r = distribuirColumnas([{ id: 'a', fila: 4 }])
+    expect(r.get('a')).toEqual({ col: 0, total: 1 })
+  })
+  it('dos citas a la misma hora se reparten en dos columnas', () => {
+    const r = distribuirColumnas([{ id: 'a', fila: 4 }, { id: 'b', fila: 4 }])
+    expect(r.get('a')).toEqual({ col: 0, total: 2 })
+    expect(r.get('b')).toEqual({ col: 1, total: 2 })
+  })
+  it('10:00 y 10:30 se solapan; 11:00 reutiliza la columna de las 10:00', () => {
+    const r = distribuirColumnas([{ id: 'c', fila: 6 }, { id: 'a', fila: 4 }, { id: 'b', fila: 5 }])
+    expect(r.get('a')).toEqual({ col: 0, total: 2 })
+    expect(r.get('b')).toEqual({ col: 1, total: 2 })
+    expect(r.get('c')).toEqual({ col: 0, total: 2 })
+  })
+  it('citas que no se solapan van cada una a ancho completo', () => {
+    const r = distribuirColumnas([{ id: 'a', fila: 4 }, { id: 'b', fila: 8 }])
+    expect(r.get('a')).toEqual({ col: 0, total: 1 })
+    expect(r.get('b')).toEqual({ col: 0, total: 1 })
   })
 })
 

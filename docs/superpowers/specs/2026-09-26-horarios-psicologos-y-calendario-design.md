@@ -291,7 +291,17 @@ Se añade un apartado al documento de cambios de Make que está fuera del repo, 
 `datosProcesados.tipo_cita` → columna `acciones_psicologos.tipo_cita` en el módulo que crea
 la fila de "Agendar cita".
 
-La app no puede rellenarlo por su cuenta porque la fila la crea Make después del webhook.
+La app no puede rellenarlo en el momento porque la fila la crea Make después del webhook.
+Lo que sí hace la migración 012 es **rellenar las citas ya existentes**: para cada fila
+`Agendar cita` con `tipo_cita` nulo busca en `formulario_citas_psicologos` el envío del
+mismo psicólogo (por nombre y centro en texto) con la misma `hora_cita`, hecho en los
+cinco minutos anteriores a `creado_en`, y copia su `tipo_cita` si hay exactamente una
+coincidencia. Es idempotente y solo toca filas con el tipo a nulo.
+
+Comprobado el 26-09-2026 en el blueprint exportado: el módulo 14 (upsert de "Agendar
+cita") ya tiene el campo mapeado, así que puede que solo haga falta probarlo. Las
+instrucciones para Sonia están en el apartado F de
+`Z:\Claude\Somos Psicológos\docs\make-cambios-2026-09-25.md`.
 
 ## Pruebas
 

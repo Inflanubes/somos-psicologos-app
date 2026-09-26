@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, Paciente, Perfil, TipoCita } from '@/types/database'
 import EventoSelect from '@/components/EventoSelect'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
-import { fetchCitasActivas, fetchBloqueosActivos, type EventoActivo } from '@/lib/eventos-activos'
+import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
 import { getCentroActivo, setCentroActivo, clearCentroActivo, type CentroActivo } from '@/lib/centro-activo'
+import { generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo } from '@/lib/disponibilidad'
+import { useDisponibilidad } from './useDisponibilidad'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -325,6 +327,34 @@ export default function PsicologosPage() {
   const requiereSelectorBloqueo = accion === 'Desbloquear agenda' || esModificarBloqueo
   const eventoActual = [...citasActivas, ...bloqueosActivos].find((e) => e.id === eventoSeleccionadoId)
 
+  // ── Disponibilidad (horario + huecos ocupados) ─────────────────────────────
+  // Agente (o sin perfil): modo aviso, todo seleccionable con aviso antes de enviar.
+  // Psicólogo y call center: modo restringido, solo huecos libres.
+  const modoDisponibilidad: 'aviso' | 'restringido' = !perfil || perfil.rol === 'agente' ? 'aviso' : 'restringido'
+  const psicologoDisp = pideTipoCita ? (psicologos.find((p) => p.id === effPsicologoId) ?? null) : null
+  const { datos: disp, cargando: cargandoDisp, error: errorDisp, recargar: recargarDisp } = useDisponibilidad(psicologoDisp)
+  const excluirAccionId = isCambiarCita ? eventoActual?.id : undefined
+  const huecos = useMemo(() => {
+    if (!disp || !fecha) return null
+    return generarHuecos({ ...disp, fecha, incluirMedias: modoDisponibilidad === 'aviso', excluirAccionId })
+  }, [disp, fecha, modoDisponibilidad, excluirAccionId])
+  const bloqueoDia = disp && fecha ? diaBloqueado(disp.bloqueos, fecha) : null
+  const diaNoLaborable = !!(disp && fecha && !trabajaEseDia(disp.tramos, fecha))
+  const nombreCentroDisp = centros.find((c) => c.id === effCentroId)?.nombre ?? ''
+  const restringido = modoDisponibilidad === 'restringido'
+  const sinHorasHoy = restringido && (!!bloqueoDia || diaNoLaborable)
+  const hayHuecoLibre = (huecos ?? []).some((h) => h.estado === 'libre')
+  const avisoDisp =
+    !restringido && disp && fecha && psicologoDisp
+      ? motivoAviso({ ...disp, fecha, hora, incluirMedias: true, excluirAccionId, nombrePsicologo: psicologoDisp.nombre, nombreCentro: nombreCentroDisp })
+      : null
+
+  // Modo restringido: si al cambiar la fecha la hora elegida deja de estar libre, se vacía.
+  useEffect(() => {
+    if (!restringido || !huecos || !hora) return
+    if (!huecos.some((h) => h.hora === hora && h.estado === 'libre')) setHora('')
+  }, [restringido, huecos, hora])
+
   // Load logged-in identity
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -490,6 +520,18 @@ export default function PsicologosPage() {
     }
     if (pideTipoCita && !tipoCita) {
       setError('Selecciona el tipo de cita (adulto, pareja o menor).')
+      return
+    }
+    if (pideTipoCita && (!fecha || !hora)) {
+      setError('Indica la fecha y la hora de la cita.')
+      return
+    }
+    if (pideTipoCita && restringido && cargandoDisp) {
+      setError('Espera un momento: se está cargando la disponibilidad.')
+      return
+    }
+    if (pideTipoCita && restringido && (sinHorasHoy || !(huecos ?? []).some((h) => h.hora === hora && h.estado === 'libre'))) {
+      setError('La hora elegida ya no está disponible. Elige otra.')
       return
     }
     if (isNuevoPaciente && (!npNombre.trim() || !npTelefono.trim())) {
@@ -755,6 +797,7 @@ export default function PsicologosPage() {
       })
 
       setSuccess(true)
+      recargarDisp()
       resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
@@ -1368,16 +1411,51 @@ export default function PsicologosPage() {
                   </FormField>
                   {isCambiarCita && <InfoBox>Nueva fecha y hora:</InfoBox>}
                   <div className="r-grid-2" style={{ gap: 16 }}>
-                    <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'}>
+                    <FormField label={isCambiarCita ? 'Nueva fecha' : 'Fecha de cita'} required>
                       <input
                         type="date"
                         value={fecha}
                         onChange={(e) => setFecha(e.target.value)}
+                        min={restringido ? todayISODate() : undefined}
                         style={inputStyle}
+                        required
                       />
                     </FormField>
-                    <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'}>
-                      <TimeSelect value={hora} onChange={setHora} style={inputStyle} />
+                    <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'} required>
+                      <TimeSelect
+                        value={hora}
+                        onChange={setHora}
+                        style={inputStyle}
+                        required
+                        disabled={cargandoDisp || sinHorasHoy || (restringido && !fecha)}
+                        opciones={huecos ?? undefined}
+                        soloLibres={restringido}
+                        placeholder={
+                          cargandoDisp ? 'Cargando disponibilidad…'
+                          : restringido && !fecha ? '— Primero elige la fecha —'
+                          : undefined
+                        }
+                      />
+                      {restringido && bloqueoDia && (
+                        <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                          Agenda bloqueada ese día ({etiquetaMotivo(bloqueoDia.motivo)}).
+                        </div>
+                      )}
+                      {restringido && !bloqueoDia && diaNoLaborable && psicologoDisp && (
+                        <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                          {psicologoDisp.nombre} no trabaja los {nombreDia(fecha)} en {nombreCentroDisp}.
+                        </div>
+                      )}
+                      {restringido && !sinHorasHoy && huecos && !hayHuecoLibre && (
+                        <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                          No quedan huecos libres ese día.
+                        </div>
+                      )}
+                      {errorDisp && (
+                        <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
+                          No se pudo cargar la disponibilidad: se muestran todas las horas.
+                        </div>
+                      )}
                     </FormField>
                   </div>
                 </>
@@ -1495,6 +1573,22 @@ export default function PsicologosPage() {
 
           {/* Submit */}
           <div style={{ marginTop: 28 }}>
+            {avisoDisp && (
+              <div
+                style={{
+                  background: '#fff7e6',
+                  border: '1.5px solid #f5d08a',
+                  borderRadius: 10,
+                  padding: '12px 16px',
+                  marginBottom: 14,
+                  color: '#8a5a00',
+                  fontSize: 13.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                ⚠️ <strong>Aviso:</strong> {avisoDisp}. Puedes agendar igualmente.
+              </div>
+            )}
             {(() => {
               const submitDisabled =
                 loading || !accion ||

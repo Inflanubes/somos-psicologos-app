@@ -24,6 +24,7 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 
 | Pantalla | Ruta | Agente | Psicólogo | Call center |
 |---|---|:-:|:-:|:-:|
+| Calendario (agenda semanal de todos) | `/dashboard/calendario` | Sí | No | Sí (página de entrada) |
 | Panel General | `/dashboard` | Sí (datos globales) | No | Sí, pero solo **su actividad** ("Mi actividad") |
 | Estadísticas | `/dashboard/psicologos/stats` | Sí | No | No |
 | Pacientes | `/dashboard/pacientes` | Todos los pacientes | Solo los suyos (todas sus filas de psicólogo, por email) | No |
@@ -71,13 +72,22 @@ baja y modificar bloqueo personal están siempre disponibles.
 
 ### Call center
 
-Al entrar aterriza en Citas. Puede elegir **cualquier centro y cualquier psicólogo** y usar las
+Al entrar aterriza en **Calendario**. En Citas puede elegir **cualquier centro y cualquier psicólogo** y usar las
 acciones **Agendar cita, Cambiar cita, Cancelar cita y Añadir nuevo paciente**. No ve las acciones
 de bloqueo de agenda (bloquear, desbloquear, vacaciones, asuntos propios, baja, modificar bloqueo).
 En el Panel General ve **solo su propia actividad** ("Mi actividad", componente `PanelCallCenter`): citas agendadas, cambiadas y canceladas y pacientes añadidos por él, con filtro hoy / esta semana / este mes, gráfico de citas por día, reparto por centro y psicólogo y sus últimas acciones. Nunca ve los datos globales de la clínica ni la tabla de pacientes. No ve pacientes, equipo, usuarios ni comunicaciones.
 
 Cada cita que registra queda atribuida a su usuario (`created_by` con su nombre y
 `origen = 'call_center'` en `acciones_psicologos`), así que conviene **un acceso por persona**.
+
+En **Calendario** ve la agenda semanal de todos los psicólogos: cada cita activa aparece como un bloque
+de una hora con el color de su centro, el nombre del psicólogo, las **iniciales** del paciente (nunca el
+nombre) y el tipo de cita; los bloqueos (vacaciones, asuntos propios, baja, bloqueo) ocupan la fila "Día".
+Se filtra por centro, tipo de cita y psicólogo; al filtrar por un psicólogo se sombrean sus horas de
+trabajo según el horario definido en Usuarios. Solo se ve lo gestionado desde la app: lo que un psicólogo
+apunte a mano en Google Calendar no aparece. El filtro por tipo de cita depende de que Make guarde
+`tipo_cita` al agendar (hecho desde el 26-09-2026; ver `docs/make-cambios-2026-09-25.md`, apartado F,
+fuera del repo).
 
 ## Quién ha añadido cada paciente
 
@@ -131,6 +141,8 @@ uno o varios tramos), y la persona tiene el permiso `psicologos.citas_media_hora
 - Alta y listado por tipo: `app/api/usuarios/route.ts` (el GET separa `agentes` y `call_center`
   cruzando `agentes.auth_user_id` con `perfiles.rol`).
 - Sesión obligatoria en `/dashboard/*`: `proxy.ts`.
+- Calendario: `app/dashboard/calendario/page.tsx` (datos y filtros), `app/dashboard/calendario/AgendaSemanal.tsx`
+  (rejilla) y `lib/calendario.ts` (fechas, filas, filtros, colores; con tests).
 
 ## Aviso de seguridad
 

@@ -13,6 +13,7 @@
 ## Global Constraints
 
 - **NO empezar hasta que Sonia lo autorice explícitamente.** La especificación está aprobada; la ejecución no.
+- **La migración 014 conserva psicólogos reales (con calendario), agentes, perfiles, centros y horarios.** Solo borra pacientes, citas, historial y las fichas de psicólogo sin calendario. Nunca ampliar el borrado.
 - Antes de la Tarea 1: escenario de Make **desactivado** y cola del webhook vacía; workflow de Dante **inactivo**; Elias avisado (§0 de la especificación).
 - Valores de tipo de consulta en todo el sistema: exactamente `adulto`, `pareja`, `menor` (los de `TipoCita` en `types/database.ts`). Nunca "adultos", "infantil" ni mayúsculas en datos; solo en etiquetas de pantalla.
 - Columnas de psicólogo en `pacientes`: `psicologo_adultos_id`, `psicologo_pareja_id`, `psicologo_infantil_id`. `pacientes.psicologo_id` desaparece.
@@ -70,30 +71,38 @@
 -- ============================================================================
 -- 014 — Modelo nuevo: paciente con 3 psicólogos por tipo, una ficha por
 --       psicólogo (centros en tabla aparte), centro_id en citas.
--- BORRA TODOS LOS DATOS DE PRUEBA (decisión de Sonia, 26-09-2026).
+-- BORRA pacientes, citas e historial de prueba y las fichas de psicólogo SIN
+-- calendario. CONSERVA psicólogos reales (fusionando sus fichas por centro),
+-- agentes, perfiles, centros y horarios (decisión de Sonia, 27-09-2026).
 -- Requisitos: Make desactivado, Dante inactivo, Elias avisado.
 -- Idempotente salvo el borrado (que solo tiene efecto la primera vez).
 -- ============================================================================
 BEGIN;
 
--- ── 1. Borrado de datos de prueba ───────────────────────────────────────────
+-- ── 1. Borrado de datos de PACIENTES Y CITAS de prueba ──────────────────────
+--     Se conservan: psicólogos reales (con calendario), agentes, perfiles de
+--     ambos, centros y horarios de los psicólogos reales.
 TRUNCATE TABLE
   public.acciones_historial,
   public.acciones_psicologos,
   public.acciones_call_center,
-  public.horarios_psicologos,
   public.asociados_menores,
   public.historial_estados,
   public.formulario_citas_psicologos,
   public.pacientes
 RESTART IDENTITY CASCADE;
-DELETE FROM public.perfiles WHERE rol = 'psicologo';
-DELETE FROM public.psicologos;
 
--- ── 2. psicologos: una fila por persona ─────────────────────────────────────
+-- 1b. Fichas de psicólogo DE PRUEBA = sin calendario real. Se borran con su
+--     perfil y sus horarios. (Sus cuentas de Auth se borran a mano después.)
+CREATE TEMP TABLE psi_prueba AS
+  SELECT id FROM public.psicologos
+  WHERE calendar_id IS NULL OR btrim(calendar_id) IN ('', 'test');
+DELETE FROM public.perfiles            WHERE psicologo_id IN (SELECT id FROM psi_prueba);
+DELETE FROM public.horarios_psicologos WHERE psicologo_id IN (SELECT id FROM psi_prueba);
+DELETE FROM public.psicologos          WHERE id           IN (SELECT id FROM psi_prueba);
+
+-- ── 2. psicologos: columnas nuevas (las de centro se quitan al final, tras fusionar)
 ALTER TABLE public.psicologos
-  DROP COLUMN IF EXISTS centro_id,
-  DROP COLUMN IF EXISTS centro,
   ADD COLUMN IF NOT EXISTS tipos_consulta text[] NOT NULL DEFAULT '{}';
 ALTER TABLE public.psicologos DROP CONSTRAINT IF EXISTS psicologos_tipos_consulta_validos;
 ALTER TABLE public.psicologos ADD CONSTRAINT psicologos_tipos_consulta_validos
@@ -108,6 +117,65 @@ CREATE TABLE IF NOT EXISTS public.psicologos_centros (
   PRIMARY KEY (psicologo_id, centro_id)
 );
 CREATE INDEX IF NOT EXISTS psicologos_centros_centro_idx ON public.psicologos_centros (centro_id);
+
+-- ── 3b. Fusión de fichas por centro → una ficha por persona ─────────────────
+--     Persona = mismo email (o mismo nombre si no hay email). Sobrevive la ficha
+--     a la que apunta un perfil; si ninguna, la más antigua. Los centros de todas
+--     las fichas pasan a psicologos_centros; el perfil se reapunta; el horario
+--     de las fichas que se van se descarta (el horario es por persona).
+CREATE TEMP TABLE psi_persona AS
+  SELECT id, nombre, centro_id, creado_en,
+         COALESCE(NULLIF(lower(btrim(email)), ''), 'nombre:' || lower(btrim(nombre))) AS clave
+  FROM public.psicologos;
+CREATE TEMP TABLE psi_superviviente AS
+  SELECT DISTINCT ON (clave) clave, id AS id_sup
+  FROM psi_persona p
+  ORDER BY clave,
+           (EXISTS (SELECT 1 FROM public.perfiles pf WHERE pf.psicologo_id = p.id)) DESC,
+           creado_en ASC, id;
+
+-- Tabla de equivalencias para Elias (queda en la base para consultarla luego).
+CREATE TABLE IF NOT EXISTS public.migracion_014_ids (
+  id_antiguo uuid PRIMARY KEY,
+  id_nuevo   uuid NOT NULL,
+  nombre     text,
+  centro_id  uuid
+);
+INSERT INTO public.migracion_014_ids (id_antiguo, id_nuevo, nombre, centro_id)
+  SELECT p.id, s.id_sup, p.nombre, p.centro_id
+  FROM psi_persona p JOIN psi_superviviente s USING (clave)
+  WHERE p.id <> s.id_sup
+ON CONFLICT (id_antiguo) DO NOTHING;
+
+INSERT INTO public.psicologos_centros (psicologo_id, centro_id)
+  SELECT DISTINCT s.id_sup, p.centro_id
+  FROM psi_persona p JOIN psi_superviviente s USING (clave)
+  WHERE p.centro_id IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+UPDATE public.perfiles pf
+  SET psicologo_id = s.id_sup
+  FROM psi_persona p JOIN psi_superviviente s USING (clave)
+  WHERE pf.psicologo_id = p.id AND p.id <> s.id_sup;
+
+DELETE FROM public.psicologos
+  WHERE id IN (SELECT p.id FROM psi_persona p JOIN psi_superviviente s USING (clave) WHERE p.id <> s.id_sup);
+
+-- Tipos de consulta desde el sufijo del nombre ("MARTA - PAREJAS") y nombre limpio.
+-- Sin sufijo → tipos vacíos: la app ofrece los tres y Sonia los fija en Usuarios.
+UPDATE public.psicologos SET tipos_consulta = CASE
+  WHEN nombre ~* '\s-\s*ADULTOS?\s*$'  THEN ARRAY['adulto']
+  WHEN nombre ~* '\s-\s*PAREJAS?\s*$'  THEN ARRAY['pareja']
+  WHEN nombre ~* '\s-\s*INFANTIL\s*$'  THEN ARRAY['menor']
+  ELSE tipos_consulta END;
+UPDATE public.psicologos
+  SET nombre = btrim(regexp_replace(nombre, '\s*-\s*(ADULTOS?|PAREJAS?|INFANTIL)\s*$', '', 'i'));
+UPDATE public.perfiles pf SET nombre = p.nombre FROM public.psicologos p WHERE pf.psicologo_id = p.id;
+
+-- Ahora sí: fuera las columnas de centro de la ficha.
+ALTER TABLE public.psicologos
+  DROP COLUMN IF EXISTS centro_id,
+  DROP COLUMN IF EXISTS centro;
 
 -- ── 4. Vista con el aspecto de la tabla antigua (para Dante y como respaldo) ─
 CREATE OR REPLACE VIEW public.psicologos_por_centro AS
@@ -200,10 +268,12 @@ $$;
 COMMIT;
 
 -- Comprobaciones:
--- SELECT count(*) FROM pacientes;                       -- 0
--- SELECT count(*) FROM psicologos;                      -- 0
+-- SELECT count(*) FROM pacientes;                                       -- 0
+-- SELECT nombre, email, tipos_consulta FROM psicologos ORDER BY nombre;  -- una fila por persona real, sin sufijos
+-- SELECT * FROM psicologos_por_centro ORDER BY nombre, centro;           -- una fila por persona × centro
+-- SELECT * FROM migracion_014_ids;                                       -- fichas fusionadas (para Elias)
+-- SELECT count(*) FROM agentes;                                          -- igual que antes
 -- SELECT column_name FROM information_schema.columns WHERE table_name='pacientes' AND column_name LIKE 'psicologo_%';  -- 3 filas
--- SELECT * FROM psicologos_por_centro;                  -- vacía, sin error
 ```
 
 - [ ] **Step 2: Ejecutar en el SQL Editor de Supabase** (lo hace Sonia o el agente con acceso). Aceptar el aviso de operaciones destructivas.
@@ -214,17 +284,18 @@ Run:
 ```bash
 cd somos-app && URL=$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2- | tr -d '"\r') && KEY=$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2- | tr -d '"\r') && curl -s "$URL/rest/v1/psicologos_por_centro?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY"
 ```
-Expected: `[]` (sin error PGRST). Si devuelve error de permisos, ejecutar `ALTER VIEW public.psicologos_por_centro OWNER TO postgres; GRANT SELECT ON public.psicologos_por_centro TO anon, authenticated;`.
+Expected: lista con una fila por psicólogo real × centro (sin error PGRST). Si devuelve error de permisos, ejecutar `ALTER VIEW public.psicologos_por_centro OWNER TO postgres; GRANT SELECT ON public.psicologos_por_centro TO anon, authenticated;`.
 
-- [ ] **Step 4: Comprobar la Review Focus 5** (cita sin centro): insertar y borrar una fila de prueba en el SQL Editor:
+- [ ] **Step 4: Comprobar la Review Focus 5** (cita sin centro): insertar y borrar una fila de prueba en el SQL Editor, usando el id de un psicólogo real:
 
 ```sql
-INSERT INTO psicologos (nombre, email, activo) VALUES ('tmp', 'tmp@x.es', true) RETURNING id;
--- con ese id:
-INSERT INTO acciones_psicologos (psicologo_id, accion, activo) VALUES ('<id>', 'Bloquear agenda', true);
+INSERT INTO acciones_psicologos (psicologo_id, accion, activo) VALUES ('<id de un psicólogo real>', 'Bloquear agenda', true);
 SELECT accion, centro_id FROM acciones_historial;   -- 1 fila, centro_id NULL, sin error
-DELETE FROM acciones_psicologos; DELETE FROM acciones_historial; DELETE FROM psicologos WHERE id = '<id>';
+DELETE FROM acciones_psicologos; DELETE FROM acciones_historial;
 ```
+Nota: el aviso a Elias se dispara con ese insert; avisarle de que es una prueba.
+
+- [ ] **Step 4b: Cuentas de Auth de las fichas de prueba borradas** — en Supabase › Authentication, borrar a mano los usuarios cuyos emails ya no tienen perfil (`SELECT email FROM auth.users u WHERE NOT EXISTS (SELECT 1 FROM perfiles p WHERE p.id = u.id)`). Los agentes y psicólogos reales conservan su cuenta.
 
 - [ ] **Step 5: Commit del archivo** (la carpeta `Supabase/` no está en git; guardar el archivo y anotarlo en `docs/make-cambios-2026-09-26.md` de la Tarea 8 como "ejecutada el <fecha>").
 
@@ -1100,7 +1171,7 @@ Incluir la sección "Dante" de la Tarea 9 y la lista de pruebas de la Tarea 10.
 
 - [ ] **Step 1: Desplegar la app** — PR de `modelo-pacientes-psicologos` a `main`, merge, comprobar el despliegue.
 
-- [ ] **Step 2: Recrear psicólogos** desde `/dashboard/usuarios` (nombres sin sufijo; centros y tipos reales; `calendar_id` de prueba). Copiar la tabla `id | nombre | centros | tipos` al documento y enviársela a Elias con la nota "ids nuevos; cada aviso trae `centro_id`".
+- [ ] **Step 2: Revisar los psicólogos reales** en `/dashboard/usuarios`: la migración los ha conservado con una sola ficha, nombre sin sufijo y centros fusionados. Completar `tipos_consulta` en los que hayan quedado vacíos y comprobar centros. Enviar a Elias la tabla de `migracion_014_ids` (`id_antiguo → id_nuevo`, solo las fichas fusionadas; el resto de ids no cambia) con la nota "cada aviso trae ahora `centro_id`". Crear psicólogos de prueba nuevos solo si hacen falta para las pruebas.
 
 - [ ] **Step 3: Activar Make** (Tarea 8) y **Dante** (Tarea 9).
 

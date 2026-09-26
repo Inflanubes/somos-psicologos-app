@@ -14,9 +14,9 @@ Lee, en este orden, antes de tocar nada:
 4. `docs/make-cambios-2026-09-25.md` (estado actual del escenario de Make; los números de módulo del plan son los de ahí).
 
 Contexto imprescindible:
-- Los datos actuales de Supabase son de prueba y la migración 014 los borra. Es intencionado.
+- La migración 014 borra pacientes, citas e historial (datos de prueba) y las fichas de psicólogo sin calendario. CONSERVA los psicólogos reales (con `calendar_id`), fusionando sus fichas por centro, y los agentes, perfiles, centros y horarios. No amplíes el borrado bajo ningún concepto.
 - Antes de ejecutar la migración: el escenario de Make "Formulario Citas Psicólogos v2 Telegram" debe estar desactivado con la cola del webhook vacía, y el workflow de n8n "Dante" inactivo. Esto lo hace Sonia; pídeselo y espera confirmación antes de la Tarea 1.
-- El aviso a Elias (`somos.eltodi.net`) sale de un trigger de Supabase; tras recrear los psicólogos hay que pasarle la tabla de ids nuevos (Tarea 10).
+- El aviso a Elias (`somos.eltodi.net`) sale de un trigger de Supabase; tras la migración hay que pasarle la tabla `migracion_014_ids` (fichas fusionadas) y avisarle de que llega `centro_id` (Tarea 10).
 - Valores de tipo de consulta en datos: exactamente `adulto`, `pareja`, `menor`. Columnas nuevas de `pacientes`: `psicologo_adultos_id`, `psicologo_pareja_id`, `psicologo_infantil_id`. Tabla `psicologos_centros`, vista `psicologos_por_centro`, `psicologos.tipos_consulta`, `centro_id` en `acciones_psicologos` y `acciones_historial`.
 - `pacientes.telefono` guarda un teléfono (app) o el chat id de Telegram (Dante). No crees columna nueva para eso.
 - Producción despliega desde `main`. Trabaja en la rama `modelo-pacientes-psicologos` y no hagas merge hasta la Tarea 10.

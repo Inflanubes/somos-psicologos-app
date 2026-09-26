@@ -15,9 +15,10 @@ especificación.
 
 ## 2. Premisas confirmadas (26-09-2026)
 
-- **Todos los datos actuales son de prueba y se pueden borrar.** No hay que fusionar fichas ni
-  migrar histórico: se vacían las tablas, se ejecuta el modelo nuevo y se recrean los psicólogos
-  de prueba. Esto elimina el mayor riesgo del cambio B.
+- **Pacientes, citas e historial son de prueba y se borran.** Los psicólogos con calendario y
+  los agentes son reales y **se conservan** (corrección de Sonia, 27-09-2026): la migración
+  fusiona las fichas por centro de cada psicólogo en una sola y guarda la tabla de
+  equivalencias de ids para Elias. Las fichas sin calendario son de prueba y se borran.
 - **`pacientes.telefono` = chat id de Telegram cuando el alta la hace Dante.** Es deliberado:
   Dante identifica al paciente por `telefono = chat_id` (herramientas ConsultarPaciente,
   RegistrarPaciente, EjecutarAccion), y Make envía las confirmaciones a ese campo como chat id.

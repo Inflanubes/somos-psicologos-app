@@ -10,11 +10,14 @@ Documento hermano: `2026-09-26-modelo-pacientes-psicologos-riesgos.md` (estudio 
 - Todo lo decidido está en este documento; no hay decisiones fuera de él.
 - Orden de trabajo cuando Sonia dé luz verde: §8 "Plan de ejecución". Cada paso deja el
   sistema funcionando por separado.
-- Los datos actuales de Supabase son de prueba y **se borran** en la migración 014. No hay
-  histórico que conservar.
+- La migración 014 **borra pacientes, citas e historial** (datos de prueba) y las fichas de
+  psicólogo sin calendario. **Conserva** los psicólogos reales (los que tienen `calendar_id`),
+  fusionando sus fichas por centro en una sola, y también agentes, perfiles, centros y
+  horarios. Las cuentas de acceso no se tocan.
 - Make y el agente Dante (n8n) se paran durante la migración y se reactivan al final.
-- Elias (`somos.eltodi.net`) recibe aviso de que los ids de psicólogo son nuevos y de que llega
-  `centro_id` en cada aviso. Se le pasa la tabla de ids nuevos cuando se recreen los psicólogos.
+- Elias (`somos.eltodi.net`) recibe aviso de que llega `centro_id` en cada aviso y la tabla
+  `migracion_014_ids` con las fichas fusionadas (`id_antiguo → id_nuevo`); el resto de ids de
+  psicólogo no cambia.
 - Contexto de arquitectura previo: memoria del proyecto y `docs/make-cambios-2026-09-25.md`.
 
 ## 1. Objetivo
@@ -43,7 +46,7 @@ Documento hermano: `2026-09-26-modelo-pacientes-psicologos-riesgos.md` (estudio 
 | `pacientes.telefono` | Sigue siendo teléfono (app) o chat id de Telegram (Dante, fase de pruebas). Sin columna nueva. |
 | Make, módulo 3 | Busca el psicólogo por `id` (`datosProcesados.psicologo_id`, nuevo en el envío). |
 | Dante | Filtra psicólogos con la vista `psicologos_por_centro`; agenda en el `centro_id` de la ficha del paciente; solo pregunta el centro si ese psicólogo no está en él. |
-| Datos | Se borran todos los de prueba; los psicólogos se recrean desde `/dashboard/usuarios`. |
+| Datos | Se borran pacientes, citas e historial de prueba y las fichas de psicólogo sin calendario. Los psicólogos reales y los agentes se conservan; las fichas duplicadas por centro se fusionan en una (sobrevive la que apunta el perfil) y sus centros pasan a `psicologos_centros`. |
 
 ## 3. Modelo de datos (migración 014)
 
@@ -96,12 +99,18 @@ Restricción: al menos una de las tres columnas de psicólogo rellena (CHECK).
 |---|---|
 | `centro_id uuid REFERENCES centros(id)` | Nueva en ambas. El trigger `registrar_historial_accion` la copia. El aviso a Elias la incluye automáticamente (`to_jsonb`). |
 
-### 3.7 Borrado de datos de prueba
+### 3.7 Borrado y fusión de datos
 
-En este orden: `acciones_historial`, `acciones_psicologos`, `horarios_psicologos`,
-`asociados_menores`, `historial_estados`, `pacientes`, `perfiles` (solo los de rol psicólogo),
-`psicologos`. Las cuentas de Auth de psicólogos se borran desde el panel de Supabase o se
-recrean con otro correo. `centros`, `agentes` y las cuentas de agentes se conservan.
+Se vacían `acciones_historial`, `acciones_psicologos`, `acciones_call_center`,
+`asociados_menores`, `historial_estados`, `formulario_citas_psicologos` y `pacientes`.
+Se borran las fichas de `psicologos` sin calendario real (`calendar_id` nulo, vacío o
+`test`), con su perfil y sus horarios; sus cuentas de Auth se borran a mano.
+Los psicólogos reales se conservan: sus fichas por centro se fusionan en una (mismo email;
+sobrevive la que apunta un perfil, si no la más antigua), los centros pasan a
+`psicologos_centros`, `tipos_consulta` se deduce del sufijo del nombre ("- PAREJAS" →
+`pareja`) y el nombre se limpia. La tabla `migracion_014_ids` guarda `id_antiguo → id_nuevo`
+de las fichas fusionadas para Elias. `agentes`, `centros`, `perfiles` de agentes y los
+horarios de los psicólogos reales no se tocan.
 
 ### 3.8 Tipos TypeScript
 
@@ -218,8 +227,8 @@ El workflow no está en git: exportar antes de tocar y guardar en `n8n/workflows
 3. **App**: tipos, API de usuarios, selector de centro, disponibilidad, Citas, alta de paciente,
    Mis pacientes, calendario, estadísticas. Tests de `lib/` actualizados. `npm run build` limpio.
    Commit y despliegue.
-4. **Recrear psicólogos de prueba** desde `/dashboard/usuarios` (nombres sin sufijo, centros y
-   tipos). Anotar la tabla de ids nuevos para Elias.
+4. **Revisar los psicólogos reales** en `/dashboard/usuarios` (tipos de consulta que hayan
+   quedado vacíos, centros). Pasar a Elias la tabla `migracion_014_ids`.
 5. **Make**: cambios de §6. Reaprender el webhook con un envío desde la app. Activar.
 6. **Dante**: cambios de §7. Activar.
 7. **Pruebas de aceptación** (§9).

@@ -158,6 +158,46 @@ UPDATE public.perfiles pf
   FROM psi_persona p JOIN psi_superviviente s USING (clave)
   WHERE pf.psicologo_id = p.id AND p.id <> s.id_sup;
 
+-- La ficha superviviente hereda de las otras lo que tenga vacío: teléfono,
+-- calendario, email y permisos. Así no se pierde ningún dato al fusionar.
+UPDATE public.psicologos s
+  SET telefono         = COALESCE(NULLIF(s.telefono, ''),    d.telefono),
+      calendar_id      = COALESCE(NULLIF(s.calendar_id, ''), d.calendar_id),
+      email            = COALESCE(NULLIF(s.email, ''),       d.email),
+      puede_bloquear   = COALESCE(s.puede_bloquear,   d.puede_bloquear),
+      citas_media_hora = COALESCE(s.citas_media_hora, d.citas_media_hora),
+      activo           = s.activo OR d.activo
+  FROM (
+    SELECT sv.id_sup,
+           max(NULLIF(p.telefono, ''))    AS telefono,
+           max(NULLIF(p.calendar_id, '')) AS calendar_id,
+           max(NULLIF(p.email, ''))       AS email,
+           bool_or(p.puede_bloquear)      AS puede_bloquear,
+           bool_or(p.citas_media_hora)    AS citas_media_hora,
+           bool_or(p.activo)              AS activo
+    FROM psi_persona pp
+    JOIN psi_superviviente sv USING (clave)
+    JOIN public.psicologos p ON p.id = pp.id
+    GROUP BY sv.id_sup
+  ) d
+  WHERE s.id = d.id_sup;
+
+-- Horario: si la superviviente no tiene tramos, hereda los de la primera ficha
+-- hermana que los tenga (el horario es por persona, no por centro).
+INSERT INTO public.horarios_psicologos (psicologo_id, dia_semana, hora_inicio, hora_fin)
+  SELECT sv.id_sup, h.dia_semana, h.hora_inicio, h.hora_fin
+  FROM psi_superviviente sv
+  JOIN LATERAL (
+    SELECT pp.id
+    FROM psi_persona pp
+    WHERE pp.clave = sv.clave AND pp.id <> sv.id_sup
+      AND EXISTS (SELECT 1 FROM public.horarios_psicologos hh WHERE hh.psicologo_id = pp.id)
+    ORDER BY pp.creado_en, pp.id
+    LIMIT 1
+  ) donante ON true
+  JOIN public.horarios_psicologos h ON h.psicologo_id = donante.id
+  WHERE NOT EXISTS (SELECT 1 FROM public.horarios_psicologos h2 WHERE h2.psicologo_id = sv.id_sup);
+
 DELETE FROM public.psicologos
   WHERE id IN (SELECT p.id FROM psi_persona p JOIN psi_superviviente s USING (clave) WHERE p.id <> s.id_sup);
 

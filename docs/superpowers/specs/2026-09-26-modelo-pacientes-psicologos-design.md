@@ -106,7 +106,8 @@ Se vacían `acciones_historial`, `acciones_psicologos`, `acciones_call_center`,
 Se borran las fichas de `psicologos` sin calendario real (`calendar_id` nulo, vacío o
 `test`), con su perfil y sus horarios; sus cuentas de Auth se borran a mano.
 Los psicólogos reales se conservan: sus fichas por centro se fusionan en una (mismo email;
-sobrevive la que apunta un perfil, si no la más antigua), los centros pasan a
+sobrevive la que apunta un perfil, si no la más antigua, y hereda de las otras teléfono,
+calendario, email, permisos y horario si los tenía vacíos), los centros pasan a
 `psicologos_centros`, `tipos_consulta` se deduce del sufijo del nombre ("- PAREJAS" →
 `pareja`) y el nombre se limpia. La tabla `migracion_014_ids` guarda `id_antiguo → id_nuevo`
 de las fichas fusionadas para Elias. `agentes`, `centros`, `perfiles` de agentes y los

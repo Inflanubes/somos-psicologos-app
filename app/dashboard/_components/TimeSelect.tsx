@@ -14,6 +14,7 @@ for (let h = 8; h <= 21; h++) {
 const SUFIJO: Record<EstadoHueco, string> = {
   libre: '',
   ocupado: ' · ocupada',
+  bloqueado: ' · agenda bloqueada',
   fuera_horario: ' · fuera de horario',
   media_hora: ' · media hora no activa',
 }
@@ -61,7 +62,8 @@ export default function TimeSelect({
     >
       <option value="">{placeholder ?? '— Selecciona hora —'}</option>
       {lista.map((h) => (
-        <option key={h.hora} value={h.hora}>
+        // Una hora con cita no se puede elegir en ningún rol: dos pacientes no pueden solaparse.
+        <option key={h.hora} value={h.hora} disabled={h.estado === 'ocupado'}>
           {h.hora}
           {SUFIJO[h.estado]}
         </option>

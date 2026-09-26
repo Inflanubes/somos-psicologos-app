@@ -127,11 +127,16 @@ describe('generarHuecos: ocupación', () => {
     const h = generarHuecos({ ...base, citas: [{ fecha: LUNES, hora: '10:00', accionId: 'a1' }], excluirAccionId: 'a1' })
     expect(estado(h, '10:00')).toBe('libre')
   })
-  it('un bloqueo del día ocupa todas las horas', () => {
+  it('un bloqueo del día marca todas las horas como bloqueadas (no ocupadas por una cita)', () => {
     const h = generarHuecos({ ...base, bloqueos: [{ inicio: LUNES, fin: LUNES }] })
-    expect(h.every((x) => x.estado === 'ocupado')).toBe(true)
+    expect(h.every((x) => x.estado === 'bloqueado')).toBe(true)
   })
-  it('prioridad: ocupado > fuera_horario > media_hora', () => {
+  it('en un día bloqueado, la hora con cita sigue siendo ocupada (prima sobre bloqueado)', () => {
+    const h = generarHuecos({ ...base, bloqueos: [{ inicio: LUNES, fin: LUNES }], citas: [{ fecha: LUNES, hora: '10:00' }] })
+    expect(estado(h, '10:00')).toBe('ocupado')
+    expect(estado(h, '11:00')).toBe('bloqueado')
+  })
+  it('prioridad: ocupado > bloqueado > fuera_horario > media_hora', () => {
     const h = generarHuecos({
       ...base, incluirMedias: true,
       tramos: [t(1, '09:00', '14:00')],

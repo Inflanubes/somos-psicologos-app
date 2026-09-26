@@ -124,8 +124,10 @@ uno o varios tramos), y la persona tiene el permiso `psicologos.citas_media_hora
     sin cita activa que se solape (contando todas las fichas de la persona, porque comparten calendario) y sin
     bloqueo de agenda ese día. Si el día no es laborable o está bloqueado, el selector de hora se desactiva y
     se explica el motivo.
-  - **Agente** puede elegir cualquier fecha y hora; si se sale del horario, elige una hora ocupada o una media
-    hora no activa, ve un aviso ámbar encima del botón de enviar y puede continuar.
+  - **Agente** puede elegir cualquier fecha y hora fuera del horario, en una media hora no activa o en un día
+    con bloqueo de agenda: ve un aviso ámbar encima del botón de enviar y puede continuar. Lo que **nadie** puede
+    hacer, tampoco el agente, es agendar sobre una hora que ya tiene cita: esa hora aparece atenuada como
+    "10:00 · ocupada" y no se puede elegir (un psicólogo no atiende a dos pacientes a la vez).
   - **Fecha y hora son obligatorias** al agendar o cambiar una cita (antes del 26-09-2026 se podía enviar sin ellas).
   - Si la app no consigue consultar la disponibilidad (fallo de base de datos), psicólogo y call center ven el
     selector de hora desactivado con el texto "Ahora mismo no podemos consultar la disponibilidad. Contacta con

@@ -12,7 +12,12 @@ export type CitaOcupada = { fecha: string; hora: string; accionId?: string }
 /** Bloqueo de días completos, ambos incluidos. `fin` nulo = sin fin. */
 export type Bloqueo = { inicio: string; fin: string | null; motivo?: string | null }
 
-export type EstadoHueco = 'libre' | 'ocupado' | 'fuera_horario' | 'media_hora'
+/**
+ * ocupado = ya hay una cita que se solapa (nadie puede agendar encima, tampoco el agente);
+ * bloqueado = día con bloqueo de agenda; fuera_horario / media_hora = fuera de las reglas
+ * del psicólogo. Los tres últimos se ocultan a psicólogo y call center y avisan al agente.
+ */
+export type EstadoHueco = 'libre' | 'ocupado' | 'bloqueado' | 'fuera_horario' | 'media_hora'
 export type Hueco = { hora: string; estado: EstadoHueco }
 
 export type ParamsHuecos = {
@@ -79,8 +84,10 @@ export function generarHuecos(p: ParamsHuecos): Hueco[] {
   for (let m = PRIMER_INICIO_MIN; m <= ULTIMO_INICIO_MIN; m += paso) {
     const fin = m + DURACION_CITA_MIN
     let estado: EstadoHueco = 'libre'
-    if (bloqueado || iniciosOcupados.some((c) => c < fin && c + DURACION_CITA_MIN > m)) {
+    if (iniciosOcupados.some((c) => c < fin && c + DURACION_CITA_MIN > m)) {
       estado = 'ocupado'
+    } else if (bloqueado) {
+      estado = 'bloqueado'
     } else if (p.tramos.length > 0 && !tramosDia.some(([ini, f]) => ini <= m && fin <= f)) {
       estado = 'fuera_horario'
     } else if (m % 60 !== 0 && !p.mediaHora) {
@@ -121,6 +128,7 @@ export function motivoAviso(p: ParamsAviso): string | null {
   const hueco = generarHuecos(p).find((h) => h.hora === p.hora)
   if (!hueco || hueco.estado === 'libre') return null
   if (hueco.estado === 'ocupado') return `${p.nombrePsicologo} ya tiene una cita a las ${p.hora}`
+  if (hueco.estado === 'bloqueado') return `la agenda de ${p.nombrePsicologo} está bloqueada ese día`
   if (hueco.estado === 'fuera_horario') return `las ${p.hora} quedan fuera del horario de ${p.nombrePsicologo} en ${p.nombreCentro}`
   return `${p.nombrePsicologo} no tiene activadas las citas a y media`
 }

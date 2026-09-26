@@ -352,10 +352,13 @@ export default function PsicologosPage() {
       ? motivoAviso({ ...disp, fecha, hora, incluirMedias: true, excluirAccionId, nombrePsicologo: psicologoDisp.nombre, nombreCentro: nombreCentroDisp })
       : null
 
-  // Modo restringido: si al cambiar la fecha la hora elegida deja de estar libre, se vacía.
+  // Si al cambiar la fecha la hora elegida deja de ser válida, se vacía: en modo
+  // restringido solo vale un hueco libre; en modo aviso solo se veta la hora ya
+  // ocupada por otra cita (dos pacientes no pueden solaparse, tampoco para el agente).
   useEffect(() => {
-    if (!restringido || !huecos || !hora) return
-    if (!huecos.some((h) => h.hora === hora && h.estado === 'libre')) setHora('')
+    if (!huecos || !hora) return
+    const hueco = huecos.find((h) => h.hora === hora)
+    if (restringido ? hueco?.estado !== 'libre' : hueco?.estado === 'ocupado') setHora('')
   }, [restringido, huecos, hora])
 
   // Load logged-in identity
@@ -540,6 +543,12 @@ export default function PsicologosPage() {
     }
     if (pideTipoCita && restringido && (sinHorasHoy || !(huecos ?? []).some((h) => h.hora === hora && h.estado === 'libre'))) {
       setError('La hora elegida ya no está disponible. Elige otra.')
+      return
+    }
+    // Agente: puede saltarse horario, medias horas y bloqueos con aviso, pero nunca
+    // agendar sobre una hora que ya tiene cita (el psicólogo no puede atender a dos a la vez).
+    if (pideTipoCita && !restringido && (huecos ?? []).some((h) => h.hora === hora && h.estado === 'ocupado')) {
+      setError('Esa hora ya tiene una cita: el psicólogo no puede atender a dos pacientes a la vez. Elige otra hora.')
       return
     }
     if (isNuevoPaciente && (!npNombre.trim() || !npTelefono.trim())) {

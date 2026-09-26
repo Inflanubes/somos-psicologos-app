@@ -534,6 +534,10 @@ export default function PsicologosPage() {
       setError('Espera un momento: se está cargando la disponibilidad.')
       return
     }
+    if (pideTipoCita && restringido && errorDisp) {
+      setError('Ahora mismo no podemos consultar la disponibilidad. Contacta con nosotros para agendar esta cita.')
+      return
+    }
     if (pideTipoCita && restringido && (sinHorasHoy || !(huecos ?? []).some((h) => h.hora === hora && h.estado === 'libre'))) {
       setError('La hora elegida ya no está disponible. Elige otra.')
       return
@@ -1438,7 +1442,7 @@ export default function PsicologosPage() {
                         onChange={setHora}
                         style={inputStyle}
                         required
-                        disabled={cargandoDisp || sinHorasHoy || (restringido && !fecha)}
+                        disabled={cargandoDisp || sinHorasHoy || (restringido && (!fecha || !!errorDisp))}
                         opciones={huecos ?? undefined}
                         soloLibres={restringido}
                         placeholder={
@@ -1462,9 +1466,14 @@ export default function PsicologosPage() {
                           No quedan huecos libres ese día.
                         </div>
                       )}
-                      {errorDisp && (
+                      {errorDisp && restringido && (
+                        <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                          Ahora mismo no podemos consultar la disponibilidad. Contacta con nosotros para agendar esta cita.
+                        </div>
+                      )}
+                      {errorDisp && !restringido && (
                         <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
-                          No se pudo cargar la disponibilidad: se muestran todas las horas.
+                          No se pudo cargar la disponibilidad: se muestran todas las horas sin avisos.
                         </div>
                       )}
                     </FormField>

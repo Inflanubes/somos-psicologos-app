@@ -57,7 +57,7 @@ export default function HorarioEditor({ titulo, subtitulo, tramosIniciales, busy
 
   return (
     <div
-      onClick={onCancelar}
+      onClick={busy ? undefined : onCancelar}
       style={{ position: 'fixed', inset: 0, background: 'rgba(39,38,38,0.45)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
       <div

@@ -126,6 +126,12 @@ uno o varios tramos), y la persona tiene el permiso `psicologos.citas_media_hora
     se explica el motivo.
   - **Agente** puede elegir cualquier fecha y hora; si se sale del horario, elige una hora ocupada o una media
     hora no activa, ve un aviso ámbar encima del botón de enviar y puede continuar.
+  - **Fecha y hora son obligatorias** al agendar o cambiar una cita (antes del 26-09-2026 se podía enviar sin ellas).
+  - Si la app no consigue consultar la disponibilidad (fallo de base de datos), psicólogo y call center ven el
+    selector de hora desactivado con el texto "Ahora mismo no podemos consultar la disponibilidad. Contacta con
+    nosotros para agendar esta cita." y no pueden enviar; el agente ve todas las horas sin avisos y puede seguir.
+  - El formulario carga el horario y las citas del psicólogo al elegirlo. Si se cambia el horario en Usuarios con
+    Citas ya abierto, hay que recargar Citas para que lo tenga en cuenta.
 - Lógica: `lib/horarios.ts` (tramos, validación, resumen), `lib/disponibilidad.ts` (huecos y avisos; con tests
   en `npm test`), `lib/disponibilidad-datos.ts` (carga desde Supabase) y `app/dashboard/psicologos/useDisponibilidad.ts`.
 - Make no interviene: el horario solo lo lee la app.

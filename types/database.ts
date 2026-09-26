@@ -43,6 +43,8 @@ export type Psicologo = {
   calendar_id: string | null
   email: string | null
   puede_bloquear: boolean | null
+  /** true = admite citas a y media. Botón "30'" en Usuarios. Migración 012. */
+  citas_media_hora: boolean | null
 }
 
 export type PsicologoInsert = {
@@ -54,6 +56,7 @@ export type PsicologoInsert = {
   calendar_id?: string | null
   activo?: boolean
   puede_bloquear?: boolean | null
+  citas_media_hora?: boolean | null
 }
 
 export type Agente = {
@@ -280,6 +283,26 @@ export type AsociadoMenorInsert = {
   Otros?: string | null
 }
 
+/**
+ * Tramo semanal de trabajo de una ficha de psicólogo (migración 012).
+ * dia_semana: 1 = lunes … 7 = domingo. Horas 'HH:MM:SS' tal como las devuelve Postgres.
+ */
+export type HorarioPsicologo = {
+  id: string
+  psicologo_id: string
+  dia_semana: number
+  hora_inicio: string
+  hora_fin: string
+  creado_en: string
+}
+
+export type HorarioPsicologoInsert = {
+  psicologo_id: string
+  dia_semana: number
+  hora_inicio: string
+  hora_fin: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -347,6 +370,12 @@ export type Database = {
         Row: AsociadoMenor
         Insert: AsociadoMenorInsert
         Update: Partial<AsociadoMenorInsert>
+        Relationships: []
+      }
+      horarios_psicologos: {
+        Row: HorarioPsicologo
+        Insert: HorarioPsicologoInsert
+        Update: Partial<HorarioPsicologoInsert>
         Relationships: []
       }
     }

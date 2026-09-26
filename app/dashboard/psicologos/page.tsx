@@ -332,7 +332,7 @@ export default function PsicologosPage() {
   // Psicólogo y call center: modo restringido, solo huecos libres.
   const modoDisponibilidad: 'aviso' | 'restringido' = !perfil || perfil.rol === 'agente' ? 'aviso' : 'restringido'
   const psicologoDisp = pideTipoCita ? (psicologos.find((p) => p.id === effPsicologoId) ?? null) : null
-  const { datos: disp, cargando: cargandoDisp, error: errorDisp, recargar: recargarDisp } = useDisponibilidad(psicologoDisp)
+  const { datos: disp, cargando: cargandoDisp, error: errorDisp, añadirCitaLocal } = useDisponibilidad(psicologoDisp)
   const excluirAccionId = isCambiarCita ? eventoActual?.id : undefined
   const huecos = useMemo(() => {
     if (!disp || !fecha) return null
@@ -797,7 +797,9 @@ export default function PsicologosPage() {
       })
 
       setSuccess(true)
-      recargarDisp()
+      // Ocupar la hora en local ya: Make escribe la fila unos segundos después,
+      // así que una recarga inmediata no la vería.
+      if (pideTipoCita && fecha && hora) añadirCitaLocal({ fecha, hora }, excluirAccionId)
       resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')

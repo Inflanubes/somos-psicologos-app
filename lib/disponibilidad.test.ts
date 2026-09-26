@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  diaSemanaISO, nombreDia, diaBloqueado, trabajaEseDia, generarHuecos, motivoAviso, etiquetaMotivo,
+  diaSemanaISO, nombreDia, diaBloqueado, trabajaEseDia, generarHuecos, motivoAviso, etiquetaMotivo, aplicarCitaLocal,
   type ParamsHuecos, type Hueco,
 } from './disponibilidad'
 import type { Tramo } from './horarios'
@@ -141,6 +141,33 @@ describe('generarHuecos: ocupación', () => {
     expect(estado(h, '15:30')).toBe('ocupado')        // solapa con la cita de las 16:00
     expect(estado(h, '17:30')).toBe('fuera_horario')  // media hora fuera de horario
     expect(estado(h, '10:30')).toBe('media_hora')     // media hora dentro de horario, sin permiso
+  })
+})
+
+describe('generarHuecos: límite superior de la franja', () => {
+  it('una cita a las 21:00 con medias ocupa 20:30, 21:00 y 21:30 (dura hasta las 22:00) y deja libre 20:00', () => {
+    const h = generarHuecos({ ...base, mediaHora: true, citas: [{ fecha: LUNES, hora: '21:00' }] })
+    expect(estado(h, '20:00')).toBe('libre')
+    expect(estado(h, '20:30')).toBe('ocupado')
+    expect(estado(h, '21:00')).toBe('ocupado')
+    expect(estado(h, '21:30')).toBe('ocupado')
+  })
+})
+
+describe('aplicarCitaLocal (estado optimista tras agendar o cambiar)', () => {
+  it('tras agendar, la hora queda ocupada aunque Make aún no haya escrito la fila', () => {
+    const datos = aplicarCitaLocal({ ...base }, { fecha: LUNES, hora: '10:00' })
+    const h = generarHuecos({ ...datos, fecha: LUNES })
+    expect(estado(h, '10:00')).toBe('ocupado')
+    expect(estado(h, '11:00')).toBe('libre')
+  })
+  it('tras cambiar una cita, se libera la hora antigua y se ocupa la nueva', () => {
+    const antes = { ...base, citas: [{ fecha: LUNES, hora: '10:00:00', accionId: 'a1' }] }
+    const datos = aplicarCitaLocal(antes, { fecha: LUNES, hora: '12:00' }, 'a1')
+    const h = generarHuecos({ ...datos, fecha: LUNES })
+    expect(estado(h, '10:00')).toBe('libre')
+    expect(estado(h, '12:00')).toBe('ocupado')
+    expect(antes.citas).toHaveLength(1) // no muta la entrada
   })
 })
 

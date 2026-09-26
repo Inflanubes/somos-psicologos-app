@@ -91,6 +91,21 @@ export function generarHuecos(p: ParamsHuecos): Hueco[] {
   return huecos
 }
 
+/**
+ * Estado optimista tras agendar o cambiar una cita: Make escribe la fila en
+ * `acciones_psicologos` segundos después del webhook, así que la recarga
+ * inmediata no la ve. Se añade la cita nueva en local y, al cambiar, se quita
+ * la fila cambiada (su hora antigua queda libre). No muta la entrada.
+ */
+export function aplicarCitaLocal<T extends { citas: CitaOcupada[] }>(
+  datos: T,
+  cita: { fecha: string; hora: string },
+  excluirAccionId?: string,
+): T {
+  const restantes = datos.citas.filter((c) => !(excluirAccionId && c.accionId === excluirAccionId))
+  return { ...datos, citas: [...restantes, { fecha: cita.fecha, hora: cita.hora }] }
+}
+
 export type ParamsAviso = ParamsHuecos & { hora: string; nombrePsicologo: string; nombreCentro: string }
 
 /**

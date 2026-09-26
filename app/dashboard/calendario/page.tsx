@@ -46,7 +46,11 @@ export default function CalendarioPage() {
   const [cargandoBase, setCargandoBase] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [esMovil, setEsMovil] = useState(false)
-  const [diaMovil, setDiaMovil] = useState(0)
+  // En móvil se abre en el día de hoy (índice dentro de la semana actual).
+  const [diaMovil, setDiaMovil] = useState(() => {
+    const hoy = todayISODate()
+    return Math.max(0, diasDeSemana(lunesDeSemana(hoy)).indexOf(hoy))
+  })
 
   // Móvil: se muestra un solo día con flechas.
   useEffect(() => {

@@ -188,7 +188,10 @@ export default function PsicologosPage() {
   const [accion, setAccion] = useState<AccionPsicologo | ''>('')
 
   // Cita fields
-  const [pacienteIniciales, setPacienteIniciales] = useState('')
+  // Id del paciente elegido. Antes se guardaban las iniciales, pero no son únicas
+  // (dos pacientes del mismo psicólogo pueden compartirlas), así que el id es la
+  // única forma segura de identificarlo, tanto aquí como en Make.
+  const [pacienteId, setPacienteId] = useState('')
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
   const [tipoCita, setTipoCita] = useState<TipoCita | ''>('')
@@ -276,14 +279,14 @@ export default function PsicologosPage() {
     }
     setPsicologoId('')
     setPacientes([])
-    setPacienteIniciales('')
+    setPacienteId('')
   }, [centroId, psicologos])
 
   // Load patients filtered by selected psychologist
   useEffect(() => {
     if (!psicologoId) {
       setPacientes([])
-      setPacienteIniciales('')
+      setPacienteId('')
       return
     }
     setLoadingPacientes(true)
@@ -319,7 +322,7 @@ export default function PsicologosPage() {
   const isNuevoPaciente = accion === 'Añadir nuevo paciente'
   // Agendar/Cambiar piden fecha, hora y tipo de cita (adulto/pareja/menor)
   const pideTipoCita = accion === 'Agendar cita' || isCambiarCita
-  const pacienteSeleccionado = pacientes.find((p) => p.iniciales === pacienteIniciales) ?? null
+  const pacienteSeleccionado = pacientes.find((p) => p.id === pacienteId) ?? null
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
@@ -415,12 +418,7 @@ export default function PsicologosPage() {
   // Load active appointments of the selected patient (for Cancelar/Cambiar cita)
   useEffect(() => {
     setEventoSeleccionadoId('')
-    if (!requiereSelectorCita || !psicologoId || !pacienteIniciales) {
-      setCitasActivas([])
-      return
-    }
-    const pacienteId = pacientes.find((p) => p.iniciales === pacienteIniciales)?.id
-    if (!pacienteId) {
+    if (!requiereSelectorCita || !psicologoId || !pacienteId) {
       setCitasActivas([])
       return
     }
@@ -432,7 +430,7 @@ export default function PsicologosPage() {
       .finally(() => { if (!cancelled) setLoadingEventos(false) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [psicologoId, accion, pacienteIniciales])
+  }, [psicologoId, accion, pacienteId])
 
   // Load active blocks of the selected psychologist (for Desbloquear agenda)
   useEffect(() => {
@@ -469,7 +467,7 @@ export default function PsicologosPage() {
       setPacientes([])
     }
     setAccion('')
-    setPacienteIniciales('')
+    setPacienteId('')
     setFecha('')
     setHora('')
     setTipoCita('')
@@ -514,8 +512,14 @@ export default function PsicologosPage() {
       setError('No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.')
       return
     }
-    if (isCitaAction && !pacienteIniciales) {
+    if (isCitaAction && !pacienteId) {
       setError('Debes seleccionar un paciente para esta acción.')
+      return
+    }
+    if (isCitaAction && !pacienteSeleccionado) {
+      // El id elegido ya no está en la lista cargada (paciente borrado o reasignado
+      // mientras el formulario estaba abierto). No enviamos nada a Make.
+      setError('No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.')
       return
     }
     if (pideTipoCita && !tipoCita) {
@@ -739,7 +743,9 @@ export default function PsicologosPage() {
       const datosProcesados = {
         psicologo_nombre:     psicologoNombre,
         accion,
-        paciente_iniciales:   isCitaAction ? pacienteIniciales : null,
+        paciente_iniciales:   isCitaAction ? pacienteSeleccionado?.iniciales ?? null : null,
+        // Id del paciente: Make busca por él (módulos 10/40/50) en vez de por iniciales.
+        paciente_id:          isCitaAction ? pacienteSeleccionado?.id ?? null : null,
         fecha_cita:           isCitaAction ? fecha || null : null,
         hora_cita:            isCitaAction ? formatTime(hora) : null,
         tipo_cita:            pideTipoCita ? tipoCita || null : null,
@@ -818,7 +824,7 @@ export default function PsicologosPage() {
     setCentroActivoState(null)
     if (userId) clearCentroActivo(userId)
     setAccion('')
-    setPacienteIniciales('')
+    setPacienteId('')
     setEventoSeleccionadoId('')
   }
 
@@ -1333,8 +1339,8 @@ export default function PsicologosPage() {
               {/* Patient dropdown */}
               <FormField label="Paciente" required>
                 <select
-                  value={pacienteIniciales}
-                  onChange={(e) => setPacienteIniciales(e.target.value)}
+                  value={pacienteId}
+                  onChange={(e) => setPacienteId(e.target.value)}
                   style={{ ...inputStyle, cursor: 'pointer' }}
                   disabled={!psicologoId || loadingPacientes}
                   required
@@ -1349,7 +1355,7 @@ export default function PsicologosPage() {
                           : 'Selecciona el paciente'}
                   </option>
                   {pacientes.map((p) => (
-                    <option key={p.id} value={p.iniciales ?? ''}>
+                    <option key={p.id} value={p.id}>
                       {p.iniciales}
                     </option>
                   ))}
@@ -1388,7 +1394,7 @@ export default function PsicologosPage() {
                     loading={loadingEventos}
                     emptyText="Sin citas activas para este paciente"
                     placeholder="Selecciona la cita"
-                    disabled={!pacienteIniciales}
+                    disabled={!pacienteId}
                     inputStyle={inputStyle}
                     required
                   />

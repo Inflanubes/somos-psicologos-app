@@ -33,8 +33,9 @@ especificación.
   indistinguible de la tabla actual. Hay que comprobar en Make que el módulo Supabase lista
   vistas además de tablas (un minuto). Si no las lista, se cambia el módulo 3 a buscar por `id`
   (la app y Dante ya conocen el id del psicólogo).
-- **Elias**: se le avisa de que los ids de psicólogo cambian (datos nuevos) y de que llega
-  `centro_id` en cada aviso. Sin tabla de equivalencias, porque no hay histórico que conservar.
+- **Elias**: se le avisa de que llega `centro_id` en cada aviso y se le pasa la tabla
+  `migracion_014_ids` (`id_antiguo → id_nuevo` de las fichas fusionadas). El resto de ids de
+  psicólogo no cambia.
 
 ## 3. Quién depende de qué
 
@@ -55,8 +56,8 @@ especificación.
 | Dante, `ListarPsicologos` | `psicologos?centro_id=eq.X` | Misma consulta sobre la vista |
 | Dante, `RegistrarPaciente` | Exige `psico.centro_id === centroId` | Comprobar que el centro está en `centros` (o consultar la vista) |
 | Dante, `ConsultarPsicologo`, `EjecutarAccion` | Leen `centro` de la ficha y lo envían a Make | Con varios centros hay que elegir uno: el de la cita (preguntar o tomar el del paciente) |
-| Elias | Recibe `psicologo_id` | Ids nuevos + `centro_id`; avisar |
-| Datos | Fichas por centro | Se borran y se recrean |
+| Elias | Recibe `psicologo_id` | Ids de fichas fusionadas + `centro_id`; avisar |
+| Datos | Fichas por centro | Fichas de prueba (sin calendario) se borran; las reales se fusionan en una por persona (`migracion_014_ids`) |
 
 ### 3.2 De `pacientes.psicologo_id` (cambio A)
 

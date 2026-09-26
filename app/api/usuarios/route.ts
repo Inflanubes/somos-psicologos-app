@@ -8,14 +8,55 @@ export async function GET() {
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status })
 
   const admin = createSupabaseAdmin()
-  const [psies, ags, centros] = await Promise.all([
-    admin.from('psicologos').select('id, nombre, email, telefono, centro_id, calendar_id, activo, puede_bloquear').order('nombre'),
+  // Dos cadenas literales (no plantilla): supabase-js infiere el tipo de fila a partir del texto del select.
+  const [psiesConMedias, ags, centros, horarios] = await Promise.all([
+    admin
+      .from('psicologos')
+      .select('id, nombre, email, telefono, centro_id, calendar_id, activo, puede_bloquear, citas_media_hora')
+      .order('nombre'),
     admin.from('agentes').select('id, nombre, email, telefono, centro_id, activo, auth_user_id').order('nombre'),
     admin.from('centros').select('id, nombre').order('nombre'),
+    admin
+      .from('horarios_psicologos')
+      .select('psicologo_id, dia_semana, hora_inicio, hora_fin')
+      .order('dia_semana')
+      .order('hora_inicio'),
   ])
-  if (psies.error) return NextResponse.json({ error: psies.error.message }, { status: 500 })
+
+  // Migración 012 aún no ejecutada: la columna citas_media_hora o la tabla
+  // horarios_psicologos no existen. La pantalla sigue funcionando y muestra un aviso.
+  let avisoHorarios: string | null = null
+  type PsiRow = {
+    id: string; nombre: string; email: string | null; telefono: string | null; centro_id: string | null
+    calendar_id: string | null; activo: boolean; puede_bloquear: boolean | null; citas_media_hora?: boolean | null
+  }
+  let psies: PsiRow[] = []
+  if (psiesConMedias.error && /citas_media_hora/.test(psiesConMedias.error.message)) {
+    const sinMedias = await admin
+      .from('psicologos')
+      .select('id, nombre, email, telefono, centro_id, calendar_id, activo, puede_bloquear')
+      .order('nombre')
+    if (sinMedias.error) return NextResponse.json({ error: sinMedias.error.message }, { status: 500 })
+    psies = (sinMedias.data ?? []).map((p) => ({ ...p, citas_media_hora: null }))
+    avisoHorarios = 'Falta ejecutar la migración 012 (horarios y medias horas): ' + psiesConMedias.error.message
+  } else if (psiesConMedias.error) {
+    return NextResponse.json({ error: psiesConMedias.error.message }, { status: 500 })
+  } else {
+    psies = psiesConMedias.data ?? []
+  }
   if (ags.error) return NextResponse.json({ error: ags.error.message }, { status: 500 })
   if (centros.error) return NextResponse.json({ error: centros.error.message }, { status: 500 })
+
+  const horariosPorPsicologo = new Map<string, { dia_semana: number; hora_inicio: string; hora_fin: string }[]>()
+  if (horarios.error) {
+    avisoHorarios = avisoHorarios ?? 'No se pudieron leer los horarios (¿falta ejecutar la migración 012?): ' + horarios.error.message
+  } else {
+    for (const h of horarios.data ?? []) {
+      const lista = horariosPorPsicologo.get(h.psicologo_id) ?? []
+      lista.push({ dia_semana: h.dia_semana, hora_inicio: h.hora_inicio, hora_fin: h.hora_fin })
+      horariosPorPsicologo.set(h.psicologo_id, lista)
+    }
+  }
 
   // Agentes y call center comparten la tabla `agentes`; el rol lo da `perfiles`.
   const staff = ags.data ?? []
@@ -30,10 +71,11 @@ export async function GET() {
     !!a.auth_user_id && rolPorAuthId.get(a.auth_user_id) === 'call_center'
 
   return NextResponse.json({
-    psicologos: psies.data ?? [],
+    psicologos: psies.map((p) => ({ ...p, horarios: horariosPorPsicologo.get(p.id) ?? [] })),
     agentes: staff.filter((a) => !esCallCenter(a)),
     call_center: staff.filter(esCallCenter),
     centros: centros.data ?? [],
+    aviso_horarios: avisoHorarios,
   })
 }
 

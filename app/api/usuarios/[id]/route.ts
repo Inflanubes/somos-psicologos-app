@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAgente } from '@/lib/require-agente'
 import { generateTempPassword } from '@/lib/temp-password'
+import { validarTramos, type Tramo } from '@/lib/horarios'
 
 type EditarBody = {
   tipo: 'psicologo' | 'agente' | 'call_center'
@@ -12,6 +13,8 @@ type EditarBody = {
   calendar_id?: string | null
   activo?: boolean
   puede_bloquear?: boolean   // permiso para bloquear/desbloquear la agenda
+  citas_media_hora?: boolean // permite citas a y media (se aplica a todas las fichas de la persona)
+  horarios?: Tramo[]         // horario semanal de ESTA ficha (centro); sustituye todas sus filas
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -55,6 +58,53 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         ? await admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('email', email)
         : await admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('id', id)
       if (updBloqueo.error) return NextResponse.json({ error: updBloqueo.error.message }, { status: 500 })
+    }
+
+    // Medias horas: permiso de la persona → todas sus fichas (mismo email), como puede_bloquear.
+    if (body.citas_media_hora !== undefined) {
+      const row = await admin.from('psicologos').select('email').eq('id', id).maybeSingle()
+      const email = row.data?.email ?? null
+      const updMedias = email
+        ? await admin.from('psicologos').update({ citas_media_hora: body.citas_media_hora }).eq('email', email)
+        : await admin.from('psicologos').update({ citas_media_hora: body.citas_media_hora }).eq('id', id)
+      if (updMedias.error) return NextResponse.json({ error: updMedias.error.message }, { status: 500 })
+    }
+
+    // Horario semanal de esta ficha (cada centro tiene el suyo): se sustituyen
+    // todas sus filas. Si el insert falla, se reponen las anteriores.
+    if (body.horarios !== undefined) {
+      if (!Array.isArray(body.horarios)) {
+        return NextResponse.json({ error: 'Horario no válido' }, { status: 400 })
+      }
+      const nuevos: Tramo[] = body.horarios.map((h) => ({
+        dia_semana: Number(h.dia_semana),
+        hora_inicio: String(h.hora_inicio),
+        hora_fin: String(h.hora_fin),
+      }))
+      const errorValidacion = validarTramos(nuevos)
+      if (errorValidacion) return NextResponse.json({ error: errorValidacion }, { status: 400 })
+
+      const previos = await admin
+        .from('horarios_psicologos')
+        .select('dia_semana, hora_inicio, hora_fin')
+        .eq('psicologo_id', id)
+      if (previos.error) return NextResponse.json({ error: previos.error.message }, { status: 500 })
+
+      const del = await admin.from('horarios_psicologos').delete().eq('psicologo_id', id)
+      if (del.error) return NextResponse.json({ error: del.error.message }, { status: 500 })
+
+      if (nuevos.length > 0) {
+        const ins = await admin
+          .from('horarios_psicologos')
+          .insert(nuevos.map((h) => ({ ...h, psicologo_id: id })))
+        if (ins.error) {
+          const anteriores = previos.data ?? []
+          if (anteriores.length > 0) {
+            await admin.from('horarios_psicologos').insert(anteriores.map((h) => ({ ...h, psicologo_id: id })))
+          }
+          return NextResponse.json({ error: 'No se pudo guardar el horario: ' + ins.error.message }, { status: 500 })
+        }
+      }
     }
 
     // Sincronizar nombre en perfiles (atribución coherente)

@@ -1,6 +1,8 @@
 'use client'
 
 import { Fragment, useEffect, useRef, useState } from 'react'
+import HorarioEditor from './HorarioEditor'
+import { resumenHorario, type Tramo } from '@/lib/horarios'
 
 // Tabla con scroll horizontal y una segunda barra de scroll ARRIBA sincronizada,
 // para poder desplazarse aunque haya muchas filas (la barra de abajo queda fuera de pantalla).
@@ -51,6 +53,8 @@ type Psicologo = {
   id: string; nombre: string; email: string | null; telefono: string | null
   centro_id: string | null; calendar_id: string | null; activo: boolean
   puede_bloquear: boolean | null
+  citas_media_hora: boolean | null
+  horarios: Tramo[]
 }
 type Agente = {
   id: string; nombre: string; email: string | null; telefono: string | null
@@ -137,6 +141,10 @@ export default function UsuariosPage() {
   const [resultado, setResultado] = useState<
     { email: string; password?: string; emailSent?: boolean; contexto: 'alta' | 'reset' } | null
   >(null)
+  // Ficha cuyo horario se está editando (abre el modal) y aviso de la API si
+  // falta la migración 012.
+  const [editandoHorario, setEditandoHorario] = useState<Psicologo | null>(null)
+  const [avisoHorarios, setAvisoHorarios] = useState<string | null>(null)
 
   // Formulario de alta
   const [tipo, setTipo] = useState<Tipo>('psicologo')
@@ -164,6 +172,7 @@ export default function UsuariosPage() {
       setAgentes(data.agentes)
       setCallCenter(data.call_center ?? [])
       setCentros(data.centros ?? [])
+      setAvisoHorarios(data.aviso_horarios ?? null)
     } catch {
       setError('Error de conexión al cargar')
     } finally {
@@ -202,7 +211,8 @@ export default function UsuariosPage() {
   }
 
   // PATCH compartido para editar/desactivar: siempre limpia busy y muestra errores.
-  async function patchUsuario(id: string, body: Record<string, unknown>) {
+  // Devuelve true si se guardó.
+  async function patchUsuario(id: string, body: Record<string, unknown>): Promise<boolean> {
     setBusy(true); setError(null)
     try {
       const res = await fetch(`/api/usuarios/${id}`, {
@@ -213,11 +223,13 @@ export default function UsuariosPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'No se pudo guardar el cambio')
-        return
+        return false
       }
       await cargar()
+      return true
     } catch {
       setError('Error de conexión al guardar')
+      return false
     } finally {
       setBusy(false)
     }
@@ -231,6 +243,18 @@ export default function UsuariosPage() {
   // Se aplica a todas sus fichas de centro en el servidor.
   async function toggleBloqueo(id: string, actual: boolean) {
     await patchUsuario(id, { tipo: 'psicologo', puede_bloquear: !actual })
+  }
+
+  // Permite / quita las citas a y media. Se aplica a todas sus fichas (misma persona).
+  async function toggleMediaHora(id: string, actual: boolean) {
+    await patchUsuario(id, { tipo: 'psicologo', citas_media_hora: !actual })
+  }
+
+  // Guarda el horario de la ficha abierta en el editor y lo cierra si fue bien.
+  async function guardarHorario(tramos: Tramo[]) {
+    if (!editandoHorario) return
+    const ok = await patchUsuario(editandoHorario.id, { tipo: 'psicologo', horarios: tramos })
+    if (ok) setEditandoHorario(null)
   }
 
   async function editarCalendario(id: string, actual: string | null) {
@@ -287,6 +311,12 @@ export default function UsuariosPage() {
       {error && (
         <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 18, fontSize: 13 }}>
           {error}
+        </div>
+      )}
+
+      {avisoHorarios && (
+        <div style={{ background: '#fff7e6', border: '1.5px solid #f5d08a', color: '#8a5a00', padding: '10px 14px', borderRadius: 8, marginBottom: 18, fontSize: 13 }}>
+          {avisoHorarios}
         </div>
       )}
 
@@ -413,18 +443,23 @@ export default function UsuariosPage() {
           </p>
           <div style={card}>
             <ScrollBox>
-            <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
               <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Centro', 'Email', 'Calendario', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
+                {['Nombre', 'Centro', 'Horarios', 'Email', 'Calendario', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {psicologosFiltrados.length === 0 ? (
-                  <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={5}>No hay psicólogos en este centro</td></tr>
+                  <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={6}>No hay psicólogos en este centro</td></tr>
                 ) : psicologosFiltrados.map((p) => (
                   <Fragment key={p.id}>
                     <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
                       <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{p.nombre}</td>
                       <td style={{ ...td, paddingBottom: 6 }}>{centroMap[p.centro_id ?? ''] ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6, fontSize: 12.5, minWidth: 180 }}>
+                        {p.horarios.length > 0
+                          ? resumenHorario(p.horarios)
+                          : <span style={{ color: '#8899bb' }}>Sin horario</span>}
+                      </td>
                       <td style={{ ...td, paddingBottom: 6 }}>{p.email ?? '—'}</td>
                       <td style={{ ...td, paddingBottom: 6, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.calendar_id ?? '—'}</td>
                       <td style={{ ...td, paddingBottom: 6, whiteSpace: 'nowrap' }}>
@@ -432,12 +467,17 @@ export default function UsuariosPage() {
                         <div style={{ fontSize: 11.5, color: p.puede_bloquear ? '#1e7d4f' : '#8899bb', marginTop: 2 }}>
                           {p.puede_bloquear ? '✓ Puede bloquear agenda' : 'Sin bloqueo de agenda'}
                         </div>
+                        <div style={{ fontSize: 11.5, color: p.citas_media_hora ? '#1e7d4f' : '#8899bb', marginTop: 2 }}>
+                          {p.citas_media_hora ? '✓ Citas a y media' : 'Solo en punto'}
+                        </div>
                       </td>
                     </tr>
                     <tr>
-                      <td colSpan={5} style={{ padding: '0 20px 16px' }}>
+                      <td colSpan={6} style={{ padding: '0 20px 16px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <ActionButton onClick={() => editarCalendario(p.id, p.calendar_id)} disabled={busy} title="Cambiar el calendario de Google del psicólogo">Calendario</ActionButton>
+                          <ActionButton onClick={() => setEditandoHorario(p)} disabled={busy} title="Días y horas en que trabaja en este centro">Horario</ActionButton>
+                          <ActionButton onClick={() => toggleMediaHora(p.id, !!p.citas_media_hora)} disabled={busy} variant={p.citas_media_hora ? 'default' : 'success'} title="Permitir o quitar citas a las medias horas para este psicólogo (todos sus centros)">{p.citas_media_hora ? "Quitar 30'" : "30'"}</ActionButton>
                           <ActionButton onClick={() => restablecer('psicologo', p.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
                           <ActionButton onClick={() => restablecer('psicologo', p.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
                           <ActionButton onClick={() => toggleBloqueo(p.id, !!p.puede_bloquear)} disabled={busy} variant={p.puede_bloquear ? 'default' : 'success'} title="Permitir o quitar que este psicólogo pueda bloquear y desbloquear su agenda">{p.puede_bloquear ? 'Quitar bloqueo' : 'Permitir bloqueo'}</ActionButton>
@@ -496,6 +536,17 @@ export default function UsuariosPage() {
             </Fragment>
           ))}
         </>
+      )}
+
+      {editandoHorario && (
+        <HorarioEditor
+          titulo={editandoHorario.nombre}
+          subtitulo={`Centro: ${centroMap[editandoHorario.centro_id ?? ''] ?? '—'}. Cada centro tiene su propio horario.`}
+          tramosIniciales={editandoHorario.horarios}
+          busy={busy}
+          onGuardar={guardarHorario}
+          onCancelar={() => setEditandoHorario(null)}
+        />
       )}
     </div>
   )

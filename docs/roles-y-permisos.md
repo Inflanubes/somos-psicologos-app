@@ -1,6 +1,6 @@
 # Roles y permisos de la app Somos Psicología
 
-Última revisión: 25-09-2026 (panel personal del call center y atribución de pacientes).
+Última revisión: 26-09-2026 (horarios de psicólogos, medias horas y disponibilidad en Citas).
 
 ## Una sola app
 
@@ -96,6 +96,29 @@ la opción "Single session per user" en el panel de Auth (está desactivada), y 
 ningún contador de sesiones. Pueden entrar tantas personas como haga falta, tanto con cuentas
 distintas como compartiendo una misma cuenta. La única pega de compartir cuenta es que todas las
 citas saldrán con el mismo nombre.
+
+## Horarios de psicólogos y disponibilidad en Citas
+
+Desde la migración `Supabase/migrations/012_horarios_psicologos.sql` cada **ficha** de psicólogo
+(persona × centro) tiene su horario semanal en la tabla `horarios_psicologos` (día de la semana y
+uno o varios tramos), y la persona tiene el permiso `psicologos.citas_media_hora` (citas a y media).
+
+- Los **agentes** lo gestionan en Usuarios: columna **Horarios** (resumen tipo `L, X 09:00–14:00 · V 16:00–20:00`),
+  botón **Horario** (editor de siete días) y botón **30'** (medias horas; se aplica a todas las fichas
+  de la persona, como el permiso de bloqueo). Nadie más puede editarlo.
+- Una ficha **sin horario** no restringe nada: solo se ocultan las horas ya ocupadas.
+- Toda cita dura **60 minutos**. Se ofrecen las horas de 08:00 a 21:00 en punto y, si la persona tiene 30',
+  también las y media hasta 21:30.
+- En Citas (Agendar y Cambiar cita):
+  - **Psicólogo y call center** solo ven los huecos libres: dentro del horario del psicólogo en ese centro,
+    sin cita activa que se solape (contando todas las fichas de la persona, porque comparten calendario) y sin
+    bloqueo de agenda ese día. Si el día no es laborable o está bloqueado, el selector de hora se desactiva y
+    se explica el motivo.
+  - **Agente** puede elegir cualquier fecha y hora; si se sale del horario, elige una hora ocupada o una media
+    hora no activa, ve un aviso ámbar encima del botón de enviar y puede continuar.
+- Lógica: `lib/horarios.ts` (tramos, validación, resumen), `lib/disponibilidad.ts` (huecos y avisos; con tests
+  en `npm test`), `lib/disponibilidad-datos.ts` (carga desde Supabase) y `app/dashboard/psicologos/useDisponibilidad.ts`.
+- Make no interviene: el horario solo lo lee la app.
 
 ## Cómo se aplica en el código
 

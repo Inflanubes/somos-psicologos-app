@@ -609,6 +609,9 @@ export default function PsicologosPage() {
               responseId: 'web_' + Date.now(),
               timestampFormulario: new Date().toISOString(),
               datosProcesados: {
+                // Make localiza al psicólogo por psicologo_nombre + centro (módulo 3) antes
+                // de enrutar; sin este campo el filtro "psicólogo encontrado" corta el aviso.
+                psicologo_nombre: psicologoNombre,
                 accion: 'Paciente duplicado',
                 psicologo_solicitante_nombre: psicologoNombre,
                 psicologo_solicitante_id: effPsicologoId,

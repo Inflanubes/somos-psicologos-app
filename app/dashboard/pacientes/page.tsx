@@ -65,6 +65,7 @@ export default async function PacientesPage() {
     es_menor: p.es_menor,
     edad: p.edad,
     consentimiento: p.consentimiento,
+    dni: p.DNI ?? null,
     fecha_incorporacion: p.fecha_incorporacion,
   }))
 

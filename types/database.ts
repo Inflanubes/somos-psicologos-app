@@ -79,6 +79,7 @@ export type Paciente = {
   fecha_nacimiento: string | null
   es_menor: boolean
   consentimiento: boolean | null
+  DNI: string | null
   centro_id: string
   psicologo_id: string
   estado: EstadoPaciente
@@ -267,6 +268,8 @@ export type AsociadoMenor = {
   'T2_teléfono': string | null
   T2_mail: string | null
   T2_consentimiento: boolean | null
+  T1_dni: string | null
+  T2_dni: string | null
   Otros: string | null
 }
 
@@ -280,6 +283,8 @@ export type AsociadoMenorInsert = {
   'T2_teléfono'?: string | null
   T2_mail?: string | null
   T2_consentimiento?: boolean | null
+  T1_dni?: string | null
+  T2_dni?: string | null
   Otros?: string | null
 }
 

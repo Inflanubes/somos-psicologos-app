@@ -18,6 +18,7 @@ export interface PacienteTableRow {
   es_menor: boolean
   edad: number | null
   consentimiento: boolean | null
+  dni: string | null
   fecha_incorporacion: string | null
 }
 
@@ -57,6 +58,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
         !q ||
         (p.nombre ?? '').toLowerCase().includes(q) ||
         (p.telefono ?? '').includes(q) ||
+        (p.dni ?? '').toLowerCase().includes(q) ||
         (p.email ?? '').toLowerCase().includes(q) ||
         (p.psicologo_nombre ?? '').toLowerCase().includes(q) ||
         (p.centro_nombre ?? '').toLowerCase().includes(q)
@@ -82,7 +84,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <input
           type="text"
-          placeholder="Buscar por nombre, teléfono, email o psicólogo…"
+          placeholder="Buscar por nombre, teléfono, DNI, email o psicólogo…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ ...inputStyle, width: 320 }}
@@ -126,7 +128,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
         <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr>
-              {['Nombre', 'Teléfono', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita', 'Añadido por'].map((col) => (
+              {['Nombre', 'Teléfono', 'DNI', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita', 'Añadido por'].map((col) => (
                 <th
                   key={col}
                   style={{
@@ -150,7 +152,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   style={{ textAlign: 'center', padding: '48px 0', color: '#8899bb', fontSize: 14 }}
                 >
                   No se encontraron pacientes
@@ -189,6 +191,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                     )}
                   </td>
                   <td data-label="Teléfono" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.telefono || '—'}</td>
+                  <td data-label="DNI" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>{p.dni || '—'}</td>
                   <td data-label="Centro" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.centro_nombre || '—'}</td>
                   <td data-label="Psicólogo" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
                   <td data-label="Estado" style={{ padding: '13px 14px' }}>

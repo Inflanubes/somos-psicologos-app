@@ -528,9 +528,150 @@ footer img{width:28px; height:28px}
   </div>
 </div></section>
 <!-- SECCION-CITA -->
-<section class="clara seccion" id="cita"><div class="wrap"><span class="num">04</span><h2>El viaje de una cita</h2></div></section>
+<section class="clara seccion" id="cita"><div class="wrap">
+  <span class="num">04</span><h2>El viaje de una cita</h2>
+  <p class="entrada">Desde que un paciente llega hasta que tiene su cita, o la cambia, o la anula. Qué se pide, qué estados atraviesa y qué ocurre por detrás en cada paso.</p>
+
+  <p class="subtitulo">Por dónde entra un paciente</p>
+  <div class="dos">
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Desde la app</h3><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
+      <p>En <a href="#p-citas">Citas</a>, acción <code class="ui">Añadir nuevo paciente</code>. Se pide nombre completo, teléfono, email (opcional) y <code class="ui">Fecha de nacimiento</code>, que es obligatoria: con ella la app calcula la edad y si es menor.</p>
+      <ul>
+        <li>La app crea sus <b>iniciales</b> sola, por ejemplo «MGL (María)». Son lo que se ve en el calendario, nunca el nombre completo.</li>
+        <li>La casilla <code class="ui">Nueva recomendación</code> marca que el paciente lo trae ese psicólogo.</li>
+        <li>Si es <b>menor</b> (hasta 15 años) se piden los dos tutores legales. Si solo hay uno, se marca la circunstancia especial y se explica en «Otros».</li>
+        <li>El paciente queda como «Nuevo paciente» y Make envía el enlace del consentimiento: al paciente, o a los dos tutores si es menor.</li>
+      </ul>
+    </article>
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Desde Dante</h3><span class="chip r-dante">Dante</span></div>
+      <p>El paciente escribe al asistente de Telegram y Dante lo da de alta con las mismas reglas que la app, incluidos los avisos de duplicado. Queda firmado como hecho por Dante. Más en <a href="#dante">Dante</a>.</p>
+      <p class="nota">Mientras Dante use el chat de Telegram como «teléfono», un paciente dado de alta por Dante y otro dado de alta en la app con su número real no se reconocen como la misma persona.</p>
+    </article>
+  </div>
+
+  <p class="subtitulo">Pacientes repetidos</p>
+  <article class="ficha">
+    <p>Antes de crear un paciente, la app busca su teléfono.</p>
+    <ul>
+      <li><b>Ya es del mismo psicólogo:</b> no se crea nada y se avisa: <code class="ui">Este paciente ya está añadido en tu lista: <var>María García</var> (<var>MGL</var>).</code></li>
+      <li><b>Es de otro psicólogo:</b> no se crea, se avisa con <code class="ui" data-nocheck>Este paciente ya existe en la base de datos asignado a otro psicólogo. Hemos avisado al equipo para que lo revisen.</code> y el equipo recibe por Telegram un aviso de posible duplicado. Si venía marcado como recomendación, el aviso pide revisar un posible fraude.</li>
+    </ul>
+  </article>
+
+  <p class="subtitulo">Estados del paciente</p>
+  <div class="tabla"><table>
+    <thead><tr><th>Estado</th><th>Quién lo pone</th><th>Cuándo</th></tr></thead>
+    <tbody>
+      <tr><td>Nuevo paciente</td><td>La app o Dante</td><td>Al darlo de alta.</td></tr>
+      <tr><td>Agendado</td><td>Make</td><td>Al agendar o cambiar una cita.</td></tr>
+      <tr><td>Anulado</td><td>Make</td><td>Al cancelar una cita.</td></tr>
+      <tr><td>Sin disponibilidad</td><td>Make, a petición de Dante</td><td>Cuando Dante no encuentra hueco para el paciente. Avisa al equipo.</td></tr>
+      <tr><td>En espera</td><td>Comunicaciones</td><td>Al pulsar «Mover a En espera» sobre un paciente sin disponibilidad.</td></tr>
+      <tr><td>Cambio solicitado</td><td>Make, a petición de Dante</td><td>Cuando el paciente pide cambiar de psicólogo. Avisa al equipo.</td></tr>
+      <tr><td>Dudoso contactado</td><td>Comunicaciones</td><td>Tras escribir a un paciente indeciso.</td></tr>
+      <tr><td>Psicólogo</td><td>Make</td><td>Paciente pendiente de que su psicólogo le llame. Aparece en la pestaña «Hablar con Psicólogo».</td></tr>
+      <tr><td>Dudoso</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna; solo se lee en Comunicaciones. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
+      <tr><td>Revisar recomendado</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna; solo aparece en los gráficos. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
+      <tr><td>Psicólogo sin disponibilidad</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna, aunque tiene mensaje estándar en «En Espera». Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
+      <tr><td>Inactivo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
+    </tbody>
+  </table></div>
+  <p class="nota">Los cambios de estado hechos desde Comunicaciones quedan registrados con fecha, para saber cuántos días lleva cada paciente esperando.</p>
+
+  <p class="subtitulo">Las acciones y qué pasa detrás</p>
+  <div class="tabla"><table>
+    <thead><tr><th>Acción</th><th>Quién</th><th>Google Calendar</th><th>Paciente</th><th>Aviso</th></tr></thead>
+    <tbody>
+      <tr><td>Agendar cita</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span><span class="chip r-dante">Dante</span></td><td>Crea el evento con las iniciales del paciente.</td><td>Agendado</td><td>Confirmación al paciente con psicólogo, día y hora.</td></tr>
+      <tr><td>Cambiar cita</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span><span class="chip r-dante">Dante</span></td><td>Mueve el mismo evento.</td><td>Agendado</td><td>Confirmación del cambio al paciente.</td></tr>
+      <tr><td>Cancelar cita</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span><span class="chip r-dante">Dante</span></td><td>Borra el evento.</td><td>Anulado</td><td>Aviso de anulación al paciente con el teléfono de la clínica.</td></tr>
+      <tr><td>Añadir nuevo paciente</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span><span class="chip r-dante">Dante</span></td><td>—</td><td>Nuevo paciente</td><td>Al equipo: paciente nuevo en la cartera de ese psicólogo. Al paciente o a sus tutores: enlace del consentimiento.</td></tr>
+      <tr><td>Bloquear agenda</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo con permiso</span></td><td>Crea un evento «BLOQUEADO».</td><td>—</td><td>Al psicólogo: bloqueo registrado, desde y hasta.</td></tr>
+      <tr><td>Desbloquear agenda</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo con permiso</span></td><td>Borra el evento de bloqueo.</td><td>—</td><td>—</td></tr>
+      <tr><td>Vacaciones, Asuntos propios, Baja laboral</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span></td><td>Crea un evento «BLOQUEADO» con el motivo.</td><td>—</td><td>A todo el equipo: quién estará fuera y por qué.</td></tr>
+      <tr><td>Modificar bloqueo personal</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span></td><td>Cambia las fechas del evento.</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <div class="dos">
+    <p class="nota">Cambiar mueve la misma cita, no crea otra. Cancelar la deja anulada en el historial. Para cambiar o cancelar, la app enseña las citas activas del paciente de hoy en adelante; si no tiene: <code class="ui">Sin citas activas para este paciente</code>.</p>
+    <p class="nota">Make encuentra al psicólogo por su nombre y su centro. Si no lo encuentra, Be Banana recibe un aviso de error. Por eso el nombre de cada centro tiene que escribirse igual en todas partes.</p>
+  </div>
+
+  <p class="subtitulo">Consentimiento informado</p>
+  <div class="dos">
+    <article class="ficha">
+      <h3>Adultos</h3>
+      <p>Al darlo de alta, el paciente recibe el enlace del formulario. Cuando lo firma, Make encuentra su ficha por nombre y teléfono y marca el consentimiento con su DNI. Si no la encuentra, avisa a Be Banana.</p>
+      <p>En Citas se ve <code class="ui">✓ Consentimiento firmado</code> o <code class="ui">⏳ Consentimiento pendiente</code>.</p>
+    </article>
+    <article class="ficha">
+      <h3>Menores</h3>
+      <p>Cada tutor recibe su enlace. Make marca la firma de cada uno por su teléfono, y cuando han firmado los dos marca el consentimiento del menor.</p>
+      <p class="nota">Si cambia el formulario de la web (remitente, asunto o nombres de los campos), el consentimiento deja de marcarse solo, sin avisar.</p>
+    </article>
+  </div>
+
+  <p class="subtitulo">Tipo de cita</p>
+  <article class="ficha">
+    <p>Al agendar o cambiar se elige <b>Adulto</b>, <b>Pareja</b> o <b>Menor</b>. Si el paciente es menor, se preselecciona Menor; si no, Adulto. Todas las citas duran 60 minutos. Las citas anteriores al 26-09-2026 pueden aparecer como «Sin tipo».</p>
+  </article>
+</div></section>
 <!-- SECCION-DISPONIBILIDAD -->
-<section class="clara seccion" id="disponibilidad"><div class="wrap"><span class="num">05</span><h2>Horarios y disponibilidad</h2></div></section>
+<section class="clara seccion" id="disponibilidad"><div class="wrap">
+  <span class="num">05</span><h2>Horarios y disponibilidad</h2>
+  <p class="entrada">Cada psicólogo tiene un horario semanal en cada centro donde trabaja. La app lo usa para ofrecer solo huecos reales al agendar.</p>
+  <div class="dos">
+    <article class="ficha">
+      <h3>Las reglas</h3>
+      <ol>
+        <li>El horario es <b>semanal y por centro</b>: días de la semana con uno o varios tramos. Lo editan los agentes en <a href="#p-usuarios">Usuarios</a>.</li>
+        <li>Un psicólogo <b>sin horario</b> no tiene restricción: solo se ocultan sus horas ya ocupadas. Así nadie se queda bloqueado mientras se rellenan.</li>
+        <li>Toda cita dura <b>60 minutos</b>.</li>
+        <li>Se ofrecen las horas <b>en punto de 08:00 a 21:00</b>. Si el psicólogo tiene activado <code class="ui">30'</code>, también las <b>y media hasta las 21:30</b>. Por defecto nadie lo tiene.</li>
+        <li>Los bloqueos (vacaciones, baja, asuntos propios) cuentan como <b>días completos</b>.</li>
+      </ol>
+    </article>
+    <article class="ficha">
+      <h3>Qué se comprueba al elegir hora</h3>
+      <ol>
+        <li>Que ese día no esté bloqueado.</li>
+        <li>Que la hora caiga dentro de un tramo de su horario en ese centro y que la cita quepa entera.</li>
+        <li>Que no choque con otra cita suya, <b>en cualquiera de sus centros</b>. Al cambiar una cita, su hora actual cuenta como libre.</li>
+        <li>Si es una media hora, que tenga activado <code class="ui">30'</code>.</li>
+      </ol>
+    </article>
+  </div>
+  <div class="dos" style="margin-top:16px">
+    <article class="ficha">
+      <div class="ficha-cab"><h3>La app no deja</h3><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
+      <p>Solo ven los huecos libres y no pueden elegir fechas pasadas. Si el día está bloqueado o no trabaja, el selector de hora se desactiva y dice por qué:</p>
+      <ul class="lista-msg">
+        <li><code class="ui">Agenda bloqueada ese día (<var>Vacaciones</var>).</code></li>
+        <li><code class="ui"><var>Marta</var> no trabaja los <var>martes</var> en <var>San Blas</var>.</code></li>
+        <li><code class="ui">No quedan huecos libres ese día.</code></li>
+      </ul>
+    </article>
+    <article class="ficha">
+      <div class="ficha-cab"><h3>La app avisa</h3><span class="chip r-agente">Agente</span></div>
+      <p>Ve todas las horas, con una etiqueta en las que no son libres. Puede agendar fuera de horario, en un día bloqueado o en una media hora no activa, pero antes de enviar ve un aviso ámbar:</p>
+      <ul class="lista-msg">
+        <li>⚠️ <code class="ui">Aviso: <var>Marta no trabaja los martes en San Blas</var>. Puedes agendar igualmente.</code></li>
+      </ul>
+      <p class="nota">Lo que ni el agente puede hacer es poner dos pacientes a la misma hora con el mismo psicólogo.</p>
+    </article>
+  </div>
+
+  <p class="subtitulo">Límites que conviene conocer</p>
+  <article class="ficha">
+    <ul class="lista-msg">
+      <li><b>Dos personas, el mismo hueco, a la vez.</b> Si dos personas agendan exactamente el mismo hueco en el mismo momento, la app no lo impide. Es poco probable, pero posible.</li>
+      <li><b>Lo apuntado a mano en Google Calendar no cuenta.</b> Si un psicólogo apunta algo directamente en su calendario, la app no lo ve y puede ofrecer esa hora.</li>
+      <li><b>Dante mira otra fuente.</b> <span class="badge b-pend">pendiente</span> Hoy Dante busca huecos con su propio sistema, que no usa estos horarios, así que puede ofrecer horas distintas a las de la app. Está en <a href="#pendientes">Pendientes</a>.</li>
+    </ul>
+  </article>
+</div></section>
 <!-- SECCION-DANTE -->
 <section class="clara seccion" id="dante"><div class="wrap"><span class="num">06</span><h2>Dante</h2></div></section>
 <!-- SECCION-PENDIENTES -->

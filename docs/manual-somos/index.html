@@ -54,6 +54,7 @@ a{color:inherit; text-decoration-color:var(--acento-texto); text-underline-offse
 
 /* Portada */
 .portada{padding-top:72px; padding-bottom:56px}
+.logo-portada{display:block; width:44px; height:44px; margin-bottom:20px}
 .portada .para{font:500 13px "DM Mono",monospace; color:var(--amarillo); letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:16px}
 .portada h1 em{font-style:normal; color:var(--amarillo)}
 .portada .lead{font-size:clamp(17px,2vw,20px); color:var(--texto2); max-width:62ch; margin:20px 0 0}
@@ -98,7 +99,7 @@ code.ui var{font-style:italic; opacity:.8}
 .lista-msg .grupo{font:700 12px "DM Sans",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--texto2); padding-top:14px}
 .nota{border-left:3px solid var(--amarillo); background:var(--ui-fondo); padding:10px 14px; border-radius:0 10px 10px 0; font-size:15px; margin:14px 0}
 details{margin-top:12px; border-top:1px solid var(--borde); padding-top:8px}
-summary{cursor:pointer; font-weight:600; font-size:14px; color:var(--acento-texto); list-style:none; display:flex; align-items:center; gap:8px; min-height:36px}
+summary{cursor:pointer; font-weight:600; font-size:14px; color:var(--acento-texto); list-style:none; display:flex; align-items:center; gap:8px; min-height:40px}
 summary::-webkit-details-marker{display:none}
 summary::before{content:"+"; font:500 16px "DM Mono",monospace; width:14px}
 details[open] summary::before{content:"–"}
@@ -186,6 +187,7 @@ footer img{width:28px; height:28px}
 
 <header class="oscura" id="portada">
   <div class="wrap portada">
+    <img class="logo-portada" src="bebanana-icon.png" alt="Be Banana" width="44" height="44">
     <span class="para">Para el equipo de dirección de Somos Psicólogos</span>
     <h1>Cómo funciona<br><em>vuestra app</em>, pieza a pieza</h1>
     <p class="lead">Qué hace cada pantalla, qué ve cada persona del equipo, qué mensajes aparecen y por qué, y qué pasa por detrás cada vez que alguien agenda una cita. Este documento crece con la app: cuando añadimos algo, lo veréis en Novedades.</p>
@@ -206,7 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
-        <li><time datetime="2026-09-27">27-09-2026</time><span>Primera versión del manual: todo el sistema tal y como está hoy.</span></li>
+        <li><time datetime="2026-09-27">27-09-2026</time><span>Primera versión del manual: <a href="#montado">todo el sistema tal y como está hoy</a>.</span></li>
       </ol>
     </section>
   </div>
@@ -240,7 +242,7 @@ footer img{width:28px; height:28px}
     <article class="pieza">
       <div class="icono"><span aria-hidden="true">✈️</span></div>
       <h3>Telegram</h3>
-      <p>Hoy es el canal de las confirmaciones a pacientes y de los avisos al equipo: altas, vacaciones, posibles duplicados, derivaciones de Dante.</p>
+      <p>Hoy es el canal de los avisos al equipo (altas, vacaciones, posibles duplicados, derivaciones de Dante) y de las confirmaciones a pacientes. Ojo con esto último: ver <a href="#p-telegram-pacientes">Pendientes</a>.</p>
     </article>
     <article class="pieza">
       <div class="icono"><span aria-hidden="true">💬</span><span class="badge b-pend">pendiente</span></div>
@@ -292,7 +294,7 @@ footer img{width:28px; height:28px}
         <dt>Quién es</dt><dd>Las personas que atienden el teléfono.</dd>
         <dt>Empieza en</dt><dd>Calendario, para ver de un vistazo la disponibilidad.</dd>
         <dt>Puede</dt><dd>Agendar, cambiar y cancelar citas y dar de alta pacientes, en cualquier centro y con cualquier psicólogo. Ver su propia actividad.</dd>
-        <dt>No puede</dt><dd>Ver ni tocar bloqueos, ver datos globales ni gestionar usuarios.</dd>
+        <dt>No puede</dt><dd>Crear ni cambiar bloqueos (sí los ve en el Calendario), ver datos globales ni gestionar usuarios.</dd>
       </dl>
     </article>
   </div>
@@ -329,7 +331,7 @@ footer img{width:28px; height:28px}
         <thead><tr><th>Botón</th><th>Qué hace</th><th>Cuándo</th></tr></thead>
         <tbody>
           <tr><td><code class="ui">Enviar acceso</code></td><td>Le llega un correo para crear una contraseña nueva. La actual sigue valiendo hasta que la cambie.</td><td>Lo normal.</td></tr>
-          <tr><td><code class="ui">Generar</code></td><td>Crea una contraseña temporal que se ve una sola vez en pantalla. La anterior deja de funcionar.</td><td>Si el correo no llega o hay prisa. Hay que entregarla a mano.</td></tr>
+          <tr><td><code class="ui">Generar</code> (en Agentes, <code class="ui">Generar contraseña</code>)</td><td>Crea una contraseña temporal que se ve una sola vez en pantalla. La anterior deja de funcionar.</td><td>Si el correo no llega o hay prisa. Hay que entregarla a mano.</td></tr>
         </tbody>
       </table></div>
     </article>
@@ -369,11 +371,11 @@ footer img{width:28px; height:28px}
           <li><code class="ui">No quedan huecos libres ese día.</code></li>
           <li><code class="ui">Ahora mismo no podemos consultar la disponibilidad. Contacta con nosotros para agendar esta cita.</code><span class="donde">Si falla la consulta de horarios: no deja agendar a ciegas</span></li>
           <li><code class="ui">La hora elegida ya no está disponible. Elige otra.</code><span class="donde">Error al enviar</span></li>
+          <li><code class="ui">Espera un momento: se está cargando la disponibilidad.</code><span class="donde">Error al enviar</span></li>
 
           <li class="grupo">Todos los roles</li>
           <li><code class="ui">Cargando disponibilidad…</code><span class="donde">Texto del desplegable de hora mientras carga</span></li>
           <li><code class="ui">Indica la fecha y la hora de la cita.</code><span class="donde">Error al enviar</span></li>
-          <li><code class="ui">Espera un momento: se está cargando la disponibilidad.</code><span class="donde">Error al enviar</span></li>
           <li><code class="ui">Selecciona el tipo de cita (adulto, pareja o menor).</code><span class="donde">Error al enviar</span></li>
           <li><code class="ui">No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.</code></li>
           <li><code class="ui">No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.</code><span class="donde">Psicólogo sin permiso de bloqueo</span></li>
@@ -395,7 +397,7 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Calendario</h3><span class="chip r-agente">Agente</span><span class="chip r-callcenter">Call center</span></div>
       <dl>
         <dt>Para qué</dt><dd><code class="ui">Citas y bloqueos de todos los psicólogos. Filtra por centro, tipo de cita o psicólogo para ver la disponibilidad.</code></dd>
-        <dt>Cómo se ve</dt><dd>Semana de lunes a domingo, de 08:00 a 22:00. Cada cita ocupa una hora, con el color de su centro. Los bloqueos van en la fila de arriba, «Día». Nunca se ve el nombre del paciente: solo sus iniciales.</dd>
+        <dt>Cómo se ve</dt><dd>Semana de lunes a domingo, de 08:00 a 22:00. Cada cita ocupa una hora, con el color de su centro. Los bloqueos van en la fila de arriba, «Día». Del paciente solo se ven sus iniciales, nunca el nombre completo.</dd>
         <dt>Qué se hace</dt><dd>Filtrar con <code class="ui">Todos los centros</code>, el tipo de cita (Adulto, Pareja, Menor, <code class="ui">Sin tipo</code>) y <code class="ui">Todos los psicólogos</code>. Moverse con <code class="ui">‹ Semana anterior</code>, <code class="ui">Hoy</code> y <code class="ui">Semana siguiente ›</code>; en el móvil, día a día con <code class="ui">‹ Día</code> y <code class="ui">Día ›</code>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
@@ -516,7 +518,7 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-agentes">
       <div class="ficha-cab"><h3>Agentes</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>La lista de agentes: activar o desactivar y restablecer su acceso con <code class="ui">Enviar acceso</code> o <code class="ui">Generar</code>.</dd>
+        <dt>Para qué</dt><dd>La lista de agentes: activar o desactivar y restablecer su acceso con <code class="ui">Enviar acceso</code> o <code class="ui">Generar contraseña</code>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
@@ -571,7 +573,7 @@ footer img{width:28px; height:28px}
       <tr><td>En espera</td><td>Comunicaciones</td><td>Al pulsar «Mover a En espera» sobre un paciente sin disponibilidad.</td></tr>
       <tr><td>Cambio solicitado</td><td>Make, a petición de Dante</td><td>Cuando el paciente pide cambiar de psicólogo. Avisa al equipo.</td></tr>
       <tr><td>Dudoso contactado</td><td>Comunicaciones</td><td>Tras escribir a un paciente indeciso.</td></tr>
-      <tr><td>Psicólogo</td><td>Make</td><td>Paciente pendiente de que su psicólogo le llame. Aparece en la pestaña «Hablar con Psicólogo».</td></tr>
+      <tr><td>Psicólogo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Paciente pendiente de que su psicólogo le llame; aparece en la pestaña «Hablar con Psicólogo». Make sabe ponerlo, pero hoy ni la app ni Dante se lo piden. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
       <tr><td>Dudoso</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna; solo se lee en Comunicaciones. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
       <tr><td>Revisar recomendado</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna; solo aparece en los gráficos. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
       <tr><td>Psicólogo sin disponibilidad</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna, aunque tiene mensaje estándar en «En Espera». Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
@@ -590,7 +592,7 @@ footer img{width:28px; height:28px}
       <tr><td>Añadir nuevo paciente</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span><span class="chip r-dante">Dante</span></td><td>—</td><td>Nuevo paciente</td><td>Al equipo: paciente nuevo en la cartera de ese psicólogo. Al paciente o a sus tutores: enlace del consentimiento.</td></tr>
       <tr><td>Bloquear agenda</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo con permiso</span></td><td>Crea un evento «BLOQUEADO».</td><td>—</td><td>Al psicólogo: bloqueo registrado, desde y hasta.</td></tr>
       <tr><td>Desbloquear agenda</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo con permiso</span></td><td>Borra el evento de bloqueo.</td><td>—</td><td>—</td></tr>
-      <tr><td>Vacaciones, Asuntos propios, Baja laboral</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span></td><td>Crea un evento «BLOQUEADO» con el motivo.</td><td>—</td><td>A todo el equipo: quién estará fuera y por qué.</td></tr>
+      <tr><td>Vacaciones, Asuntos propios, Baja laboral</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span></td><td>Crea un evento «BLOQUEADO».</td><td>—</td><td>A todo el equipo: quién estará fuera y por qué.</td></tr>
       <tr><td>Modificar bloqueo personal</td><td><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span></td><td>Cambia las fechas del evento.</td><td>—</td><td>—</td></tr>
     </tbody>
   </table></div>
@@ -608,7 +610,7 @@ footer img{width:28px; height:28px}
     </article>
     <article class="ficha">
       <h3>Menores</h3>
-      <p>Cada tutor recibe su enlace. Make marca la firma de cada uno por su teléfono, y cuando han firmado los dos marca el consentimiento del menor.</p>
+      <p>Cada tutor recibe su enlace. Make marca la firma de cada uno por su teléfono, y cuando han firmado los dos, o el único tutor, si solo hay uno, marca el consentimiento del menor.</p>
       <p class="nota">Si cambia el formulario de la web (remitente, asunto o nombres de los campos), el consentimiento deja de marcarse solo, sin avisar.</p>
     </article>
   </div>
@@ -646,7 +648,7 @@ footer img{width:28px; height:28px}
   <div class="dos" style="margin-top:16px">
     <article class="ficha">
       <div class="ficha-cab"><h3>La app no deja</h3><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
-      <p>Solo ven los huecos libres y no pueden elegir fechas pasadas. Si el día está bloqueado o no trabaja, el selector de hora se desactiva y dice por qué:</p>
+      <p>Solo ven los huecos libres y no pueden elegir días pasados. Las horas de hoy que ya han pasado todavía se ofrecen (está en <a href="#pendientes">Pendientes</a>). Si el día está bloqueado o no trabaja, el selector de hora se desactiva y dice por qué:</p>
       <ul class="lista-msg">
         <li><code class="ui">Agenda bloqueada ese día (<var>Vacaciones</var>).</code></li>
         <li><code class="ui"><var>Marta</var> no trabaja los <var>martes</var> en <var>San Blas</var>.</code></li>
@@ -692,7 +694,7 @@ footer img{width:28px; height:28px}
       <ul>
         <li>No bloquea agendas: si se lo piden, pasa la conversación al equipo.</li>
         <li>No lee imágenes. Responde «Por favor, escríbeme o mándame un audio. No puedo procesar imágenes. 😊».</li>
-        <li>No da más de una cita activa por paciente.</li>
+        <li>Si el paciente ya tiene una cita, no le da otra: le ofrece cambiarla.</li>
         <li>Solo ofrece horas en punto o y media, entre las 08:00 y las 21:30.</li>
         <li>Nunca enseña códigos internos al paciente.</li>
       </ul>
@@ -700,17 +702,17 @@ footer img{width:28px; height:28px}
   </div>
 
   <p class="subtitulo">Cuándo pasa a una persona</p>
-  <p>Cuando Dante no puede o no debe seguir, deriva la conversación. Avisa por Telegram a la primera persona de la lista; si no responde, a la siguiente.</p>
+  <p>Cuando Dante no puede o no debe seguir, deriva la conversación y avisa por Telegram a la primera persona de la lista. Solo si a esa persona no le puede llegar el mensaje (por ejemplo, porque nunca ha abierto el bot), avisa a la siguiente.</p>
   <div class="tabla"><table>
     <thead><tr><th>Tipo</th><th>Orden de aviso</th><th>Nota</th></tr></thead>
     <tbody>
-      <tr><td>General</td><td>Marta → Sonia → Jaime</td><td>Dudas que Dante no resuelve, bloqueos, quejas.</td></tr>
+      <tr><td>General</td><td>Marta → Sonia → Jaime</td><td>El paciente pide hablar con una persona, Dante no sabe resolverlo, o se trata de bloqueos, facturas o informes.</td></tr>
       <tr><td>Marketing</td><td>Jaime → Sonia → Marta</td><td>Colaboraciones, publicidad, prensa.</td></tr>
       <tr><td>Emergencia</td><td>Bea → Marta → Sonia → Jaime</td><td>Además recuerda al paciente los teléfonos 112 y 024.</td></tr>
     </tbody>
   </table></div>
   <div class="dos">
-    <p class="nota">Quien atiende la derivación responde «atendido» en Telegram y queda cerrada. Si nadie la atiende, cada 15 minutos llega un recordatorio.</p>
+    <p class="nota">Quien atiende la derivación responde «atendido» en Telegram y queda cerrada. Mientras no lo haga, la persona avisada recibe un recordatorio cada 15 minutos.</p>
     <p class="nota"><span class="badge b-decision">decisión pendiente</span> Cuando actúa Dante, el paciente recibe hoy dos confirmaciones: la de Dante y la de Make.</p>
   </div>
 </div></section>
@@ -722,19 +724,20 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <div class="ficha-cab"><h3>Decisiones que tomar</h3><span class="badge b-decision">decisión pendiente</span></div>
       <ul class="lista-msg">
-        <li><b>Estados de paciente sin uso.</b> «Dudoso», «Revisar recomendado», «Psicólogo sin disponibilidad» e «Inactivo» existen, pero nadie los asigna hoy. ¿Los usará el call center? ¿Se activan? Ver <a href="#cita">Estados del paciente</a>.</li>
+        <li><b>Estados de paciente sin uso.</b> «Psicólogo», «Dudoso», «Revisar recomendado», «Psicólogo sin disponibilidad» e «Inactivo» existen, pero nadie los asigna hoy. ¿Los usará el call center? ¿Se activan? Ver <a href="#cita">Estados del paciente</a>.</li>
         <li><b>Doble confirmación con Dante.</b> Decidir cuál de las dos confirmaciones se queda.</li>
-        <li><b>Consentimiento desde Dante.</b> Decidir si Dante también envía el enlace del consentimiento al dar de alta.</li>
+        <li><b>Consentimiento desde Dante.</b> Cuando Dante da de alta a un paciente, el enlace del consentimiento ya lo envía Make, como con la app. Queda por decidir si Dante lo menciona también en la conversación.</li>
         <li><b>Un paciente con varios psicólogos.</b> Hay un rediseño preparado para que un paciente pueda tener a la vez psicólogo de adultos, de pareja e infantil. No se hace hasta que Sonia lo indique.</li>
       </ul>
     </article>
     <article class="ficha">
       <div class="ficha-cab"><h3>Por construir o ajustar</h3><span class="badge b-pend">pendiente</span></div>
       <ul class="lista-msg">
+        <li id="p-telegram-pacientes"><b>Confirmaciones a pacientes dados de alta en la app.</b> <span class="badge b-pend">a confirmar</span> Las confirmaciones de cita y el enlace del consentimiento salen hoy por Telegram. Telegram solo puede escribir a quien ha hablado antes con el bot, es decir, a los pacientes que entraron por Dante. Los pacientes dados de alta en la app con su número de teléfono probablemente no los reciben. Se resuelve con el paso a WhatsApp.</li>
         <li><b>WhatsApp para Dante y recordatorios.</b> Pasar Dante y los recordatorios de consentimiento de Telegram a WhatsApp.</li>
         <li><b>Una sola fuente de huecos.</b> Que Dante use los mismos horarios que la app.</li>
         <li><b>Tipo de cita en el calendario.</b> Que el evento de Google Calendar incluya si es Adulto, Pareja o Menor.</li>
-        <li><b>Nombre del centro Salamanca.</b> Renombrar «Barrio Salamanca» a «Salamanca» en las fichas de psicólogos para que Make los encuentre.</li>
+        <li><b>Horas pasadas de hoy.</b> Al agendar para hoy, la app todavía ofrece horas que ya han pasado. Hay que ocultarlas.</li>
         <li><b>Citas a y media.</b> Activar <code class="ui">30'</code> a los psicólogos que las necesiten.</li>
         <li><b>Protección de datos en la base de datos.</b> Hoy los permisos se controlan en la app; falta cerrarlos también en la base de datos.</li>
         <li><b>Guía de pruebas antigua.</b> Actualizarla: menciona la app retirada y campos que ya no existen.</li>
@@ -748,7 +751,7 @@ footer img{width:28px; height:28px}
   <p class="entrada">Palabras que se usan en la app y en este manual con un sentido concreto.</p>
   <dl>
     <div><dt>30'</dt><dd>Permiso de un psicólogo para recibir citas a las medias horas (10:30, 11:30…). Se activa en Usuarios y vale para todos sus centros.</dd></div>
-    <div><dt>Bloqueo</dt><dd>Tiempo en que un psicólogo no atiende: bloqueo general, vacaciones, asuntos propios o baja laboral. Siempre ocupa días completos.</dd></div>
+    <div><dt>Bloqueo</dt><dd>Tiempo en que un psicólogo no atiende: bloqueo general, vacaciones, asuntos propios o baja laboral. Aunque se pida por horas, para la app cuenta como el día completo.</dd></div>
     <div><dt>Centro</dt><dd>Cada sede de la clínica: Hortaleza, San Blas, Moratalaz, Vallecas, Salamanca, Las Rosas. «Online» funciona como un centro más.</dd></div>
     <div><dt>Cita activa</dt><dd>Una cita agendada que no se ha cancelado, de hoy en adelante.</dd></div>
     <div><dt>Consentimiento</dt><dd>El formulario firmado en la web de Somos. Los menores necesitan el de sus dos tutores.</dd></div>

@@ -20,7 +20,8 @@ for (const d of new Set(destinos)) if (!ids.has(d)) fallos.push(`Ancla rota: #${
 
 // 3. Secretos
 const SECRETOS = [/hook\.eu\d?\.make\.com/i, /eltodi/i, /supabase\.co/i, /eyJ[A-Za-z0-9_-]{10,}/,
-  /\bbot\d{6,}:/i, /service_role/i, /sk-[A-Za-z0-9]{10,}/]
+  /\bbot\d{6,}:/i, /service_role/i, /sk-[A-Za-z0-9]{10,}/, /sb_(publishable|secret)_/i,
+  /api\.telegram\.org/i, /\b\d{9,10}\b/]
 for (const re of SECRETOS) if (re.test(html)) fallos.push(`Posible secreto: ${re}`)
 
 // 4. Toda tabla dentro de .tabla

@@ -673,11 +673,97 @@ footer img{width:28px; height:28px}
   </article>
 </div></section>
 <!-- SECCION-DANTE -->
-<section class="clara seccion" id="dante"><div class="wrap"><span class="num">06</span><h2>Dante</h2></div></section>
+<section class="clara seccion" id="dante"><div class="wrap">
+  <span class="num">06</span><h2>Dante</h2>
+  <p class="entrada">Dante es el asistente de Telegram que atiende a los pacientes a cualquier hora. Está en producción desde el 26-09-2026. Todo lo que hace pasa por los mismos caminos que la app, así que sus citas aparecen en el calendario y en las estadísticas como las demás.</p>
+  <div class="fichas">
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Qué hace</h3><span class="chip r-dante">Dante</span></div>
+      <ul>
+        <li>Reconoce al paciente por su chat de Telegram. Si es nuevo, lo da de alta.</li>
+        <li>Busca huecos y ofrece tres opciones.</li>
+        <li>Agenda, cambia y anula citas, siempre con una confirmación del paciente antes.</li>
+        <li>Si no hay hueco, deja al paciente como «Sin disponibilidad». Si pide otro psicólogo, como «Cambio solicitado». En ambos casos avisa al equipo.</li>
+        <li>Entiende texto y mensajes de voz.</li>
+      </ul>
+    </article>
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Qué no hace</h3><span class="chip r-dante">Dante</span></div>
+      <ul>
+        <li>No bloquea agendas: si se lo piden, pasa la conversación al equipo.</li>
+        <li>No lee imágenes. Responde «Por favor, escríbeme o mándame un audio. No puedo procesar imágenes. 😊».</li>
+        <li>No da más de una cita activa por paciente.</li>
+        <li>Solo ofrece horas en punto o y media, entre las 08:00 y las 21:30.</li>
+        <li>Nunca enseña códigos internos al paciente.</li>
+      </ul>
+    </article>
+  </div>
+
+  <p class="subtitulo">Cuándo pasa a una persona</p>
+  <p>Cuando Dante no puede o no debe seguir, deriva la conversación. Avisa por Telegram a la primera persona de la lista; si no responde, a la siguiente.</p>
+  <div class="tabla"><table>
+    <thead><tr><th>Tipo</th><th>Orden de aviso</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td>General</td><td>Marta → Sonia → Jaime</td><td>Dudas que Dante no resuelve, bloqueos, quejas.</td></tr>
+      <tr><td>Marketing</td><td>Jaime → Sonia → Marta</td><td>Colaboraciones, publicidad, prensa.</td></tr>
+      <tr><td>Emergencia</td><td>Bea → Marta → Sonia → Jaime</td><td>Además recuerda al paciente los teléfonos 112 y 024.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="dos">
+    <p class="nota">Quien atiende la derivación responde «atendido» en Telegram y queda cerrada. Si nadie la atiende, cada 15 minutos llega un recordatorio.</p>
+    <p class="nota"><span class="badge b-decision">decisión pendiente</span> Cuando actúa Dante, el paciente recibe hoy dos confirmaciones: la de Dante y la de Make.</p>
+  </div>
+</div></section>
 <!-- SECCION-PENDIENTES -->
-<section class="clara seccion" id="pendientes"><div class="wrap"><span class="num">07</span><h2>Pendientes y decisiones abiertas</h2></div></section>
+<section class="clara seccion" id="pendientes"><div class="wrap">
+  <span class="num">07</span><h2>Pendientes y decisiones abiertas</h2>
+  <p class="entrada">Lo que queda por decidir y lo que queda por construir o ajustar, a fecha de esta versión. Cuando algo se resuelva, desaparece de aquí y aparece en Novedades.</p>
+  <div class="dos">
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Decisiones que tomar</h3><span class="badge b-decision">decisión pendiente</span></div>
+      <ul class="lista-msg">
+        <li><b>Estados de paciente sin uso.</b> «Dudoso», «Revisar recomendado», «Psicólogo sin disponibilidad» e «Inactivo» existen, pero nadie los asigna hoy. ¿Los usará el call center? ¿Se activan? Ver <a href="#cita">Estados del paciente</a>.</li>
+        <li><b>Doble confirmación con Dante.</b> Decidir cuál de las dos confirmaciones se queda.</li>
+        <li><b>Consentimiento desde Dante.</b> Decidir si Dante también envía el enlace del consentimiento al dar de alta.</li>
+        <li><b>Un paciente con varios psicólogos.</b> Hay un rediseño preparado para que un paciente pueda tener a la vez psicólogo de adultos, de pareja e infantil. No se hace hasta que Sonia lo indique.</li>
+      </ul>
+    </article>
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Por construir o ajustar</h3><span class="badge b-pend">pendiente</span></div>
+      <ul class="lista-msg">
+        <li><b>WhatsApp para Dante y recordatorios.</b> Pasar Dante y los recordatorios de consentimiento de Telegram a WhatsApp.</li>
+        <li><b>Una sola fuente de huecos.</b> Que Dante use los mismos horarios que la app.</li>
+        <li><b>Tipo de cita en el calendario.</b> Que el evento de Google Calendar incluya si es Adulto, Pareja o Menor.</li>
+        <li><b>Nombre del centro Salamanca.</b> Renombrar «Barrio Salamanca» a «Salamanca» en las fichas de psicólogos para que Make los encuentre.</li>
+        <li><b>Citas a y media.</b> Activar <code class="ui">30'</code> a los psicólogos que las necesiten.</li>
+        <li><b>Protección de datos en la base de datos.</b> Hoy los permisos se controlan en la app; falta cerrarlos también en la base de datos.</li>
+        <li><b>Guía de pruebas antigua.</b> Actualizarla: menciona la app retirada y campos que ya no existen.</li>
+      </ul>
+    </article>
+  </div>
+</div></section>
 <!-- SECCION-GLOSARIO -->
-<section class="clara seccion" id="glosario"><div class="wrap"><span class="num">08</span><h2>Glosario</h2></div></section>
+<section class="clara seccion" id="glosario"><div class="wrap">
+  <span class="num">08</span><h2>Glosario</h2>
+  <p class="entrada">Palabras que se usan en la app y en este manual con un sentido concreto.</p>
+  <dl>
+    <div><dt>30'</dt><dd>Permiso de un psicólogo para recibir citas a las medias horas (10:30, 11:30…). Se activa en Usuarios y vale para todos sus centros.</dd></div>
+    <div><dt>Bloqueo</dt><dd>Tiempo en que un psicólogo no atiende: bloqueo general, vacaciones, asuntos propios o baja laboral. Siempre ocupa días completos.</dd></div>
+    <div><dt>Centro</dt><dd>Cada sede de la clínica: Hortaleza, San Blas, Moratalaz, Vallecas, Salamanca, Las Rosas. «Online» funciona como un centro más.</dd></div>
+    <div><dt>Cita activa</dt><dd>Una cita agendada que no se ha cancelado, de hoy en adelante.</dd></div>
+    <div><dt>Consentimiento</dt><dd>El formulario firmado en la web de Somos. Los menores necesitan el de sus dos tutores.</dd></div>
+    <div><dt>Dante</dt><dd>El asistente de Telegram que atiende a los pacientes.</dd></div>
+    <div><dt>Derivación</dt><dd>Cuando Dante pasa una conversación a una persona del equipo.</dd></div>
+    <div><dt>Ficha de psicólogo</dt><dd>Un psicólogo en un centro. Quien trabaja en tres centros tiene tres fichas, con el mismo calendario.</dd></div>
+    <div><dt>Iniciales</dt><dd>Cómo se identifica a un paciente en el calendario, por ejemplo «MGL (María)». Nunca se muestra el nombre completo.</dd></div>
+    <div><dt>Menor</dt><dd>Paciente de 15 años o menos. La app lo calcula con la fecha de nacimiento.</dd></div>
+    <div><dt>Origen</dt><dd>Quién hizo cada acción: un psicólogo, un agente, alguien del call center o Dante. Queda guardado siempre.</dd></div>
+    <div><dt>Permiso de bloqueo</dt><dd>Permiso de un psicólogo para bloquear y desbloquear su agenda él mismo. Se da en Usuarios.</dd></div>
+    <div><dt>Proveedor externo de calendario</dt><dd>Un servicio externo que recibe un aviso automático con cada cita y cada bloqueo.</dd></div>
+    <div><dt>Recomendado</dt><dd>Paciente que trae el propio psicólogo, marcado con la casilla «Nueva recomendación».</dd></div>
+    <div><dt>Tipo de cita</dt><dd>Adulto, Pareja o Menor. Todas duran 60 minutos.</dd></div>
+  </dl>
+</div></section>
 
 <footer class="clara">
   <div class="wrap">

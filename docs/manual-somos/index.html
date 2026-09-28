@@ -192,7 +192,7 @@ footer img{width:28px; height:28px}
     <h1>Cómo funciona<br><em>vuestra app</em>, pieza a pieza</h1>
     <p class="lead">Qué hace cada pantalla, qué ve cada persona del equipo, qué mensajes aparecen y por qué, y qué pasa por detrás cada vez que alguien agenda una cita. Este documento crece con la app: cuando añadimos algo, lo veréis en Novedades.</p>
     <div class="meta">
-      <span class="pildora">Versión del 27-09-2026</span>
+      <span class="pildora">Versión del 28-09-2026</span>
       <span class="pildora">Preparado por Be Banana</span>
     </div>
     <ol class="indice">
@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-09-28">28-09-2026</time><span>Estados del paciente aclarados: cuáles ya tienen uso en Comunicaciones aunque nadie los active, cuál no tiene uso y de dónde falta confirmar que sale «Inactivo». <a href="#cita">Ver estados</a>.</span></li>
         <li><time datetime="2026-09-27">27-09-2026</time><span>Primera versión del manual: <a href="#montado">todo el sistema tal y como está hoy</a>.</span></li>
       </ol>
     </section>
@@ -573,11 +574,11 @@ footer img{width:28px; height:28px}
       <tr><td>En espera</td><td>Comunicaciones</td><td>Al pulsar «Mover a En espera» sobre un paciente sin disponibilidad.</td></tr>
       <tr><td>Cambio solicitado</td><td>Make, a petición de Dante</td><td>Cuando el paciente pide cambiar de psicólogo. Avisa al equipo.</td></tr>
       <tr><td>Dudoso contactado</td><td>Comunicaciones</td><td>Tras escribir a un paciente indeciso.</td></tr>
-      <tr><td>Psicólogo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Paciente pendiente de que su psicólogo le llame; aparece en la pestaña «Hablar con Psicólogo». Make sabe ponerlo, pero hoy ni la app ni Dante se lo piden. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
-      <tr><td>Dudoso</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna; solo se lee en Comunicaciones. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
-      <tr><td>Revisar recomendado</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna; solo aparece en los gráficos. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
-      <tr><td>Psicólogo sin disponibilidad</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna, aunque tiene mensaje estándar en «En Espera». Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
-      <tr><td>Inactivo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo asigna. Por decidir: ¿lo usará el call center? ¿se activa?</td></tr>
+      <tr><td>Psicólogo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Tiene uso: alimenta la pestaña «Hablar con Psicólogo» de <a href="#p-comunicaciones">Comunicaciones</a>, desde donde se avisa al psicólogo de que tiene una llamada pendiente. Pero hoy ni la app ni Dante ponen a nadie en este estado. Por decidir: ¿lo activa el call center?</td></tr>
+      <tr><td>Dudoso</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Tiene uso: alimenta la pestaña «Dudosos» de Comunicaciones, donde se escribe a cada paciente y pasa a «Dudoso contactado». Pero hoy nadie pone a un paciente en «Dudoso». Por decidir: ¿lo activa el call center?</td></tr>
+      <tr><td>Revisar recomendado</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Sin uso hoy: nadie lo asigna y ninguna pantalla hace nada con él; solo aparece en los gráficos y la tabla de pacientes. Por decidir: ¿para qué se quiere y quién lo activa?</td></tr>
+      <tr><td>Psicólogo sin disponibilidad</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Tiene uso: alimenta la pestaña «En Espera» de Comunicaciones, con su propio mensaje estándar. Pero hoy nadie pone a un paciente en este estado. Por decidir: ¿lo activa el call center?</td></tr>
+      <tr><td>Inactivo</td><td><span class="badge b-pend">a confirmar</span></td><td>Ni la app, ni Dante, ni los escenarios de Make revisados lo asignan, y ninguna pantalla hace nada con él. Aun así hay pacientes en este estado, así que puede ponerlo un escenario de Make que no hemos revisado o alguien a mano. Hay que confirmar de dónde sale.</td></tr>
     </tbody>
   </table></div>
   <p class="nota">Los cambios de estado hechos desde Comunicaciones quedan registrados con fecha, para saber cuántos días lleva cada paciente esperando.</p>
@@ -724,7 +725,7 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <div class="ficha-cab"><h3>Decisiones que tomar</h3><span class="badge b-decision">decisión pendiente</span></div>
       <ul class="lista-msg">
-        <li><b>Estados de paciente sin uso.</b> «Psicólogo», «Dudoso», «Revisar recomendado», «Psicólogo sin disponibilidad» e «Inactivo» existen, pero nadie los asigna hoy. ¿Los usará el call center? ¿Se activan? Ver <a href="#cita">Estados del paciente</a>.</li>
+        <li><b>Estados que nadie activa.</b> «Psicólogo», «Dudoso» y «Psicólogo sin disponibilidad» ya tienen su pestaña en Comunicaciones, pero hoy nadie pone a un paciente en ellos. ¿Los activará el call center? «Revisar recomendado» ni siquiera tiene uso: ¿para qué se quiere? Y falta confirmar de dónde sale «Inactivo». Ver <a href="#cita">Estados del paciente</a>.</li>
         <li><b>Doble confirmación con Dante.</b> Decidir cuál de las dos confirmaciones se queda.</li>
         <li><b>Consentimiento desde Dante.</b> Cuando Dante da de alta a un paciente, el enlace del consentimiento ya lo envía Make, como con la app. Queda por decidir si Dante lo menciona también en la conversación.</li>
         <li><b>Un paciente con varios psicólogos.</b> Hay un rediseño preparado para que un paciente pueda tener a la vez psicólogo de adultos, de pareja e infantil. No se hace hasta que Sonia lo indique.</li>
@@ -771,7 +772,7 @@ footer img{width:28px; height:28px}
 <footer class="clara">
   <div class="wrap">
     <img src="bebanana-icon.png" alt="Be Banana" width="28" height="28">
-    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 27-09-2026 · «Where humans use artificial intelligence with real intelligence»</span>
+    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 28-09-2026 · «Where humans use artificial intelligence with real intelligence»</span>
   </div>
 </footer>
 

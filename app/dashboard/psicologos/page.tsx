@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Centro, Psicologo, Paciente, Perfil, TipoCita } from '@/types/database'
+import type { Centro, Psicologo, Paciente, Perfil, PsicologoCentro, TipoCita } from '@/types/database'
+import { filtroPacientesDePsicologo, tiposDisponibles, ETIQUETA_TIPO } from '@/lib/pacientes-tipos'
 import EventoSelect from '@/components/EventoSelect'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
@@ -179,6 +180,8 @@ function calcularEdad(fechaNacimiento: string): number {
 export default function PsicologosPage() {
   const [centros, setCentros] = useState<Centro[]>([])
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
+  // Centros de cada psicólogo (migración 014): una ficha, N centros.
+  const [psicologosCentros, setPsicologosCentros] = useState<PsicologoCentro[]>([])
   const [filteredPsicologos, setFilteredPsicologos] = useState<Psicologo[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [loadingPacientes, setLoadingPacientes] = useState(false)
@@ -238,20 +241,21 @@ export default function PsicologosPage() {
   const esPsicologo = perfil?.rol === 'psicologo'
   const esCallCenter = perfil?.rol === 'call_center'
 
-  // Multi-centro: un psicólogo que trabaja en varios centros tiene una fila en
-  // `psicologos` por centro (mismo email). Si hay más de una, debe elegir centro.
-  const [misVariantes, setMisVariantes] = useState<Psicologo[]>([])
+  // Psicólogo logueado: su ficha única y la lista de centros donde trabaja
+  // (migración 014). Si tiene más de un centro, debe elegir en cuál está hoy.
+  const [miFicha, setMiFicha] = useState<Psicologo | null>(null)
+  const [misCentros, setMisCentros] = useState<string[]>([])
   const [variantesCargadas, setVariantesCargadas] = useState(false)
   const [centroActivo, setCentroActivoState] = useState<CentroActivo | null>(null)
-  const esMultiCentro = esPsicologo && misVariantes.length > 1
+  const esMultiCentro = esPsicologo && misCentros.length > 1
   const necesitaElegirCentro = esMultiCentro && !centroActivo
 
   // For a psychologist the centro/psicólogo are fixed to their own profile (or
   // to the chosen center when they work in several). Use these as the source of
   // truth so a successful action (which resets the form) or a slow auto-fill
   // can never leave the next submit without them.
-  const psiPsicologoId = centroActivo?.psicologoId ?? perfil?.psicologo_id ?? null
-  const psiCentroId    = centroActivo?.centroId ?? perfil?.centro_id ?? null
+  const psiPsicologoId = miFicha?.id ?? perfil?.psicologo_id ?? null
+  const psiCentroId    = centroActivo?.centroId ?? (misCentros.length === 1 ? misCentros[0] : null) ?? perfil?.centro_id ?? null
   const effCentroId    = esPsicologo ? (psiCentroId ?? centroId) : centroId
   const effPsicologoId = esPsicologo ? (psiPsicologoId ?? psicologoId) : psicologoId
 
@@ -261,26 +265,29 @@ export default function PsicologosPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [{ data: c }, { data: p }] = await Promise.all([
+      const [{ data: c }, { data: p }, { data: pc }] = await Promise.all([
         supabase.from('centros').select('*').order('nombre'),
         supabase.from('psicologos').select('*').eq('activo', true).order('nombre'),
+        supabase.from('psicologos_centros').select('psicologo_id, centro_id'),
       ])
       setCentros((c ?? []) as Centro[])
       setPsicologos((p ?? []) as Psicologo[])
+      setPsicologosCentros((pc ?? []) as PsicologoCentro[])
     }
     fetchData()
   }, [])
 
   useEffect(() => {
     if (centroId) {
-      setFilteredPsicologos(psicologos.filter((p) => p.centro_id === centroId))
+      const enCentro = new Set(psicologosCentros.filter((pc) => pc.centro_id === centroId).map((pc) => pc.psicologo_id))
+      setFilteredPsicologos(psicologos.filter((p) => enCentro.has(p.id)))
     } else {
       setFilteredPsicologos([])
     }
     setPsicologoId('')
     setPacientes([])
     setPacienteId('')
-  }, [centroId, psicologos])
+  }, [centroId, psicologos, psicologosCentros])
 
   // Load patients filtered by selected psychologist
   useEffect(() => {
@@ -292,8 +299,8 @@ export default function PsicologosPage() {
     setLoadingPacientes(true)
     supabase
       .from('pacientes')
-      .select('id, nombre, iniciales, psicologo_id, es_menor, consentimiento')
-      .eq('psicologo_id', psicologoId)
+      .select('id, nombre, iniciales, es_menor, consentimiento, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id')
+      .or(filtroPacientesDePsicologo(psicologoId))
       .not('iniciales', 'is', null)
       .order('iniciales')
       .then(({ data }) => {
@@ -323,6 +330,8 @@ export default function PsicologosPage() {
   // Agendar/Cambiar piden fecha, hora y tipo de cita (adulto/pareja/menor)
   const pideTipoCita = accion === 'Agendar cita' || isCambiarCita
   const pacienteSeleccionado = pacientes.find((p) => p.id === pacienteId) ?? null
+  // Tipos de cita que se ofrecen: los del psicólogo, acotados por la edad del paciente.
+  const tiposCita = tiposDisponibles(psicologoSeleccionado, pacienteSeleccionado ? pacienteSeleccionado.es_menor : null)
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
@@ -370,36 +379,46 @@ export default function PsicologosPage() {
     getPerfilActual().then(setPerfil)
   }, [])
 
-  // Multi-centro: load every psicologos row sharing the logged-in email and
-  // restore the previously chosen center (if it still exists).
+  // Psicólogo logueado: su ficha (por email, con respaldo en perfil) y sus centros.
+  // Restaura el centro elegido antes (si sigue siendo suyo) o fija el único que tenga.
   useEffect(() => {
-    if (!esPsicologo || !userEmail || !userId) return
+    if (!esPsicologo || !userId) return
+    const uid = userId
     let cancelled = false
-    supabase
-      .from('psicologos')
-      .select('id, nombre, centro_id, centro')
-      .eq('email', userEmail)
-      .eq('activo', true)
-      .then(({ data }) => {
-        if (cancelled) return
-        const rows = (data ?? []) as Psicologo[]
-        setMisVariantes(rows)
-        const guardada = getCentroActivo(userId)
-        if (guardada && rows.some((r) => r.id === guardada.psicologoId)) {
-          setCentroActivoState(guardada)
-        }
-        setVariantesCargadas(true)
-      })
+    async function cargar() {
+      let ficha: Psicologo | null = null
+      if (userEmail) {
+        const { data } = await supabase.from('psicologos').select('*').eq('email', userEmail).eq('activo', true).maybeSingle()
+        ficha = (data as Psicologo | null) ?? null
+      }
+      if (!ficha && perfil?.psicologo_id) {
+        const { data } = await supabase.from('psicologos').select('*').eq('id', perfil.psicologo_id).maybeSingle()
+        ficha = (data as Psicologo | null) ?? null
+      }
+      if (cancelled) return
+      setMiFicha(ficha)
+      if (!ficha) { setMisCentros([]); setVariantesCargadas(true); return }
+      const { data: pcs } = await supabase.from('psicologos_centros').select('centro_id').eq('psicologo_id', ficha.id)
+      if (cancelled) return
+      const ids = (pcs ?? []).map((r) => r.centro_id)
+      setMisCentros(ids)
+      const guardada = getCentroActivo(uid)
+      if (guardada && guardada.psicologoId === ficha.id && ids.includes(guardada.centroId)) setCentroActivoState(guardada)
+      else if (ids.length === 1) setCentroActivoState({ psicologoId: ficha.id, centroId: ids[0] })
+      setVariantesCargadas(true)
+    }
+    cargar()
     return () => { cancelled = true }
-  }, [esPsicologo, userEmail, userId])
+  }, [esPsicologo, userEmail, userId, perfil?.psicologo_id])
 
-  // Pre-select the appointment type from the patient (menor → 'menor'), still
-  // overridable to 'pareja' by hand. Re-runs only when the patient changes.
+  // Pre-select the appointment type from the patient: the only type possible,
+  // or menor/adulto by age, as long as the psychologist offers it.
   useEffect(() => {
     if (!pideTipoCita || !pacienteSeleccionado) return
-    setTipoCita(pacienteSeleccionado.es_menor ? 'menor' : 'adulto')
+    const preferido: TipoCita = tiposCita.length === 1 ? tiposCita[0] : (pacienteSeleccionado.es_menor ? 'menor' : 'adulto')
+    setTipoCita(tiposCita.includes(preferido) ? preferido : '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pacienteSeleccionado?.id, pideTipoCita])
+  }, [pacienteSeleccionado?.id, pideTipoCita, tiposCita.join(',')])
 
   // Psychologist user: lock the form to their own centro + psychologist record
   // (the chosen center when they work in several).
@@ -525,8 +544,12 @@ export default function PsicologosPage() {
       setError('No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.')
       return
     }
-    if (pideTipoCita && !tipoCita) {
-      setError('Selecciona el tipo de cita (adulto, pareja o menor).')
+    if (pideTipoCita && tiposCita.length === 0) {
+      setError('Este psicólogo no atiende este tipo de paciente.')
+      return
+    }
+    if (pideTipoCita && (!tipoCita || !tiposCita.includes(tipoCita))) {
+      setError('Selecciona el tipo de cita.')
       return
     }
     if (pideTipoCita && (!fecha || !hora)) {
@@ -625,6 +648,8 @@ export default function PsicologosPage() {
                 // Make localiza al psicólogo por psicologo_nombre + centro (módulo 3) antes
                 // de enrutar; sin este campo el filtro "psicólogo encontrado" corta el aviso.
                 psicologo_nombre: psicologoNombre,
+                psicologo_id: effPsicologoId,
+                centro_id: effCentroId,
                 accion: 'Paciente duplicado',
                 psicologo_solicitante_nombre: psicologoNombre,
                 psicologo_solicitante_id: effPsicologoId,
@@ -716,6 +741,8 @@ export default function PsicologosPage() {
             timestampFormulario: new Date().toISOString(),
             datosProcesados: {
               psicologo_nombre: psicologoNombre,
+              psicologo_id:     effPsicologoId,
+              centro_id:        effCentroId,
               accion:           'Añadir nuevo paciente',
               paciente_nombre:  npNombre.trim(),
               paciente_iniciales: iniciales,
@@ -758,6 +785,9 @@ export default function PsicologosPage() {
 
       const datosProcesados = {
         psicologo_nombre:     psicologoNombre,
+        // Migración 014: Make busca al psicólogo por id (módulo 3) y guarda el centro de la cita.
+        psicologo_id:         effPsicologoId,
+        centro_id:            effCentroId,
         accion,
         paciente_iniciales:   isCitaAction ? pacienteSeleccionado?.iniciales ?? null : null,
         // Id del paciente: Make busca por él (módulos 10/40/50) en vez de por iniciales.
@@ -830,8 +860,9 @@ export default function PsicologosPage() {
     }
   }
 
-  function elegirCentro(variante: Psicologo) {
-    const seleccion: CentroActivo = { psicologoId: variante.id, centroId: variante.centro_id }
+  function elegirCentro(centroElegido: string) {
+    if (!miFicha) return
+    const seleccion: CentroActivo = { psicologoId: miFicha.id, centroId: centroElegido }
     setCentroActivoState(seleccion)
     if (userId) setCentroActivo(userId, seleccion)
   }
@@ -844,12 +875,12 @@ export default function PsicologosPage() {
     setEventoSeleccionadoId('')
   }
 
-  function nombreCentro(variante: Psicologo): string {
-    return centros.find((c) => c.id === variante.centro_id)?.nombre ?? variante.centro ?? 'Centro'
+  function nombreCentro(id: string): string {
+    return centros.find((c) => c.id === id)?.nombre ?? 'Centro'
   }
 
   // Psicólogo multi-centro sin centro elegido: pedir el centro antes del formulario.
-  // (El psicólogo nunca se elige: cada centro apunta a su propia fila de la misma persona.)
+  // (El psicólogo nunca se elige: es siempre su única ficha.)
   if (necesitaElegirCentro) {
     return (
       <div className="page-pad" style={{ maxWidth: 560 }}>
@@ -877,11 +908,11 @@ export default function PsicologosPage() {
         >
           <div style={{ ...labelStyle, marginBottom: 16 }}>¿En qué centro vas a trabajar hoy?</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {misVariantes.map((v) => (
+            {misCentros.map((id) => (
               <button
-                key={v.id}
+                key={id}
                 type="button"
-                onClick={() => elegirCentro(v)}
+                onClick={() => elegirCentro(id)}
                 style={{
                   padding: '16px 18px',
                   border: '1.5px solid #dde1ea',
@@ -904,7 +935,7 @@ export default function PsicologosPage() {
                   e.currentTarget.style.borderColor = '#dde1ea'
                 }}
               >
-                {nombreCentro(v)}
+                {nombreCentro(id)}
               </button>
             ))}
           </div>
@@ -1428,10 +1459,15 @@ export default function PsicologosPage() {
                       required
                     >
                       <option value="">Selecciona el tipo</option>
-                      <option value="adulto">Adulto</option>
-                      <option value="pareja">Pareja</option>
-                      <option value="menor">Menor</option>
+                      {tiposCita.map((t) => (
+                        <option key={t} value={t}>{ETIQUETA_TIPO[t]}</option>
+                      ))}
                     </select>
+                    {pacienteSeleccionado && tiposCita.length === 0 && (
+                      <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                        Este psicólogo no atiende este tipo de paciente.
+                      </div>
+                    )}
                   </FormField>
                   {isCambiarCita && <InfoBox>Nueva fecha y hora:</InfoBox>}
                   <div className="r-grid-2" style={{ gap: 16 }}>

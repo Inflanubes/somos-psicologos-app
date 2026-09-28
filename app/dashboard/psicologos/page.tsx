@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, Paciente, Perfil, PsicologoCentro, TipoCita } from '@/types/database'
 import {
-  filtroPacientesDePsicologo, tiposDisponibles, evaluarDuplicado, COLUMNA_PSICOLOGO, ETIQUETA_TIPO,
+  filtroPacientesDePsicologo, tiposDisponibles, evaluarDuplicado, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, TIPOS_CONSULTA,
   type TipoConsulta, type DecisionDuplicado, type PacienteExistente, type ColumnaPsicologo,
 } from '@/lib/pacientes-tipos'
 import EventoSelect from '@/components/EventoSelect'
@@ -349,6 +349,9 @@ export default function PsicologosPage() {
   const pacienteSeleccionado = pacientes.find((p) => p.id === pacienteId) ?? null
   // Tipos de cita que se ofrecen: los del psicólogo, acotados por la edad del paciente.
   const tiposCita = tiposDisponibles(psicologoSeleccionado, pacienteSeleccionado ? pacienteSeleccionado.es_menor : null)
+  // Ficha sin tipos de consulta: se ofrecen los tres, pero se avisa para que se complete en Usuarios.
+  const sinTiposConfigurados = !!psicologoSeleccionado && (psicologoSeleccionado.tipos_consulta?.length ?? 0) === 0
+  const avisoSinTipos = 'Esta ficha no tiene tipos de consulta configurados: se muestran los tres. Pide al equipo que los complete en Usuarios.'
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'
@@ -554,9 +557,13 @@ export default function PsicologosPage() {
       psicologos.find((p) => p.id === effPsicologoId))?.nombre ?? ''
 
   // ── Alta de paciente (migración 014) ─────────────────────────────────────
+  // "en adultos con Marta y en pareja con Juan": con quién está ya esa persona.
   function nombreDePsicologo(pac: PacienteExistente): string {
-    const id = pac.psicologo_adultos_id ?? pac.psicologo_pareja_id ?? pac.psicologo_infantil_id
-    return psicologos.find((x) => x.id === id)?.nombre ?? 'otro psicólogo'
+    const partes = TIPOS_CONSULTA
+      .map((t) => ({ t, id: pac[COLUMNA_PSICOLOGO[t]] }))
+      .filter((x): x is { t: TipoConsulta; id: string } => !!x.id)
+      .map((x) => `en ${ETIQUETA_TIPO[x.t].toLowerCase()} con ${psicologos.find((p) => p.id === x.id)?.nombre ?? 'otro psicólogo'}`)
+    return partes.join(' y ') || 'con otro psicólogo'
   }
 
   async function candidatosDuplicado(): Promise<PacienteExistente[]> {
@@ -1423,6 +1430,9 @@ export default function PsicologosPage() {
                         Este psicólogo no atiende este tipo de paciente.
                       </div>
                     )}
+                    {sinTiposConfigurados && (
+                      <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>{avisoSinTipos}</div>
+                    )}
                   </FormField>
                 )}
               </div>
@@ -1677,6 +1687,9 @@ export default function PsicologosPage() {
                         Este psicólogo no atiende este tipo de paciente.
                       </div>
                     )}
+                    {sinTiposConfigurados && (
+                      <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>{avisoSinTipos}</div>
+                    )}
                   </FormField>
                   {isCambiarCita && <InfoBox>Nueva fecha y hora:</InfoBox>}
                   <div className="r-grid-2" style={{ gap: 16 }}>
@@ -1878,8 +1891,8 @@ export default function PsicologosPage() {
               >
                 <div style={{ marginBottom: 12 }}>
                   {npConfirmacion.decision.fuerza === 'suave'
-                    ? `Este teléfono es de ${npConfirmacion.decision.paciente.nombre}, en adultos con ${npConfirmacion.nombrePsi}. ¿Es la misma persona?`
-                    : `Este teléfono ya es de ${npConfirmacion.decision.paciente.nombre} con ${npConfirmacion.nombrePsi}. ¿Seguro que es para adultos?`}
+                    ? `Este teléfono es de ${npConfirmacion.decision.paciente.nombre}, ${npConfirmacion.nombrePsi}. ¿Es la misma persona?`
+                    : `Este teléfono ya es de ${npConfirmacion.decision.paciente.nombre}, ${npConfirmacion.nombrePsi}. ¿Seguro que es para adultos?`}
                   {npConfirmacion.nombreOcupa && (
                     <>
                       {' '}<strong>{npConfirmacion.decision.paciente.nombre}</strong> ya tiene psicólogo de{' '}

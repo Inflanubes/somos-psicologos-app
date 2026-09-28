@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Psicologo, Centro } from '@/types/database'
+import type { Psicologo, Centro, TipoCita, EstadoPaciente } from '@/types/database'
+import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO } from '@/lib/pacientes-tipos'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PacienteBase = {
@@ -16,8 +17,12 @@ type PacienteBase = {
   fecha_cambio_estado: string | null
 }
 
+/** Psicólogo del paciente en un tipo de consulta (migración 014: hasta tres). */
+type PsicologoDePaciente = { tipo: TipoCita; id: string; nombre: string; telefono: string | null }
+
 type PacienteConExtra = PacienteBase & {
   psicologo_nombre: string
+  psicologos_paciente: PsicologoDePaciente[]
   centro_nombre: string
   dias_espera: number
 }
@@ -98,11 +103,17 @@ export default function MensajesPage() {
       const psiList = (psi ?? []) as Psicologo[]
       const cenList = (cen ?? []) as Centro[]
       const psiMap = Object.fromEntries(psiList.map(p => [p.id, p.nombre]))
+      const psiTelMap = Object.fromEntries(psiList.map(p => [p.id, p.telefono]))
       const cenMap = Object.fromEntries(cenList.map(c => [c.id, c.nombre]))
 
       const lista: PacienteConExtra[] = (pac ?? []).map(p => {
+        // Psicólogos del paciente por tipo de consulta (migración 014).
+        const psicologosPaciente: PsicologoDePaciente[] = TIPOS_CONSULTA
+          .map(t => ({ tipo: t, id: p[COLUMNA_PSICOLOGO[t]] }))
+          .filter((x): x is { tipo: TipoCita; id: string } => !!x.id)
+          .map(x => ({ tipo: x.tipo, id: x.id, nombre: psiMap[x.id] ?? '—', telefono: psiTelMap[x.id] ?? null }))
         // Psicólogo de referencia: el primero que tenga (adultos, pareja, infantil).
-        const psicologoId = p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id ?? null
+        const psicologoId = psicologosPaciente[0]?.id ?? null
         return {
         id: p.id,
         nombre: p.nombre,
@@ -112,7 +123,8 @@ export default function MensajesPage() {
         psicologo_id: psicologoId,
         centro_id: p.centro_id,
         fecha_cambio_estado: p.fecha_cambio_estado,
-        psicologo_nombre: psicologoId ? (psiMap[psicologoId] ?? '—') : '—',
+        psicologo_nombre: psicologosPaciente.map(x => `${ETIQUETA_TIPO[x.tipo]}: ${x.nombre}`).join(' · ') || '—',
+        psicologos_paciente: psicologosPaciente,
         centro_nombre: p.centro_id ? (cenMap[p.centro_id] ?? '—') : '—',
         dias_espera: diasDesde(p.fecha_cambio_estado),
         }
@@ -128,6 +140,34 @@ export default function MensajesPage() {
 
   // Patients with estado 'Psicólogo' are those waiting for a psychologist callback
   const pacientesPsicologo = pacientes.filter(p => p.estado === 'Psicólogo')
+
+  // El psicólogo ha hablado con el paciente y no quiere seguir: pasa a Inactivo y
+  // desaparece de esta lista (si agenda, Make lo pone en Agendado).
+  const [marcando, setMarcando] = useState<Record<string, boolean>>({})
+  async function marcarInactivo(p: PacienteConExtra) {
+    if (!window.confirm(`¿Marcar a ${p.nombre} como Inactivo? Dejará de aparecer en "Hablar con Psicólogo".`)) return
+    setMarcando(prev => ({ ...prev, [p.id]: true }))
+    const ahora = new Date().toISOString()
+    const { error } = await supabase
+      .from('pacientes')
+      .update({ estado: 'Inactivo', fecha_cambio_estado: ahora })
+      .eq('id', p.id)
+    if (error) {
+      alert('No se pudo cambiar el estado: ' + error.message)
+      setMarcando(prev => ({ ...prev, [p.id]: false }))
+      return
+    }
+    await supabase.from('historial_estados').insert({
+      paciente_id: p.id,
+      estado_anterior: p.estado as EstadoPaciente,
+      estado_nuevo: 'Inactivo',
+      fecha_cambio: ahora,
+      origen: 'comunicaciones',
+      comentario: 'Marcado como Inactivo desde panel de comunicaciones (el paciente no quiere continuar)',
+    })
+    setPacientes(prev => prev.map(x => (x.id === p.id ? { ...x, estado: 'Inactivo', fecha_cambio_estado: ahora } : x)))
+    setMarcando(prev => ({ ...prev, [p.id]: false }))
+  }
 
   const pacientesDudoso = pacientes.filter(
     p => p.estado === 'Dudoso' || p.estado === 'Dudoso contactado'
@@ -310,7 +350,9 @@ export default function MensajesPage() {
             <div>
               <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
                 Pacientes que llevan más de 1 día esperando que un psicólogo les llame.
-                El mensaje se envía <strong>al psicólogo</strong> con los datos del paciente.
+                El mensaje se envía <strong>al psicólogo</strong> con los datos del paciente. Si un paciente tiene
+                varios psicólogos, elige a cuál avisar. Si tras hablar el paciente no quiere continuar, márcalo como
+                <strong> Inactivo</strong> y saldrá de esta lista.
               </p>
               {pacientesPsicologo.length === 0 ? (
                 <Empty text="No hay pacientes pendientes de llamada" />
@@ -323,31 +365,46 @@ export default function MensajesPage() {
                           <div style={{ fontWeight: 600, fontSize: 14, color: '#272626', marginBottom: 4 }}>{p.nombre}</div>
                           <div style={{ fontSize: 13, color: '#4a5870' }}>📞 {p.telefono} · {p.centro_nombre}</div>
                           <div style={{ fontSize: 13, color: '#4a5870', marginTop: 2 }}>
-                            Psicólogo asignado: <strong>{p.psicologo_nombre}</strong>
+                            {p.psicologos_paciente.length > 1 ? 'Psicólogos asignados: ' : 'Psicólogo asignado: '}
+                            <strong>{p.psicologo_nombre}</strong>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                           <Badge text={`${p.dias_espera} día${p.dias_espera !== 1 ? 's' : ''} esperando`} color="amber" />
-                          {enviados[p.id] ? (
-                            <Badge text="✓ Enviado" color="blue" />
-                          ) : (
-                            <SendButton
-                              loading={enviando[p.id]}
-                              label="Notificar psicólogo"
-                              onClick={() => {
-                                const psi = psicologos.find(ps => ps.id === p.psicologo_id)
-                                enviar(p.id, {
-                                  // sin tilde: el filtro del router de Make compara texto exacto
-                                  tipo: 'notificar_psicologo',
-                                  paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
-                                  psicologo: { nombre: p.psicologo_nombre, telefono: psi?.telefono ?? null },
-                                  centro: p.centro_nombre,
-                                  dias_espera: p.dias_espera,
-                                  mensaje: `Tienes una llamada pendiente con ${p.nombre} (${p.telefono}). Llevan ${p.dias_espera} día(s) esperando.`,
-                                }, p.id)
-                              }}
-                            />
-                          )}
+                          {p.psicologos_paciente.length === 0 ? (
+                            <Badge text="Sin psicólogo asignado" color="amber" />
+                          ) : p.psicologos_paciente.map(psi => {
+                            const key = p.psicologos_paciente.length > 1 ? `${p.id}-${psi.id}` : p.id
+                            return enviados[key] ? (
+                              <Badge key={key} text={`✓ Avisado ${psi.nombre}`} color="blue" />
+                            ) : (
+                              <SendButton
+                                key={key}
+                                loading={enviando[key]}
+                                label={p.psicologos_paciente.length > 1 ? `Notificar a ${psi.nombre} (${ETIQUETA_TIPO[psi.tipo].toLowerCase()})` : 'Notificar psicólogo'}
+                                onClick={() => {
+                                  enviar(key, {
+                                    // sin tilde: el filtro del router de Make compara texto exacto
+                                    tipo: 'notificar_psicologo',
+                                    paciente: { nombre: p.nombre, telefono: p.telefono, email: p.email },
+                                    psicologo: { nombre: psi.nombre, telefono: psi.telefono, tipo_consulta: psi.tipo },
+                                    centro: p.centro_nombre,
+                                    dias_espera: p.dias_espera,
+                                    mensaje: `Tienes una llamada pendiente con ${p.nombre} (${p.telefono}). Llevan ${p.dias_espera} día(s) esperando.`,
+                                  }, p.id)
+                                }}
+                              />
+                            )
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => marcarInactivo(p)}
+                            disabled={!!marcando[p.id]}
+                            title="El psicólogo ya ha hablado con el paciente y no quiere continuar"
+                            style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid rgba(185,28,28,0.3)', background: '#fff', color: '#b91c1c', fontSize: 12.5, fontWeight: 600, cursor: marcando[p.id] ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: marcando[p.id] ? 0.5 : 1 }}
+                          >
+                            {marcando[p.id] ? 'Guardando…' : 'Marcar inactivo'}
+                          </button>
                         </div>
                       </div>
                     </Card>

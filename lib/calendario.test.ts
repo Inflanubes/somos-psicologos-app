@@ -78,6 +78,15 @@ describe('filtrarEventos', () => {
   it('filtra por psicólogo', () => {
     expect(filtrarEventos(eventos, { centroId: '', tipoCita: '', psicologoId: 'p2' }).map((e) => e.id)).toEqual(['c2'])
   })
+  it('un bloqueo sin centro se ve en cualquier filtro de centro', () => {
+    const sinCentro = bloqueo({ id: 'b2', centroId: null })
+    expect(filtrarEventos([sinCentro], { centroId: 'c1', tipoCita: '', psicologoId: '' })).toHaveLength(1)
+  })
+  it('una cita sin centro solo se ve en "Todos los centros"', () => {
+    const sinCentro = cita({ id: 'c9', centroId: null })
+    expect(filtrarEventos([sinCentro], { centroId: '', tipoCita: '', psicologoId: '' })).toHaveLength(1)
+    expect(filtrarEventos([sinCentro], { centroId: 'c1', tipoCita: '', psicologoId: '' })).toHaveLength(0)
+  })
 })
 
 describe('bloqueoCubreDia / tramoCubreCelda', () => {

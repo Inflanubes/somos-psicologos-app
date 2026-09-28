@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Psicologo, Centro } from '@/types/database'
+import type { Psicologo, Centro, PsicologoCentro } from '@/types/database'
 
-type PsicologoConCentro = Psicologo & { centro_nombre: string }
+// Una ficha por psicólogo con sus centros (migración 014).
+type PsicologoConCentro = Psicologo & { centro_ids: string[]; centro_nombre: string }
 
 export default function EquipoPage() {
   const [psicologos, setPsicologos] = useState<PsicologoConCentro[]>([])
@@ -15,16 +16,25 @@ export default function EquipoPage() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: psi }, { data: cen }] = await Promise.all([
+      const [{ data: psi }, { data: cen }, { data: pcs }] = await Promise.all([
         supabase.from('psicologos').select('*').order('nombre'),
         supabase.from('centros').select('*').order('nombre'),
+        supabase.from('psicologos_centros').select('psicologo_id, centro_id'),
       ])
       const centrosList = (cen ?? []) as Centro[]
       const centroMap = Object.fromEntries(centrosList.map(c => [c.id, c.nombre]))
-      const lista: PsicologoConCentro[] = (psi ?? []).map(p => ({
-        ...(p as Psicologo),
-        centro_nombre: centroMap[p.centro_id] ?? '—',
-      }))
+      const centrosDe = new Map<string, string[]>()
+      for (const pc of (pcs ?? []) as PsicologoCentro[]) {
+        centrosDe.set(pc.psicologo_id, [...(centrosDe.get(pc.psicologo_id) ?? []), pc.centro_id])
+      }
+      const lista: PsicologoConCentro[] = (psi ?? []).map(p => {
+        const ids = centrosDe.get(p.id) ?? []
+        return {
+          ...(p as Psicologo),
+          centro_ids: ids,
+          centro_nombre: ids.map(id => centroMap[id] ?? '—').join(' · ') || '—',
+        }
+      })
       setPsicologos(lista)
       setCentros(centrosList)
       setLoading(false)
@@ -48,7 +58,7 @@ export default function EquipoPage() {
 
   const filtrados = filtroCentro === 'todos'
     ? psicologos
-    : psicologos.filter(p => p.centro_id === filtroCentro)
+    : psicologos.filter(p => p.centro_ids.includes(filtroCentro))
 
   const activos = filtrados.filter(p => p.activo).length
 

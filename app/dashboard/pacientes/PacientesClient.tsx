@@ -128,7 +128,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
         <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr>
-              {['Nombre', 'Teléfono', 'DNI', 'Centro', 'Psicólogo', 'Estado', 'Consentimiento', 'Fecha cita', 'Añadido por'].map((col) => (
+              {['Nombre', 'Teléfono', 'DNI', 'Centro', 'Psicólogos', 'Estado', 'Consentimiento', 'Fecha cita', 'Añadido por'].map((col) => (
                 <th
                   key={col}
                   style={{
@@ -193,7 +193,7 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                   <td data-label="Teléfono" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.telefono || '—'}</td>
                   <td data-label="DNI" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>{p.dni || '—'}</td>
                   <td data-label="Centro" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.centro_nombre || '—'}</td>
-                  <td data-label="Psicólogo" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
+                  <td data-label="Psicólogos" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
                   <td data-label="Estado" style={{ padding: '13px 14px' }}>
                     <span
                       style={{

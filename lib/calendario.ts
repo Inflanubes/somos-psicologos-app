@@ -80,7 +80,9 @@ export function filaDeHora(hora: string): number {
 
 export function filtrarEventos(eventos: EventoCalendario[], f: FiltrosCalendario): EventoCalendario[] {
   return eventos.filter((e) => {
-    if (f.centroId && e.centroId !== f.centroId) return false
+    // Los bloqueos no tienen centro (afectan a la agenda entera): se ven con cualquier filtro.
+    const bloqueoSinCentro = e.tipo === 'bloqueo' && e.centroId === null
+    if (f.centroId && !bloqueoSinCentro && e.centroId !== f.centroId) return false
     if (f.psicologoId && e.psicologoId !== f.psicologoId) return false
     if (f.tipoCita && e.tipo === 'cita') {
       if (f.tipoCita === 'sin_tipo' ? e.tipoCita !== null : e.tipoCita !== f.tipoCita) return false

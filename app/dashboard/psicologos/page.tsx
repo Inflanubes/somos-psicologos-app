@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, Paciente, Perfil, PsicologoCentro, TipoCita } from '@/types/database'
-import { filtroPacientesDePsicologo, tiposDisponibles, ETIQUETA_TIPO } from '@/lib/pacientes-tipos'
+import {
+  filtroPacientesDePsicologo, tiposDisponibles, evaluarDuplicado, COLUMNA_PSICOLOGO, ETIQUETA_TIPO,
+  type TipoConsulta, type DecisionDuplicado, type PacienteExistente, type ColumnaPsicologo,
+} from '@/lib/pacientes-tipos'
 import EventoSelect from '@/components/EventoSelect'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
@@ -177,6 +180,8 @@ function calcularEdad(fechaNacimiento: string): number {
   return edad
 }
 
+type TutorCandidato = PacienteExistente & { email: string | null }
+
 export default function PsicologosPage() {
   const [centros, setCentros] = useState<Centro[]>([])
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
@@ -227,6 +232,18 @@ export default function PsicologosPage() {
   const [npT2Mail, setNpT2Mail] = useState('')
   const [npSoloUnTutor, setNpSoloUnTutor] = useState(false)
   const [npOtros, setNpOtros] = useState('')
+  // Tipo de consulta del alta (migración 014): adulto | pareja; menor se deduce de la edad.
+  const [npTipoConsulta, setNpTipoConsulta] = useState<TipoConsulta>('adulto')
+  // Duplicado pendiente de confirmación (aviso suave/fuerte). null = no hay.
+  const [npConfirmacion, setNpConfirmacion] = useState<{
+    decision: Extract<DecisionDuplicado, { tipo: 'confirmar' }>
+    nombrePsi: string
+    nombreOcupa: string | null
+  } | null>(null)
+  // Tutor que ya es paciente: id de su ficha (se copian nombre, teléfono y correo).
+  const [npT1PacienteId, setNpT1PacienteId] = useState<string | null>(null)
+  const [npT2PacienteId, setNpT2PacienteId] = useState<string | null>(null)
+  const [busquedaTutor, setBusquedaTutor] = useState<{ slot: 1 | 2; texto: string; resultados: TutorCandidato[] } | null>(null)
 
   // Event selector (Cambiar/Cancelar cita, Desbloquear agenda)
   const [citasActivas, setCitasActivas] = useState<EventoActivo[]>([])
@@ -515,6 +532,266 @@ export default function PsicologosPage() {
     setNpT2Mail('')
     setNpSoloUnTutor(false)
     setNpOtros('')
+    setNpTipoConsulta('adulto')
+    setNpConfirmacion(null)
+    setNpT1PacienteId(null)
+    setNpT2PacienteId(null)
+    setBusquedaTutor(null)
+  }
+
+  // Menor → tipo 'menor' implícito; adulto → un tipo que el psicólogo tenga.
+  const tiposAlta = tiposDisponibles(psicologoSeleccionado, npFechaNacimiento ? npEsMenor : null)
+  useEffect(() => {
+    if (!isNuevoPaciente) return
+    if (npEsMenor) { if (npTipoConsulta !== 'menor') setNpTipoConsulta('menor'); return }
+    if (!tiposAlta.includes(npTipoConsulta)) setNpTipoConsulta(tiposAlta[0] ?? 'adulto')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNuevoPaciente, npEsMenor, tiposAlta.join(',')])
+
+  const centroNombreEff = centros.find((c) => c.id === effCentroId)?.nombre ?? ''
+  const psicologoNombreEff =
+    (filteredPsicologos.find((p) => p.id === effPsicologoId) ??
+      psicologos.find((p) => p.id === effPsicologoId))?.nombre ?? ''
+
+  // ── Alta de paciente (migración 014) ─────────────────────────────────────
+  function nombreDePsicologo(pac: PacienteExistente): string {
+    const id = pac.psicologo_adultos_id ?? pac.psicologo_pareja_id ?? pac.psicologo_infantil_id
+    return psicologos.find((x) => x.id === id)?.nombre ?? 'otro psicólogo'
+  }
+
+  async function candidatosDuplicado(): Promise<PacienteExistente[]> {
+    const cols = 'id, nombre, telefono, fecha_nacimiento, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id'
+    if (npEsMenor) {
+      const { data } = await supabase.from('pacientes').select(cols).eq('fecha_nacimiento', npFechaNacimiento)
+      return (data ?? []) as PacienteExistente[]
+    }
+    const { data } = await supabase.from('pacientes').select(cols).eq('telefono', npTelefono.trim())
+    return (data ?? []) as PacienteExistente[]
+  }
+
+  async function avisarDuplicadoAMake(existente: PacienteExistente) {
+    await fetch('/api/webhook/psicologos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mensaje: 'Paciente duplicado',
+        responseId: 'web_' + Date.now(),
+        timestampFormulario: new Date().toISOString(),
+        datosProcesados: {
+          // Make localiza al psicólogo por psicologo_id (módulo 3) antes de enrutar.
+          psicologo_nombre: psicologoNombreEff,
+          psicologo_id: effPsicologoId,
+          centro_id: effCentroId,
+          accion: 'Paciente duplicado',
+          tipo_consulta: npTipoConsulta,
+          psicologo_solicitante_nombre: psicologoNombreEff,
+          psicologo_solicitante_id: effPsicologoId,
+          paciente_existente_nombre: existente.nombre,
+          paciente_existente_id: existente.id,
+          psicologo_actual_nombre: nombreDePsicologo(existente),
+          telefono: npEsMenor ? null : npTelefono.trim() || null,
+          nombre_intentado: npNombre.trim(),
+          es_paciente_recomendado: npEsRecomendado,
+        },
+        respuestasFormulario: {
+          'Selecciona tu centro': centroNombreEff,
+          '¿Qué necesitas hoy?': 'Añadir nuevo paciente',
+        },
+      }),
+    })
+  }
+
+  // El usuario ha confirmado "es la misma persona": se vincula la ficha existente
+  // (columna del tipo elegido) en vez de crear otra.
+  async function vincularExistente() {
+    const conf = npConfirmacion
+    if (!conf || !effPsicologoId) return
+    setLoading(true)
+    setError('')
+    try {
+      const columna = COLUMNA_PSICOLOGO[npTipoConsulta]
+      const { error: errVinc } = await supabase
+        .from('pacientes')
+        .update({ [columna]: effPsicologoId })
+        .eq('id', conf.decision.paciente.id)
+      if (errVinc) { setError('No se pudo vincular al paciente: ' + errVinc.message); return }
+      setNpConfirmacion(null)
+      setSuccess(true)
+      resetForm()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Comprueba duplicados (reglas de la especificación §5) y, si procede, crea el paciente.
+  async function ejecutarAlta(omitirDuplicados: boolean) {
+    if (!effPsicologoId || !effCentroId) return
+    const existentes = await candidatosDuplicado()
+    const decision = evaluarDuplicado(
+      {
+        nombre: npNombre,
+        telefono: npEsMenor ? '' : npTelefono,
+        fechaNacimiento: npFechaNacimiento,
+        esMenor: npEsMenor,
+        tipoConsulta: npTipoConsulta,
+        psicologoId: effPsicologoId,
+      },
+      existentes,
+    )
+    if (decision.tipo === 'bloquear') {
+      if (decision.motivo === 'ya_en_tu_lista') {
+        setError(`Este paciente ya está en tu lista: ${decision.paciente.nombre}.`)
+        return
+      }
+      await avisarDuplicadoAMake(decision.paciente)
+      setError(
+        'Este paciente ya existe. Revisa los datos y vuelve a crearlo; el equipo está avisado. ' +
+        'Si sigue fallando y los datos son correctos, contacta con nosotros.'
+      )
+      return
+    }
+    if (decision.tipo === 'confirmar' && !omitirDuplicados) {
+      const nombreOcupa = decision.columnaOcupadaPor
+        ? psicologos.find((x) => x.id === decision.columnaOcupadaPor)?.nombre ?? 'otro psicólogo'
+        : null
+      setNpConfirmacion({ decision, nombrePsi: nombreDePsicologo(decision.paciente), nombreOcupa })
+      return
+    }
+    await crearPaciente()
+  }
+
+  async function crearPaciente() {
+    if (!effPsicologoId || !effCentroId) return
+    const iniciales = generarIniciales(npNombre)
+    const telefonoNorm = npTelefono.trim()
+    // Columna del psicólogo según el tipo de consulta (adultos / pareja / infantil).
+    const asignacion: Partial<Record<ColumnaPsicologo, string>> = { [COLUMNA_PSICOLOGO[npTipoConsulta]]: effPsicologoId }
+    const { data: nuevoPaciente, error: supaError } = await supabase
+      .from('pacientes')
+      .insert({
+        nombre:              npNombre.trim(),
+        iniciales,
+        // Menor: sin teléfono propio; el contacto es el del tutor 1.
+        telefono:            npEsMenor ? npT1Telefono.trim() : telefonoNorm,
+        email:               npEmail.trim() || null,
+        fecha_nacimiento:    npFechaNacimiento,
+        edad:                npEdadCalc,
+        es_menor:            npEsMenor,
+        centro_id:           effCentroId,
+        ...asignacion,
+        recomendado_por:     npEsRecomendado ? effPsicologoId : null,
+        estado:              'Nuevo paciente' as const,
+        fecha_incorporacion: new Date().toISOString().split('T')[0],
+        // Quién ha añadido al paciente (login): alimenta "Añadido por" en Pacientes.
+        created_by:    perfil?.nombre ?? psicologoNombreEff ?? null,
+        created_by_id: userId,
+        origen:        perfil?.rol ?? 'agente',
+      })
+      .select('id')
+      .single()
+    if (supaError) throw new Error('Error al añadir paciente: ' + supaError.message)
+    if (!nuevoPaciente) throw new Error('No se pudo recuperar el identificador del nuevo paciente. Inténtalo de nuevo.')
+
+    // Paciente menor: guardar los datos de los tutores legales.
+    if (npEsMenor) {
+      const { error: menorError } = await supabase.from('asociados_menores').insert({
+        id_menor:           nuevoPaciente.id,
+        T1_nombre_completo: npT1Nombre.trim(),
+        'T1_teléfono':      npT1Telefono.trim(),
+        T1_mail:            npT1Mail.trim() || null,
+        T1_paciente_id:     npT1PacienteId,
+        T2_nombre_completo: npSoloUnTutor ? null : npT2Nombre.trim(),
+        'T2_teléfono':      npSoloUnTutor ? null : npT2Telefono.trim(),
+        T2_mail:            npSoloUnTutor ? null : (npT2Mail.trim() || null),
+        T2_paciente_id:     npSoloUnTutor ? null : npT2PacienteId,
+        Otros:              npSoloUnTutor ? npOtros.trim() : null,
+      })
+      if (menorError) {
+        throw new Error(
+          'El paciente se creó, pero no se pudieron guardar los datos de los tutores: ' +
+          menorError.message + '. Avisa al equipo para completarlos.'
+        )
+      }
+    }
+
+    await fetch('/api/webhook/psicologos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mensaje:             'Formulario Web Psicólogos',
+        responseId:          'web_' + Date.now(),
+        timestampFormulario: new Date().toISOString(),
+        datosProcesados: {
+          psicologo_nombre: psicologoNombreEff,
+          psicologo_id:     effPsicologoId,
+          centro_id:        effCentroId,
+          accion:           'Añadir nuevo paciente',
+          tipo_consulta:    npTipoConsulta,
+          paciente_nombre:  npNombre.trim(),
+          paciente_iniciales: iniciales,
+          paciente_id:      nuevoPaciente.id,
+          telefono:         npEsMenor ? npT1Telefono.trim() : telefonoNorm,
+          email:            npEmail.trim() || null,
+          fecha_nacimiento: npFechaNacimiento,
+          edad:             npEdadCalc,
+          es_paciente_recomendado: npEsRecomendado,
+          recomendado_por:  npEsRecomendado ? effPsicologoId : null,
+          es_menor:         npEsMenor,
+          tutor1_nombre:    npEsMenor ? npT1Nombre.trim() : null,
+          tutor1_telefono:  npEsMenor ? npT1Telefono.trim() : null,
+          tutor1_mail:      npEsMenor ? (npT1Mail.trim() || null) : null,
+          tutor2_nombre:    npEsMenor && !npSoloUnTutor ? npT2Nombre.trim() : null,
+          tutor2_telefono:  npEsMenor && !npSoloUnTutor ? npT2Telefono.trim() : null,
+          tutor2_mail:      npEsMenor && !npSoloUnTutor ? (npT2Mail.trim() || null) : null,
+          solo_un_tutor:    npEsMenor ? npSoloUnTutor : null,
+          otros:            npEsMenor && npSoloUnTutor ? npOtros.trim() : null,
+        },
+        respuestasFormulario: {
+          'Selecciona tu centro': centroNombreEff,
+          '¿Qué necesitas hoy?':  'Añadir nuevo paciente',
+        },
+      }),
+    })
+
+    setSuccess(true)
+    resetForm()
+  }
+
+  // "No, es otra persona": se crea la ficha nueva saltando la comprobación.
+  async function crearAunqueCoincida() {
+    setNpConfirmacion(null)
+    setLoading(true)
+    setError('')
+    try {
+      await ejecutarAlta(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Tutor que ya es paciente: buscar por nombre o teléfono entre los adultos.
+  async function buscarTutor(slot: 1 | 2, texto: string) {
+    setBusquedaTutor({ slot, texto, resultados: busquedaTutor?.slot === slot ? busquedaTutor.resultados : [] })
+    const q = texto.trim()
+    if (q.length < 3) { setBusquedaTutor({ slot, texto, resultados: [] }); return }
+    const { data } = await supabase
+      .from('pacientes')
+      .select('id, nombre, telefono, email, fecha_nacimiento, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id')
+      .or(`nombre.ilike.%${q}%,telefono.ilike.%${q}%`)
+      .eq('es_menor', false)
+      .limit(8)
+    setBusquedaTutor((prev) => (prev && prev.slot === slot && prev.texto === texto ? { ...prev, resultados: (data ?? []) as TutorCandidato[] } : prev))
+  }
+
+  function elegirTutor(slot: 1 | 2, t: TutorCandidato) {
+    if (slot === 1) {
+      setNpT1Nombre(t.nombre); setNpT1Telefono(t.telefono ?? ''); setNpT1Mail(t.email ?? ''); setNpT1PacienteId(t.id)
+    } else {
+      setNpT2Nombre(t.nombre); setNpT2Telefono(t.telefono ?? ''); setNpT2Mail(t.email ?? ''); setNpT2PacienteId(t.id)
+    }
+    setBusquedaTutor(null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -574,8 +851,12 @@ export default function PsicologosPage() {
       setError('Esa hora ya tiene una cita: el psicólogo no puede atender a dos pacientes a la vez. Elige otra hora.')
       return
     }
-    if (isNuevoPaciente && (!npNombre.trim() || !npTelefono.trim())) {
-      setError('El nombre y el teléfono son obligatorios.')
+    if (isNuevoPaciente && !npNombre.trim()) {
+      setError('El nombre es obligatorio.')
+      return
+    }
+    if (isNuevoPaciente && !npEsMenor && !npTelefono.trim()) {
+      setError('El teléfono es obligatorio.')
       return
     }
     if (isNuevoPaciente && !npFechaNacimiento) {
@@ -584,6 +865,10 @@ export default function PsicologosPage() {
     }
     if (isNuevoPaciente && (npEdadCalc === null || npEdadCalc < 0 || npEdadCalc > 120)) {
       setError('La fecha de nacimiento no es válida.')
+      return
+    }
+    if (isNuevoPaciente && tiposAlta.length === 0) {
+      setError('Este psicólogo no atiende este tipo de paciente.')
       return
     }
     if (isNuevoPaciente && npEsMenor) {
@@ -619,159 +904,7 @@ export default function PsicologosPage() {
 
       // ── AÑADIR NUEVO PACIENTE ─────────────────────────────────────────────
       if (isNuevoPaciente) {
-        // 1) Duplicate check — does this telefono already belong to a patient?
-        const telefonoNorm = npTelefono.trim()
-        const { data: existentes } = await supabase
-          .from('pacientes')
-          .select('id, nombre, iniciales, psicologo_id')
-          .eq('telefono', telefonoNorm)
-
-        if (existentes && existentes.length > 0) {
-          const dup = existentes[0]
-          // Same psicólogo: friendly notice, no agent alert.
-          if (dup.psicologo_id === effPsicologoId) {
-            setError(
-              `Este paciente ya está añadido en tu lista: ${dup.nombre} (${dup.iniciales}).`
-            )
-            return
-          }
-          // Different psicólogo: alert agentes via Make and block the insert.
-          const psicologoActual = psicologos.find((p) => p.id === dup.psicologo_id)
-          await fetch('/api/webhook/psicologos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              mensaje: 'Paciente duplicado',
-              responseId: 'web_' + Date.now(),
-              timestampFormulario: new Date().toISOString(),
-              datosProcesados: {
-                // Make localiza al psicólogo por psicologo_nombre + centro (módulo 3) antes
-                // de enrutar; sin este campo el filtro "psicólogo encontrado" corta el aviso.
-                psicologo_nombre: psicologoNombre,
-                psicologo_id: effPsicologoId,
-                centro_id: effCentroId,
-                accion: 'Paciente duplicado',
-                psicologo_solicitante_nombre: psicologoNombre,
-                psicologo_solicitante_id: effPsicologoId,
-                paciente_existente_nombre: dup.nombre,
-                paciente_existente_iniciales: dup.iniciales,
-                paciente_existente_id: dup.id,
-                psicologo_actual_id: dup.psicologo_id,
-                psicologo_actual_nombre: psicologoActual?.nombre ?? null,
-                telefono: telefonoNorm,
-                nombre_intentado: npNombre.trim(),
-                es_paciente_recomendado: npEsRecomendado,
-              },
-              respuestasFormulario: {
-                'Selecciona tu centro': centroNombre,
-                '¿Qué necesitas hoy?': 'Añadir nuevo paciente',
-              },
-            }),
-          })
-          setError(
-            `Este paciente ya existe en la base de datos asignado a otro psicólogo. ` +
-            `Hemos avisado al equipo para que lo revisen.`
-          )
-          return
-        }
-
-        // 2) No duplicate — proceed with the standard insert + Make notification.
-        const iniciales = generarIniciales(npNombre)
-        const nuevoPacienteBase = {
-          nombre:              npNombre.trim(),
-          iniciales,
-          telefono:            telefonoNorm,
-          email:               npEmail.trim() || null,
-          fecha_nacimiento:    npFechaNacimiento,
-          edad:                npEdadCalc,
-          es_menor:            npEsMenor,
-          centro_id:           effCentroId,
-          psicologo_id:        effPsicologoId,
-          recomendado_por:     npEsRecomendado ? effPsicologoId : null,
-          estado:              'Nuevo paciente' as const,
-          fecha_incorporacion: new Date().toISOString().split('T')[0],
-        }
-        // Quién ha añadido al paciente (login): alimenta "Añadido por" en Pacientes
-        // y el panel personal del call center. Columnas de la migración 011.
-        const atribucion = {
-          created_by:    perfil?.nombre ?? psicologoNombre ?? null,
-          created_by_id: userId,
-          origen:        perfil?.rol ?? 'agente',
-        }
-        let insertado = await supabase
-          .from('pacientes')
-          .insert({ ...nuevoPacienteBase, ...atribucion })
-          .select('id')
-          .single()
-        // Si la migración 011 aún no se ha ejecutado, reintentar sin atribución
-        // para no bloquear el alta.
-        if (insertado.error && /created_by|origen/.test(insertado.error.message)) {
-          insertado = await supabase.from('pacientes').insert(nuevoPacienteBase).select('id').single()
-        }
-        const { data: nuevoPaciente, error: supaError } = insertado
-        if (supaError) throw new Error('Error al añadir paciente: ' + supaError.message)
-        if (!nuevoPaciente) throw new Error('No se pudo recuperar el identificador del nuevo paciente. Inténtalo de nuevo.')
-
-        // Paciente menor: guardar los datos de los tutores legales.
-        if (npEsMenor) {
-          const { error: menorError } = await supabase.from('asociados_menores').insert({
-            id_menor:           nuevoPaciente.id,
-            T1_nombre_completo: npT1Nombre.trim(),
-            'T1_teléfono':      npT1Telefono.trim(),
-            T1_mail:            npT1Mail.trim() || null,
-            T2_nombre_completo: npSoloUnTutor ? null : npT2Nombre.trim(),
-            'T2_teléfono':      npSoloUnTutor ? null : npT2Telefono.trim(),
-            T2_mail:            npSoloUnTutor ? null : (npT2Mail.trim() || null),
-            Otros:              npSoloUnTutor ? npOtros.trim() : null,
-          })
-          if (menorError) {
-            throw new Error(
-              'El paciente se creó, pero no se pudieron guardar los datos de los tutores: ' +
-              menorError.message + '. Avisa al equipo para completarlos.'
-            )
-          }
-        }
-
-        await fetch('/api/webhook/psicologos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mensaje:             'Formulario Web Psicólogos',
-            responseId:          'web_' + Date.now(),
-            timestampFormulario: new Date().toISOString(),
-            datosProcesados: {
-              psicologo_nombre: psicologoNombre,
-              psicologo_id:     effPsicologoId,
-              centro_id:        effCentroId,
-              accion:           'Añadir nuevo paciente',
-              paciente_nombre:  npNombre.trim(),
-              paciente_iniciales: iniciales,
-              paciente_id:      nuevoPaciente.id,
-              telefono:         npTelefono.trim(),
-              email:            npEmail.trim() || null,
-              fecha_nacimiento: npFechaNacimiento,
-              edad:             npEdadCalc,
-              es_paciente_recomendado: npEsRecomendado,
-              recomendado_por:  npEsRecomendado ? effPsicologoId : null,
-              es_menor:         npEsMenor,
-              tutor1_nombre:    npEsMenor ? npT1Nombre.trim() : null,
-              tutor1_telefono:  npEsMenor ? npT1Telefono.trim() : null,
-              tutor1_mail:      npEsMenor ? (npT1Mail.trim() || null) : null,
-              tutor2_nombre:    npEsMenor && !npSoloUnTutor ? npT2Nombre.trim() : null,
-              tutor2_telefono:  npEsMenor && !npSoloUnTutor ? npT2Telefono.trim() : null,
-              tutor2_mail:      npEsMenor && !npSoloUnTutor ? (npT2Mail.trim() || null) : null,
-              solo_un_tutor:    npEsMenor ? npSoloUnTutor : null,
-              otros:            npEsMenor && npSoloUnTutor ? npOtros.trim() : null,
-            },
-            respuestasFormulario: {
-              'Selecciona tu centro': centroNombre,
-              '¿Qué necesitas hoy?':  'Añadir nuevo paciente',
-            },
-          }),
-        })
-
-        setSuccess(true)
-        resetForm()
+        await ejecutarAlta(false)
         return
       }
 
@@ -943,6 +1076,61 @@ export default function PsicologosPage() {
             Podrás cambiar de centro en cualquier momento desde el formulario.
           </p>
         </div>
+      </div>
+    )
+  }
+
+  // Bloque "Ya es paciente" de cada tutor: botón, buscador y resultados, o la
+  // etiqueta de vinculado si ya se eligió una ficha.
+  function tutorExistente(slot: 1 | 2, pacienteVinculado: string | null, desvincular: () => void) {
+    const abierto = busquedaTutor?.slot === slot
+    return (
+      <div style={{ marginBottom: 10 }}>
+        {pacienteVinculado ? (
+          <div style={{ fontSize: 12.5, color: '#2a7a2a', display: 'flex', alignItems: 'center', gap: 8 }}>
+            ✓ Vinculado a una ficha de paciente existente
+            <button type="button" onClick={desvincular} style={{ background: 'none', border: 'none', color: BRAND_BLUE, cursor: 'pointer', fontSize: 12, textDecoration: 'underline', fontFamily: 'inherit' }}>
+              Quitar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => (abierto ? setBusquedaTutor(null) : setBusquedaTutor({ slot, texto: '', resultados: [] }))}
+            style={{ padding: '5px 12px', border: `1px solid ${BRAND_BLUE}`, borderRadius: 16, background: abierto ? '#eef2fb' : '#fff', color: BRAND_BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {abierto ? 'Cerrar búsqueda' : 'Ya es paciente'}
+          </button>
+        )}
+        {abierto && !pacienteVinculado && busquedaTutor && (
+          <div style={{ marginTop: 8, border: '1.5px solid #dde1ea', borderRadius: 8, padding: 10, background: '#fafbfc' }}>
+            <input
+              type="text"
+              value={busquedaTutor.texto}
+              onChange={(e) => buscarTutor(slot, e.target.value)}
+              placeholder="Busca por nombre o teléfono (mín. 3 caracteres)"
+              style={inputStyle}
+              autoFocus
+            />
+            {busquedaTutor.texto.trim().length >= 3 && (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {busquedaTutor.resultados.length === 0 ? (
+                  <div style={{ fontSize: 12.5, color: '#888' }}>Sin resultados</div>
+                ) : busquedaTutor.resultados.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => elegirTutor(slot, t)}
+                    style={{ textAlign: 'left', padding: '8px 10px', border: '1px solid #dde1ea', borderRadius: 8, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: '#272626' }}
+                  >
+                    <strong>{t.nombre}</strong>
+                    <span style={{ color: '#888', marginLeft: 8 }}>{t.telefono ?? '—'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -1157,7 +1345,8 @@ export default function PsicologosPage() {
               <InfoBox>
                 El paciente quedará asignado a{' '}
                 <strong>{filteredPsicologos.find((p) => p.id === psicologoId)?.nombre}</strong>{' '}
-                con estado <strong>Nuevo paciente</strong>.
+                como paciente de <strong>{ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}</strong>, con estado{' '}
+                <strong>Nuevo paciente</strong>.
               </InfoBox>
 
               <FormField label="Nombre completo" required>
@@ -1171,15 +1360,21 @@ export default function PsicologosPage() {
                 />
               </FormField>
 
-              <FormField label="Teléfono" required>
-                <input
-                  type="tel"
-                  value={npTelefono}
-                  onChange={(e) => setNpTelefono(e.target.value)}
-                  placeholder="Ej. 612 345 678"
-                  style={inputStyle}
-                  required
-                />
+              <FormField label="Teléfono" required={!npEsMenor}>
+                {npEsMenor ? (
+                  <div style={{ ...inputStyle, color: '#7a9090', background: '#fafbfc' }}>
+                    El contacto será el teléfono del tutor 1
+                  </div>
+                ) : (
+                  <input
+                    type="tel"
+                    value={npTelefono}
+                    onChange={(e) => setNpTelefono(e.target.value)}
+                    placeholder="Ej. 612 345 678"
+                    style={inputStyle}
+                    required
+                  />
+                )}
               </FormField>
 
               <FormField label="Email">
@@ -1204,20 +1399,31 @@ export default function PsicologosPage() {
                   />
                 </FormField>
 
-                <FormField label={`¿Es menor? (hasta ${EDAD_MAXIMA_MENOR} años)`}>
-                  <select
-                    value={npEsMenor ? 'si' : 'no'}
-                    disabled
-                    style={inputStyle}
-                  >
-                    <option value="no">
-                      {npEdadCalc !== null ? `No — ${npEdadCalc} años` : 'No'}
-                    </option>
-                    <option value="si">
-                      {npEdadCalc !== null ? `Sí — ${npEdadCalc} años` : 'Sí'}
-                    </option>
-                  </select>
-                </FormField>
+                {npEsMenor ? (
+                  <FormField label="Tipo de consulta">
+                    <div style={{ ...inputStyle, color: '#7a9090', background: '#fafbfc' }}>
+                      Infantil — menor de {EDAD_MAXIMA_MENOR + 1} años ({npEdadCalc} años)
+                    </div>
+                  </FormField>
+                ) : (
+                  <FormField label="Tipo de consulta" required>
+                    <select
+                      value={npTipoConsulta}
+                      onChange={(e) => setNpTipoConsulta(e.target.value as TipoConsulta)}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
+                      disabled={!npFechaNacimiento}
+                    >
+                      {tiposAlta.map((t) => (
+                        <option key={t} value={t}>{ETIQUETA_TIPO[t]}</option>
+                      ))}
+                    </select>
+                    {npFechaNacimiento && tiposAlta.length === 0 && (
+                      <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                        Este psicólogo no atiende este tipo de paciente.
+                      </div>
+                    )}
+                  </FormField>
+                )}
               </div>
 
               {npNombre.trim() && (
@@ -1265,11 +1471,12 @@ export default function PsicologosPage() {
                     marca la casilla de circunstancia especial y explica el motivo.
                   </InfoBox>
 
+                  {tutorExistente(1, npT1PacienteId, () => setNpT1PacienteId(null))}
                   <FormField label="Tutor 1 · Nombre completo" required>
                     <input
                       type="text"
                       value={npT1Nombre}
-                      onChange={(e) => setNpT1Nombre(e.target.value)}
+                      onChange={(e) => { setNpT1Nombre(e.target.value); setNpT1PacienteId(null) }}
                       placeholder="Ej. Juan García Pérez"
                       style={inputStyle}
                     />
@@ -1297,11 +1504,12 @@ export default function PsicologosPage() {
 
                   {!npSoloUnTutor && (
                     <>
+                      {tutorExistente(2, npT2PacienteId, () => setNpT2PacienteId(null))}
                       <FormField label="Tutor 2 · Nombre completo" required>
                         <input
                           type="text"
                           value={npT2Nombre}
-                          onChange={(e) => setNpT2Nombre(e.target.value)}
+                          onChange={(e) => { setNpT2Nombre(e.target.value); setNpT2PacienteId(null) }}
                           placeholder="Ej. Ana López Ruiz"
                           style={inputStyle}
                         />
@@ -1654,9 +1862,46 @@ export default function PsicologosPage() {
                 ⚠️ <strong>Aviso:</strong> {avisoDisp}. Puedes agendar igualmente.
               </div>
             )}
+            {npConfirmacion && (
+              <div
+                style={{
+                  background: '#fff7e6',
+                  border: '1.5px solid #f5d08a',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                  marginBottom: 14,
+                  color: '#8a5a00',
+                  fontSize: 13.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                <div style={{ marginBottom: 12 }}>
+                  {npConfirmacion.decision.fuerza === 'suave'
+                    ? `Este teléfono es de ${npConfirmacion.decision.paciente.nombre}, en adultos con ${npConfirmacion.nombrePsi}. ¿Es la misma persona?`
+                    : `Este teléfono ya es de ${npConfirmacion.decision.paciente.nombre} con ${npConfirmacion.nombrePsi}. ¿Seguro que es para adultos?`}
+                  {npConfirmacion.nombreOcupa && (
+                    <>
+                      {' '}<strong>{npConfirmacion.decision.paciente.nombre}</strong> ya tiene psicólogo de{' '}
+                      {ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}: <strong>{npConfirmacion.nombreOcupa}</strong>. Si continúas, pasará a ser tuyo.
+                    </>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={vincularExistente} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Sí, vincular a mi lista
+                  </button>
+                  <button type="button" onClick={crearAunqueCoincida} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: `1.5px solid ${BRAND_BLUE}`, background: '#fff', color: BRAND_BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    No, es otra persona
+                  </button>
+                  <button type="button" onClick={() => setNpConfirmacion(null)} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: '1.5px solid #dde1ea', background: '#fff', color: '#666', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
             {(() => {
               const submitDisabled =
-                loading || !accion ||
+                loading || !accion || !!npConfirmacion ||
                 ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId)
               return (
                 <button

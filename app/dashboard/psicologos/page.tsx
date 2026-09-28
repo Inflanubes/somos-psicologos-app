@@ -782,7 +782,8 @@ export default function PsicologosPage() {
   // Tutor que ya es paciente: buscar por nombre o teléfono entre los adultos.
   async function buscarTutor(slot: 1 | 2, texto: string) {
     setBusquedaTutor({ slot, texto, resultados: busquedaTutor?.slot === slot ? busquedaTutor.resultados : [] })
-    const q = texto.trim()
+    // Comas y paréntesis rompen la expresión .or() de PostgREST; % y _ son comodines de ilike.
+    const q = texto.replace(/[,()%_\\]/g, ' ').replace(/\s+/g, ' ').trim()
     if (q.length < 3) { setBusquedaTutor({ slot, texto, resultados: [] }); return }
     const { data } = await supabase
       .from('pacientes')

@@ -17,7 +17,7 @@ export default async function PacientesPage() {
   const esPsicologo = perfil?.rol === 'psicologo'
 
   const [{ data: psicologos }, { data: centros }] = await Promise.all([
-    supabase.from('psicologos').select('*'),
+    supabase.from('psicologos').select('*').order('nombre'),
     supabase.from('centros').select('*'),
   ])
   const psi = (psicologos ?? []) as Psicologo[]
@@ -51,6 +51,9 @@ export default async function PacientesPage() {
     telefono: p.telefono,
     email: p.email,
     centro_nombre: centroMap[p.centro_id] ?? '—',
+    psicologo_adultos_id: p.psicologo_adultos_id,
+    psicologo_pareja_id: p.psicologo_pareja_id,
+    psicologo_infantil_id: p.psicologo_infantil_id,
     // "Adultos: Marta · Pareja: Juan": un psicólogo por tipo de consulta.
     psicologo_nombre: TIPOS_CONSULTA
       .map((t) => [t, p[COLUMNA_PSICOLOGO[t]]] as const)
@@ -102,7 +105,11 @@ export default async function PacientesPage() {
           boxShadow: '0 2px 8px rgba(58,140,140,0.06)',
         }}
       >
-        <PacientesClient pacientes={rows} />
+        <PacientesClient
+          pacientes={rows}
+          psicologos={psi.map((p) => ({ id: p.id, nombre: p.nombre, activo: p.activo, tipos_consulta: p.tipos_consulta ?? [] }))}
+          puedeEditarPsicologos={!esPsicologo}
+        />
       </div>
     </div>
   )

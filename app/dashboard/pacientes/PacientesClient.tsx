@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ESTADOS_PACIENTE, type EstadoPaciente } from '@/types/database'
+import { ESTADOS_PACIENTE, type EstadoPaciente, type TipoCita } from '@/types/database'
+import { supabase } from '@/lib/supabase'
+import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, type ColumnaPsicologo } from '@/lib/pacientes-tipos'
 
 export interface PacienteTableRow {
   id: string
@@ -10,6 +12,10 @@ export interface PacienteTableRow {
   email: string
   centro_nombre: string
   psicologo_nombre: string
+  /** Psicólogo por tipo de consulta (migración 014); al menos uno relleno. */
+  psicologo_adultos_id: string | null
+  psicologo_pareja_id: string | null
+  psicologo_infantil_id: string | null
   anadido_por: string | null
   origen: string | null
   estado: EstadoPaciente
@@ -47,9 +53,60 @@ function formatFecha(fecha: string | null): string {
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-export default function PacientesClient({ pacientes }: { pacientes: PacienteTableRow[] }) {
+export type PsicologoOpcion = { id: string; nombre: string; activo: boolean; tipos_consulta: TipoCita[] }
+
+export default function PacientesClient({
+  pacientes: pacientesIniciales,
+  psicologos = [],
+  puedeEditarPsicologos = false,
+}: {
+  pacientes: PacienteTableRow[]
+  psicologos?: PsicologoOpcion[]
+  puedeEditarPsicologos?: boolean
+}) {
+  const [pacientes, setPacientes] = useState(pacientesIniciales)
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<EstadoPaciente | ''>('')
+  // Panel inline para cambiar (o quitar) el psicólogo de cada tipo de un paciente. Solo agentes.
+  const [editando, setEditando] = useState<{ id: string; valores: Record<ColumnaPsicologo, string | null> } | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
+
+  const nombrePsi = (id: string | null) => (id ? psicologos.find((p) => p.id === id)?.nombre ?? '—' : null)
+  function abrirEdicion(p: PacienteTableRow) {
+    setErrorEdicion(null)
+    setEditando({
+      id: p.id,
+      valores: { psicologo_adultos_id: p.psicologo_adultos_id, psicologo_pareja_id: p.psicologo_pareja_id, psicologo_infantil_id: p.psicologo_infantil_id },
+    })
+  }
+  // Psicólogos que pueden ir en cada tipo: los que lo pasan (o sin tipos configurados) y el actual aunque esté inactivo.
+  function opcionesPara(tipo: TipoCita, actual: string | null) {
+    return psicologos.filter((p) => p.id === actual || (p.activo && (p.tipos_consulta.length === 0 || p.tipos_consulta.includes(tipo))))
+  }
+  async function guardarEdicion() {
+    if (!editando) return
+    const v = editando.valores
+    if (!v.psicologo_adultos_id && !v.psicologo_pareja_id && !v.psicologo_infantil_id) {
+      setErrorEdicion('El paciente tiene que tener al menos un psicólogo.')
+      return
+    }
+    setGuardando(true)
+    setErrorEdicion(null)
+    const { error } = await supabase.from('pacientes').update(v).eq('id', editando.id)
+    setGuardando(false)
+    if (error) { setErrorEdicion('No se pudo guardar: ' + error.message); return }
+    setPacientes((prev) => prev.map((p) => (p.id !== editando.id ? p : {
+      ...p,
+      ...v,
+      psicologo_nombre: TIPOS_CONSULTA
+        .map((t) => [t, v[COLUMNA_PSICOLOGO[t]]] as const)
+        .filter((x): x is readonly [TipoCita, string] => !!x[1])
+        .map(([t, id]) => `${ETIQUETA_TIPO[t]}: ${nombrePsi(id)}`)
+        .join(' · ') || 'Sin asignar',
+    })))
+    setEditando(null)
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -193,7 +250,50 @@ export default function PacientesClient({ pacientes }: { pacientes: PacienteTabl
                   <td data-label="Teléfono" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.telefono || '—'}</td>
                   <td data-label="DNI" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>{p.dni || '—'}</td>
                   <td data-label="Centro" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.centro_nombre || '—'}</td>
-                  <td data-label="Psicólogos" style={{ padding: '13px 14px', color: '#4a5870' }}>{p.psicologo_nombre}</td>
+                  <td data-label="Psicólogos" style={{ padding: '13px 14px', color: '#4a5870' }}>
+                    {editando?.id === p.id ? (
+                      <div style={{ display: 'grid', gap: 6, minWidth: 220 }}>
+                        {TIPOS_CONSULTA.map((t) => (
+                          <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                            <span style={{ width: 56, color: '#667799' }}>{ETIQUETA_TIPO[t]}</span>
+                            <select
+                              value={editando.valores[COLUMNA_PSICOLOGO[t]] ?? ''}
+                              onChange={(e) => setEditando((prev) => prev && { ...prev, valores: { ...prev.valores, [COLUMNA_PSICOLOGO[t]]: e.target.value || null } })}
+                              style={{ flex: 1, padding: '5px 8px', borderRadius: 8, border: '1px solid rgba(47,90,174,0.25)', fontSize: 12.5, fontFamily: 'inherit' }}
+                            >
+                              <option value="">Ninguno</option>
+                              {opcionesPara(t, editando.valores[COLUMNA_PSICOLOGO[t]]).map((ps) => (
+                                <option key={ps.id} value={ps.id}>{ps.nombre}{ps.activo ? '' : ' (inactivo)'}</option>
+                              ))}
+                            </select>
+                          </label>
+                        ))}
+                        {errorEdicion && <div style={{ fontSize: 12, color: '#b91c1c' }}>{errorEdicion}</div>}
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button type="button" onClick={guardarEdicion} disabled={guardando} style={{ padding: '5px 12px', borderRadius: 8, border: 'none', background: '#2f5aae', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: guardando ? 0.6 : 1 }}>
+                            {guardando ? 'Guardando…' : 'Guardar'}
+                          </button>
+                          <button type="button" onClick={() => setEditando(null)} disabled={guardando} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(47,90,174,0.3)', background: '#fff', color: '#2f5aae', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {p.psicologo_nombre}
+                        {puedeEditarPsicologos && (
+                          <button
+                            type="button"
+                            onClick={() => abrirEdicion(p)}
+                            title="Cambiar o quitar el psicólogo de cada tipo de consulta"
+                            style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(47,90,174,0.3)', background: '#fff', color: '#2f5aae', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                          >
+                            Editar
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </td>
                   <td data-label="Estado" style={{ padding: '13px 14px' }}>
                     <span
                       style={{

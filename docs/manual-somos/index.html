@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-09-28">28-09-2026</time><span>Modelo nuevo de pacientes y psicólogos: un paciente puede tener psicólogo de adultos, de pareja y de infantil; cada psicólogo es una sola ficha con sus centros y tipos de consulta; su horario vale para todos sus centros; nuevas reglas de repetidos en el alta; los agentes cambian los psicólogos de un paciente desde Pacientes. <a href="#varios-psicologos">Ver el modelo</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Estados del paciente aclarados: cuáles ya tienen uso en Comunicaciones aunque nadie los active, cuál no tiene uso y de dónde falta confirmar que sale «Inactivo». <a href="#cita">Ver estados</a>.</span></li>
         <li><time datetime="2026-09-27">27-09-2026</time><span>Primera versión del manual: <a href="#montado">todo el sistema tal y como está hoy</a>.</span></li>
       </ol>
@@ -238,7 +239,7 @@ footer img{width:28px; height:28px}
     <article class="pieza">
       <div class="icono"><span aria-hidden="true">📅</span></div>
       <h3>Google Calendar</h3>
-      <p>Un calendario por psicólogo, el mismo aunque trabaje en varios centros. Es lo que el psicólogo ve en su móvil. Make lo mantiene al día.</p>
+      <p>Un calendario por psicólogo, el mismo en todos sus centros. Es lo que el psicólogo ve en su móvil. Make lo mantiene al día.</p>
     </article>
     <article class="pieza">
       <div class="icono"><span aria-hidden="true">✈️</span></div>
@@ -306,7 +307,7 @@ footer img{width:28px; height:28px}
     <tbody>
       <tr><td><a href="#p-citas">Citas</a></td><td class="si">Sí, cualquier centro y psicólogo</td><td class="si">Sí, su agenda (página de inicio)</td><td class="si">Sí, solo citas y altas</td></tr>
       <tr><td><a href="#p-calendario">Calendario</a></td><td class="si">Sí</td><td class="no">No</td><td class="si">Sí (página de inicio)</td></tr>
-      <tr><td><a href="#p-pacientes">Pacientes</a></td><td class="si">Todos</td><td class="si">Solo los suyos</td><td class="no">No</td></tr>
+      <tr><td><a href="#p-pacientes">Pacientes</a></td><td class="si">Todos, y cambia sus psicólogos</td><td class="si">Solo los suyos</td><td class="no">No</td></tr>
       <tr><td><a href="#p-comunicaciones">Comunicaciones</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
       <tr><td><a href="#p-mensajes">Mensajes</a></td><td class="no">No</td><td class="si">Sí</td><td class="no">No</td></tr>
       <tr><td><a href="#p-panel">Panel General</a></td><td class="si">Sí, datos globales (página de inicio)</td><td class="no">No</td><td class="si">Solo su actividad</td></tr>
@@ -322,7 +323,7 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <h3>Dar de alta a alguien</h3>
       <p>Lo hace un agente desde <a href="#p-usuarios">Usuarios</a>: elige Psicólogo, Agente o Call center, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
-      <p>A un psicólogo hay que indicarle su calendario de Google y al menos un centro. Si trabaja en varios, se marcan todos y la app crea una ficha por centro.</p>
+      <p>Cada psicólogo es <b>una sola ficha</b>, aunque trabaje en varios centros. Al darlo de alta hay que indicar su calendario de Google, al menos un centro y al menos un tipo de consulta: adultos, pareja o infantil. Centros y tipos se pueden cambiar después.</p>
       <p class="nota">Desactivar a alguien no borra su cuenta ni le impide entrar: deja de aparecer en los desplegables. En call center conviene una cuenta por persona, porque todo lo que hace queda firmado con su nombre.</p>
     </article>
     <article class="ficha">
@@ -350,7 +351,7 @@ footer img{width:28px; height:28px}
       <dl>
         <dt>Para qué</dt><dd>El formulario donde se hace casi todo: <code class="ui">Gestiona citas, bloqueos y altas de pacientes</code>. A la derecha se ve el Google Calendar del psicólogo elegido.</dd>
         <dt>Qué se hace</dt><dd>Se elige centro, psicólogo y acción: agendar, cambiar o cancelar una cita, añadir un paciente, bloquear o desbloquear la agenda, vacaciones, asuntos propios, baja laboral o modificar un bloqueo. El detalle de cada acción está en <a href="#cita">El viaje de una cita</a>.</dd>
-        <dt>Varios centros</dt><dd>Si un psicólogo trabaja en más de uno, al entrar la app le pregunta <code class="ui">¿En qué centro vas a trabajar hoy?</code> y luego puede pulsar <code class="ui">Cambiar de centro</code>.</dd>
+        <dt>Varios centros</dt><dd>Si un psicólogo trabaja en más de uno, al entrar la app le pregunta <code class="ui">¿En qué centro vas a trabajar hoy?</code> y luego puede pulsar <code class="ui">Cambiar de centro</code>. La app lo recuerda en ese navegador.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
@@ -377,19 +378,25 @@ footer img{width:28px; height:28px}
           <li class="grupo">Todos los roles</li>
           <li><code class="ui">Cargando disponibilidad…</code><span class="donde">Texto del desplegable de hora mientras carga</span></li>
           <li><code class="ui">Indica la fecha y la hora de la cita.</code><span class="donde">Error al enviar</span></li>
-          <li><code class="ui">Selecciona el tipo de cita (adulto, pareja o menor).</code><span class="donde">Error al enviar</span></li>
+          <li><code class="ui">Selecciona el tipo de cita.</code><span class="donde">Error al enviar</span></li>
+          <li><code class="ui">Este psicólogo no atiende este tipo de paciente.</code><span class="donde">El tipo de cita o de consulta no está entre los que pasa ese psicólogo</span></li>
+          <li><code class="ui">Esta ficha no tiene tipos de consulta configurados: se muestran los tres. Pide al equipo que los complete en Usuarios.</code></li>
           <li><code class="ui">No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.</code></li>
           <li><code class="ui">No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.</code><span class="donde">Psicólogo sin permiso de bloqueo</span></li>
           <li><code class="ui">Lo que dejes vacío se mantiene como está.</code><span class="donde">Al modificar un bloqueo personal</span></li>
           <li><code class="ui">✅ ¡Listo! La acción se ha registrado correctamente.</code><span class="donde">Tras cualquier acción que sale bien</span></li>
 
           <li class="grupo">Al añadir un paciente</li>
-          <li><code class="ui">El nombre y el teléfono son obligatorios.</code></li>
+          <li><code class="ui">El nombre es obligatorio.</code></li>
+          <li><code class="ui">El teléfono es obligatorio.</code><span class="donde">Solo adultos: a un menor no se le pide teléfono</span></li>
           <li><code class="ui">La fecha de nacimiento es obligatoria.</code></li>
           <li><code class="ui">Para un paciente menor, el nombre y el teléfono del Tutor 1 son obligatorios.</code></li>
           <li><code class="ui">Indica el Tutor 2 (nombre y teléfono) o marca la casilla de circunstancia especial.</code></li>
-          <li><code class="ui">Este paciente ya está añadido en tu lista: <var>María García</var> (<var>MGL</var>).</code><span class="donde">El teléfono ya es de un paciente del mismo psicólogo. No se crea nada.</span></li>
-          <li><code class="ui" data-nocheck>Este paciente ya existe en la base de datos asignado a otro psicólogo. Hemos avisado al equipo para que lo revisen.</code><span class="donde">El teléfono es de un paciente de otro psicólogo. No se crea y el equipo recibe un aviso.</span></li>
+          <li><code class="ui">Este paciente ya está en tu lista: <var>María García</var>.</code><span class="donde">Ya es paciente tuyo de ese mismo tipo. No se crea nada.</span></li>
+          <li><code class="ui" data-nocheck>Este paciente ya existe. Revisa los datos y vuelve a crearlo; el equipo está avisado. Si sigue fallando y los datos son correctos, contacta con nosotros.</code><span class="donde">Mismo nombre y teléfono (adulto) o mismo nombre y fecha de nacimiento (menor). No se crea y el equipo recibe un aviso.</span></li>
+          <li><code class="ui">Este teléfono es de <var>Ana López</var>, <var>en adultos con Marta</var>. ¿Es la misma persona?</code><span class="donde">Consulta de pareja con un teléfono que ya existe. Se elige <code class="ui">Sí, vincular a mi lista</code> o <code class="ui">No, es otra persona</code>.</span></li>
+          <li><code class="ui">Este teléfono ya es de <var>Ana López</var>, <var>en adultos con Marta</var>. ¿Seguro que es para adultos?</code><span class="donde">Consulta de adultos con un teléfono que ya existe y otro nombre. Mismos dos botones.</span></li>
+          <li><code class="ui" data-nocheck><var>Ana López</var> ya tiene psicólogo de <var>adultos</var>: <var>Juan</var>. Si continúas, pasará a ser tuyo.</code><span class="donde">Se añade al aviso anterior si ese tipo ya tiene psicólogo</span></li>
         </ul>
       </details>
     </article>
@@ -398,12 +405,12 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Calendario</h3><span class="chip r-agente">Agente</span><span class="chip r-callcenter">Call center</span></div>
       <dl>
         <dt>Para qué</dt><dd><code class="ui">Citas y bloqueos de todos los psicólogos. Filtra por centro, tipo de cita o psicólogo para ver la disponibilidad.</code></dd>
-        <dt>Cómo se ve</dt><dd>Semana de lunes a domingo, de 08:00 a 22:00. Cada cita ocupa una hora, con el color de su centro. Los bloqueos van en la fila de arriba, «Día». Del paciente solo se ven sus iniciales, nunca el nombre completo.</dd>
+        <dt>Cómo se ve</dt><dd>Semana de lunes a domingo, de 08:00 a 22:00. Cada cita ocupa una hora, con el color del centro donde es esa cita. Los bloqueos van en la fila de arriba, «Día», y salen con cualquier filtro de centro, porque un bloqueo no es de un centro sino del psicólogo. Del paciente solo se ven sus iniciales, nunca el nombre completo.</dd>
         <dt>Qué se hace</dt><dd>Filtrar con <code class="ui">Todos los centros</code>, el tipo de cita (Adulto, Pareja, Menor, <code class="ui">Sin tipo</code>) y <code class="ui">Todos los psicólogos</code>. Moverse con <code class="ui">‹ Semana anterior</code>, <code class="ui">Hoy</code> y <code class="ui">Semana siguiente ›</code>; en el móvil, día a día con <code class="ui">‹ Día</code> y <code class="ui">Día ›</code>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
-          <li><code class="ui">Las celdas sombreadas en azul son las horas de trabajo de este psicólogo en este centro.</code><span class="donde">Al filtrar por un psicólogo con horario</span></li>
+          <li><code class="ui">Las celdas sombreadas en azul son las horas de trabajo de este psicólogo.</code><span class="donde">Al filtrar por un psicólogo con horario</span></li>
           <li><code class="ui">Este psicólogo no tiene horario definido en Usuarios.</code><span class="donde">Al filtrar por un psicólogo sin horario</span></li>
           <li><code class="ui">No hay citas ni bloqueos esta semana con los filtros elegidos.</code></li>
           <li><code class="ui">No se pudo cargar la semana</code><span class="donde">Error de carga (a veces sale el mensaje técnico de la base de datos)</span></li>
@@ -416,14 +423,15 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-pacientes">
       <div class="ficha-cab"><h3>Pacientes</h3><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span></div>
       <dl>
-        <dt>Para qué</dt><dd>La lista de pacientes con su teléfono, DNI, centro, psicólogo, estado, consentimiento, fecha de cita y quién lo añadió.</dd>
-        <dt>Quién ve qué</dt><dd>El agente ve todos. El psicólogo, solo los suyos, en todos sus centros.</dd>
-        <dt>Qué se hace</dt><dd>Buscar y filtrar por estado. Es de consulta: los cambios se hacen desde Citas.</dd>
+        <dt>Para qué</dt><dd>La lista de pacientes con su teléfono, DNI, centro, psicólogos, estado, consentimiento, fecha de cita y quién lo añadió. La columna Psicólogos dice de qué es cada uno, por ejemplo «Adultos: Marta · Pareja: Juan».</dd>
+        <dt>Quién ve qué</dt><dd>El agente ve todos. El psicólogo, los pacientes en los que aparece como psicólogo de cualquier tipo.</dd>
+        <dt>Qué se hace</dt><dd>Buscar y filtrar por estado. El agente tiene además el botón <code class="ui">Editar</code> para cambiar o quitar el psicólogo de cada tipo; el resto de cambios se hacen desde Citas.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
           <li><code class="ui">✓ Firmado</code> o <code class="ui">Pendiente</code><span class="donde">Columna de consentimiento</span></li>
           <li><code class="ui">No se encontraron pacientes</code><span class="donde">Si la búsqueda no da resultados</span></li>
+          <li><code class="ui">El paciente tiene que tener al menos un psicólogo.</code><span class="donde">Al quitar todos los psicólogos con Editar</span></li>
         </ul>
       </details>
     </article>
@@ -434,7 +442,7 @@ footer img{width:28px; height:28px}
         <dt>Para qué</dt><dd><code class="ui">Envía mensajes a pacientes y psicólogos según su estado</code>. Los mensajes salen por WhatsApp a través de Make.</dd>
         <dt>Pestañas</dt><dd>
           <ul>
-            <li><b><code class="ui">Hablar con Psicólogo</code></b>: <code class="ui">Pacientes que llevan más de 1 día esperando que un psicólogo les llame.</code> El botón <code class="ui">Notificar psicólogo</code> le avisa con los datos del paciente.</li>
+            <li><b><code class="ui">Hablar con Psicólogo</code></b>: <code class="ui">Pacientes que llevan más de 1 día esperando que un psicólogo les llame.</code> El botón <code class="ui">Notificar psicólogo</code> le avisa con los datos del paciente; si el paciente tiene varios psicólogos, hay un botón por cada uno, como <code class="ui">Notificar a <var>Marta</var> (<var>adultos</var>)</code>. Si tras hablar el paciente no quiere continuar, <code class="ui">Marcar inactivo</code> lo pasa a «Inactivo».</li>
             <li><b><code class="ui">Recomendaciones</code></b>: pacientes dados de alta con «Nueva recomendación», con quién los recomendó. <code class="ui">Recomendación correcta</code> la confirma; <code class="ui">Quitar recomendación</code> la descarta y el paciente deja de constar como recomendado. En los dos casos pasa a «Nuevo paciente» y queda apuntado en el historial.</li>
             <li><b><code class="ui">Dudosos</code></b>: pacientes indecisos. Se escribe un mensaje a cada uno con <code class="ui">Enviar mensaje</code> y pasan a «Dudoso contactado».</li>
             <li><b><code class="ui">En Espera</code></b>: pacientes en espera, con cambio solicitado o con psicólogo sin disponibilidad. Cada estado tiene su mensaje estándar; se envía uno a uno o con <code class="ui">Enviar a todos (<var>5</var>)</code>.</li>
@@ -461,6 +469,7 @@ footer img{width:28px; height:28px}
         <ul class="lista-msg">
           <li><code class="ui">Este centro no tiene configurado el enlace de reseñas de Google.</code><span class="donde">El botón de reseña queda desactivado</span></li>
           <li><code class="ui">No tienes pacientes con teléfono en este centro.</code></li>
+          <li><code class="ui">Tu ficha no tiene ningún centro asignado. Contacta con el equipo.</code></li>
         </ul>
       </details>
     </article>
@@ -486,9 +495,9 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Usuarios</h3><span class="chip r-agente">Agente</span></div>
       <dl>
         <dt>Para qué</dt><dd>Dar de alta a psicólogos, agentes y call center, y gestionar su acceso, horario y permisos.</dd>
-        <dt>Columnas</dt><dd>Horarios, con un resumen del tipo <code class="ui" data-nocheck>L, X 09:00–14:00 · V 16:00–20:00</code> o <code class="ui">Sin horario</code>. Estado: activo o no, <code class="ui">✓ Puede bloquear agenda</code> o <code class="ui">Sin bloqueo de agenda</code>, <code class="ui">✓ Citas a y media</code> o <code class="ui">Solo en punto</code>.</dd>
-        <dt>Botones</dt><dd><code class="ui">Calendario</code> (cambia su Google Calendar), <code class="ui">Horario</code>, <code class="ui">30'</code> / <code class="ui">Quitar 30'</code> (citas a y media), <code class="ui">Enviar acceso</code>, <code class="ui">Generar</code>, permitir o quitar el bloqueo de agenda, <code class="ui">Activar</code> / <code class="ui">Desactivar</code>.</dd>
-        <dt>Editor de horario</dt><dd>Título <code class="ui">Horario de <var>Marta</var></code> y debajo <code class="ui">Centro: <var>San Blas</var>. Cada centro tiene su propio horario.</code> Cada día puede quedar en <code class="ui">No trabaja</code> o tener uno o varios tramos con <code class="ui">+ Añadir tramo</code> y <code class="ui">Quitar</code>. Se cierra con <code class="ui">Cancelar</code> o <code class="ui">Guardar horario</code>.</dd>
+        <dt>Columnas</dt><dd>Centros y tipos, por ejemplo «San Blas · Online» y «Adulto · Pareja»; si faltan, <code class="ui">Sin centro</code> en rojo o <code class="ui">Sin tipos de consulta</code>. Horario, con un resumen del tipo <code class="ui" data-nocheck>L, X 09:00–14:00 · V 16:00–20:00</code> o <code class="ui">Sin horario</code>. Estado: activo o no, <code class="ui">✓ Puede bloquear agenda</code> o <code class="ui">Sin bloqueo de agenda</code>, <code class="ui">✓ Citas a y media</code> o <code class="ui">Solo en punto</code>.</dd>
+        <dt>Botones</dt><dd><code class="ui">Centros</code> y <code class="ui">Tipos</code> abren un panel con casillas bajo la fila. Además, <code class="ui">Calendario</code> (cambia su Google Calendar), <code class="ui">Horario</code>, <code class="ui">30'</code> / <code class="ui">Quitar 30'</code> (citas a y media), <code class="ui">Enviar acceso</code>, <code class="ui">Generar</code>, permitir o quitar el bloqueo de agenda, <code class="ui">Activar</code> / <code class="ui">Desactivar</code>.</dd>
+        <dt>Editor de horario</dt><dd>Título <code class="ui">Horario de <var>Marta</var></code> y debajo <code class="ui">Centros: <var>San Blas · Online</var>. El horario es del psicólogo y vale para todos sus centros.</code> Cada día puede quedar en <code class="ui">No trabaja</code> o tener uno o varios tramos con <code class="ui">+ Añadir tramo</code> y <code class="ui">Quitar</code>. Se cierra con <code class="ui">Cancelar</code> o <code class="ui">Guardar horario</code>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
@@ -501,11 +510,12 @@ footer img{width:28px; height:28px}
           <li><code class="ui">Horario no válido</code></li>
           <li class="grupo">Altas</li>
           <li><code class="ui">Selecciona al menos un centro para el psicólogo</code></li>
+          <li><code class="ui">Selecciona al menos un tipo de consulta</code></li>
+          <li><code class="ui">Un psicólogo necesita al menos un centro</code><span class="donde">Al quitar todos los centros en el panel</span></li>
+          <li><code class="ui">Un psicólogo necesita al menos un tipo de consulta</code><span class="donde">Al quitar todos los tipos en el panel</span></li>
           <li><code class="ui">El calendar_id es obligatorio para un psicólogo</code><span class="donde">Es el identificador de su Google Calendar</span></li>
           <li><code class="ui">Alguno de los centros seleccionados no existe</code></li>
           <li><code class="ui">¿Generar una contraseña temporal? La anterior dejará de funcionar y tendrás que entregársela tú al usuario.</code><span class="donde">Confirmación antes de generar</span></li>
-          <li class="grupo">Aviso que ya no debería salir</li>
-          <li><code class="ui">Falta ejecutar la migración 012 (horarios y medias horas): <var>detalle técnico</var></code> <span class="badge b-obsoleto">ya no debería salir</span><span class="donde">Si aparece, avisad a Be Banana.</span></li>
         </ul>
       </details>
     </article>
@@ -513,7 +523,7 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-psicologos">
       <div class="ficha-cab"><h3>Psicólogos</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>Ver el equipo de psicólogos, una fila por centro, filtrar por centro y activar o desactivar a cada uno.</dd>
+        <dt>Para qué</dt><dd>Ver el equipo de psicólogos, una fila por psicólogo con todos sus centros, filtrar por centro y activar o desactivar a cada uno.</dd>
       </dl>
     </article>
 
@@ -540,11 +550,12 @@ footer img{width:28px; height:28px}
   <div class="dos">
     <article class="ficha">
       <div class="ficha-cab"><h3>Desde la app</h3><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
-      <p>En <a href="#p-citas">Citas</a>, acción <code class="ui">Añadir nuevo paciente</code>. Se pide nombre completo, teléfono, email (opcional) y <code class="ui">Fecha de nacimiento</code>, que es obligatoria: con ella la app calcula la edad y si es menor.</p>
+      <p>En <a href="#p-citas">Citas</a>, acción <code class="ui">Añadir nuevo paciente</code>. Se pide nombre completo, email (opcional) y <code class="ui">Fecha de nacimiento</code>, que es obligatoria: con ella la app calcula la edad y si es menor.</p>
       <ul>
         <li>La app crea sus <b>iniciales</b> sola, por ejemplo «MGL (María)». Son lo que se ve en el calendario, nunca el nombre completo.</li>
         <li>La casilla <code class="ui">Nueva recomendación</code> marca que el paciente lo trae ese psicólogo. Ese paciente entra en «Revisar recomendado» en vez de «Nuevo paciente», hasta que el equipo valide la recomendación en Comunicaciones.</li>
-        <li>Si es <b>menor</b> (hasta 15 años) se piden los dos tutores legales. Si solo hay uno, se marca la circunstancia especial y se explica en «Otros».</li>
+        <li><b>Adulto:</b> se pide su teléfono y el <b>tipo de consulta</b>, adultos o pareja, entre los que pasa ese psicólogo.</li>
+        <li><b>Menor</b> (hasta 15 años): no se le pide teléfono, su contacto es el del tutor 1. Se piden los dos tutores legales; si solo hay uno, se marca la circunstancia especial y se explica en «Otros». Si un tutor ya es paciente, el botón <code class="ui">Ya es paciente</code> busca su ficha y copia sus datos.</li>
         <li>El paciente queda como «Nuevo paciente» y Make envía el enlace del consentimiento: al paciente, o a los dos tutores si es menor.</li>
       </ul>
     </article>
@@ -555,12 +566,24 @@ footer img{width:28px; height:28px}
     </article>
   </div>
 
+  <p class="subtitulo">Un paciente, hasta tres psicólogos</p>
+  <article class="ficha" id="varios-psicologos">
+    <p>Un paciente puede tener a la vez un psicólogo de <b>adultos</b>, uno de <b>pareja</b> y uno de <b>infantil</b>. Al menos uno. Así, una persona que va a terapia individual con Marta y a terapia de pareja con Juan es una sola ficha.</p>
+    <ul>
+      <li>Cada psicólogo ve en Pacientes, Mensajes y Citas los pacientes en los que aparece, sea del tipo que sea.</li>
+      <li>Cada cita guarda su propio centro. El centro con el que se dio de alta al paciente no decide nada.</li>
+      <li>Los agentes pueden cambiar o quitar el psicólogo de cada tipo desde <a href="#p-pacientes">Pacientes</a>.</li>
+    </ul>
+  </article>
+
   <p class="subtitulo">Pacientes repetidos</p>
   <article class="ficha">
-    <p>Antes de crear un paciente, la app busca su teléfono.</p>
+    <p>Antes de crear un paciente, la app busca si ya existe. Compara los nombres sin tildes, mayúsculas ni espacios de más.</p>
     <ul>
-      <li><b>Ya es del mismo psicólogo:</b> no se crea nada y se avisa: <code class="ui">Este paciente ya está añadido en tu lista: <var>María García</var> (<var>MGL</var>).</code></li>
-      <li><b>Es de otro psicólogo:</b> no se crea, se avisa con <code class="ui" data-nocheck>Este paciente ya existe en la base de datos asignado a otro psicólogo. Hemos avisado al equipo para que lo revisen.</code> y el equipo recibe por Telegram un aviso de posible duplicado. Si venía marcado como recomendación, el aviso pide revisar un posible fraude.</li>
+      <li><b>Mismo nombre y mismo teléfono (adulto), o mismo nombre y fecha de nacimiento (menor):</b> es la misma persona. No se crea, se avisa con <code class="ui" data-nocheck>Este paciente ya existe. Revisa los datos y vuelve a crearlo; el equipo está avisado. Si sigue fallando y los datos son correctos, contacta con nosotros.</code> y el equipo recibe por Telegram un aviso de posible duplicado.</li>
+      <li><b>Ya es paciente tuyo de ese tipo:</b> no se crea nada: <code class="ui">Este paciente ya está en tu lista: <var>María García</var>.</code></li>
+      <li><b>Mismo teléfono con otro nombre, o consulta de pareja:</b> la app pregunta si es la misma persona. <code class="ui">Sí, vincular a mi lista</code> añade al psicólogo a la ficha que ya existe, en el tipo elegido; si ese tipo ya tenía psicólogo, lo sustituye y lo avisa antes. <code class="ui">No, es otra persona</code> crea una ficha nueva.</li>
+      <li><b>Un menor no choca con un adulto</b> aunque tengan el mismo teléfono, porque el del menor es el de su tutor.</li>
     </ul>
   </article>
 
@@ -600,7 +623,7 @@ footer img{width:28px; height:28px}
   </table></div>
   <div class="dos">
     <p class="nota">Cambiar mueve la misma cita, no crea otra. Cancelar la deja anulada en el historial. Para cambiar o cancelar, la app enseña las citas activas del paciente de hoy en adelante; si no tiene: <code class="ui">Sin citas activas para este paciente</code>.</p>
-    <p class="nota">Make encuentra al psicólogo por su nombre y su centro. Si no lo encuentra, Be Banana recibe un aviso de error. Por eso el nombre de cada centro tiene que escribirse igual en todas partes.</p>
+    <p class="nota">La app y Dante le mandan a Make el psicólogo y el centro de cada cita por su identificador, no por su nombre. Si Make no encuentra al psicólogo, Be Banana recibe un aviso de error.</p>
   </div>
 
   <p class="subtitulo">Consentimiento informado</p>
@@ -619,18 +642,18 @@ footer img{width:28px; height:28px}
 
   <p class="subtitulo">Tipo de cita</p>
   <article class="ficha">
-    <p>Al agendar o cambiar se elige <b>Adulto</b>, <b>Pareja</b> o <b>Menor</b>. Si el paciente es menor, se preselecciona Menor; si no, Adulto. Todas las citas duran 60 minutos. Las citas anteriores al 26-09-2026 pueden aparecer como «Sin tipo».</p>
+    <p>Al agendar o cambiar se elige <b>Adulto</b>, <b>Pareja</b> o <b>Menor</b>, pero solo entre los tipos que pasa ese psicólogo. Si el paciente es menor, solo se ofrece Menor. Si solo hay un tipo posible, viene ya elegido. Todas las citas duran 60 minutos.</p>
   </article>
 </div></section>
 <!-- SECCION-DISPONIBILIDAD -->
 <section class="clara seccion" id="disponibilidad"><div class="wrap">
   <span class="num">05</span><h2>Horarios y disponibilidad</h2>
-  <p class="entrada">Cada psicólogo tiene un horario semanal en cada centro donde trabaja. La app lo usa para ofrecer solo huecos reales al agendar.</p>
+  <p class="entrada">Cada psicólogo tiene un horario semanal, el mismo para todos sus centros. La app lo usa para ofrecer solo huecos reales al agendar.</p>
   <div class="dos">
     <article class="ficha">
       <h3>Las reglas</h3>
       <ol>
-        <li>El horario es <b>semanal y por centro</b>: días de la semana con uno o varios tramos. Lo editan los agentes en <a href="#p-usuarios">Usuarios</a>.</li>
+        <li>El horario es <b>semanal y del psicólogo</b>: días de la semana con uno o varios tramos, válido en todos sus centros. Lo editan los agentes en <a href="#p-usuarios">Usuarios</a>.</li>
         <li>Un psicólogo <b>sin horario</b> no tiene restricción: solo se ocultan sus horas ya ocupadas. Así nadie se queda bloqueado mientras se rellenan.</li>
         <li>Toda cita dura <b>60 minutos</b>.</li>
         <li>Se ofrecen las horas <b>en punto de 08:00 a 21:00</b>. Si el psicólogo tiene activado <code class="ui">30'</code>, también las <b>y media hasta las 21:30</b>. Por defecto nadie lo tiene.</li>
@@ -641,7 +664,7 @@ footer img{width:28px; height:28px}
       <h3>Qué se comprueba al elegir hora</h3>
       <ol>
         <li>Que ese día no esté bloqueado.</li>
-        <li>Que la hora caiga dentro de un tramo de su horario en ese centro y que la cita quepa entera.</li>
+        <li>Que la hora caiga dentro de un tramo de su horario y que la cita quepa entera.</li>
         <li>Que no choque con otra cita suya, <b>en cualquiera de sus centros</b>. Al cambiar una cita, su hora actual cuenta como libre.</li>
         <li>Si es una media hora, que tenga activado <code class="ui">30'</code>.</li>
       </ol>
@@ -685,7 +708,8 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Qué hace</h3><span class="chip r-dante">Dante</span></div>
       <ul>
         <li>Reconoce al paciente por su chat de Telegram. Si es nuevo, lo da de alta.</li>
-        <li>Busca huecos y ofrece tres opciones.</li>
+        <li>Al dar de alta a un adulto, pregunta si la consulta es individual o de pareja, y aplica las mismas reglas de repetidos que la app.</li>
+        <li>Busca huecos y ofrece tres opciones, solo con psicólogos que pasan ese tipo de consulta. Cada cita va con el psicólogo del paciente para ese tipo.</li>
         <li>Agenda, cambia y anula citas, siempre con una confirmación del paciente antes.</li>
         <li>Si no hay hueco, deja al paciente como «Sin disponibilidad». Si pide otro psicólogo, como «Cambio solicitado». En ambos casos avisa al equipo.</li>
         <li>Entiende texto y mensajes de voz.</li>
@@ -729,7 +753,7 @@ footer img{width:28px; height:28px}
         <li><b>Estados que nadie activa.</b> «Psicólogo», «Dudoso» y «Psicólogo sin disponibilidad» ya tienen su pestaña en Comunicaciones, pero hoy nadie pone a un paciente en ellos. ¿Los activará el call center? Ver <a href="#cita">Estados del paciente</a>.</li>
         <li><b>Doble confirmación con Dante.</b> Decidir cuál de las dos confirmaciones se queda.</li>
         <li><b>Consentimiento desde Dante.</b> Cuando Dante da de alta a un paciente, el enlace del consentimiento ya lo envía Make, como con la app. Queda por decidir si Dante lo menciona también en la conversación.</li>
-        <li><b>Un paciente con varios psicólogos.</b> Hay un rediseño preparado para que un paciente pueda tener a la vez psicólogo de adultos, de pareja e infantil. No se hace hasta que Sonia lo indique.</li>
+        <li><b>Pruebas del modelo nuevo.</b> El paciente con varios psicólogos ya está en la app, en Dante y en Make. Falta la ronda de pruebas de aceptación de principio a fin.</li>
       </ul>
     </article>
     <article class="ficha">
@@ -759,14 +783,16 @@ footer img{width:28px; height:28px}
     <div><dt>Consentimiento</dt><dd>El formulario firmado en la web de Somos. Los menores necesitan el de sus dos tutores.</dd></div>
     <div><dt>Dante</dt><dd>El asistente de Telegram que atiende a los pacientes.</dd></div>
     <div><dt>Derivación</dt><dd>Cuando Dante pasa una conversación a una persona del equipo.</dd></div>
-    <div><dt>Ficha de psicólogo</dt><dd>Un psicólogo en un centro. Quien trabaja en tres centros tiene tres fichas, con el mismo calendario.</dd></div>
+    <div><dt>Ficha de psicólogo</dt><dd>Un psicólogo, con todos sus centros y sus tipos de consulta. Una sola aunque trabaje en varios centros.</dd></div>
+    <div><dt>Psicólogos del paciente</dt><dd>Hasta tres: el de adultos, el de pareja y el de infantil. Al menos uno.</dd></div>
     <div><dt>Iniciales</dt><dd>Cómo se identifica a un paciente en el calendario, por ejemplo «MGL (María)». Nunca se muestra el nombre completo.</dd></div>
     <div><dt>Menor</dt><dd>Paciente de 15 años o menos. La app lo calcula con la fecha de nacimiento.</dd></div>
     <div><dt>Origen</dt><dd>Quién hizo cada acción: un psicólogo, un agente, alguien del call center o Dante. Queda guardado siempre.</dd></div>
     <div><dt>Permiso de bloqueo</dt><dd>Permiso de un psicólogo para bloquear y desbloquear su agenda él mismo. Se da en Usuarios.</dd></div>
     <div><dt>Proveedor externo de calendario</dt><dd>Un servicio externo que recibe un aviso automático con cada cita y cada bloqueo.</dd></div>
     <div><dt>Recomendado</dt><dd>Paciente que trae el propio psicólogo, marcado con la casilla «Nueva recomendación».</dd></div>
-    <div><dt>Tipo de cita</dt><dd>Adulto, Pareja o Menor. Todas duran 60 minutos.</dd></div>
+    <div><dt>Tipo de cita</dt><dd>Adulto, Pareja o Menor. Solo se ofrecen los tipos que pasa el psicólogo. Todas duran 60 minutos.</dd></div>
+    <div><dt>Tipo de consulta</dt><dd>Lo que atiende un psicólogo: adultos, pareja, infantil. Se marca en Usuarios.</dd></div>
   </dl>
 </div></section>
 

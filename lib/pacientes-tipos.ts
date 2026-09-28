@@ -99,10 +99,15 @@ export function evaluarDuplicado(nuevo: NuevoPaciente, existentes: PacienteExist
   const mismoTelefono = telefono ? adultos.filter((p) => (p.telefono ?? '').trim() === telefono) : []
   if (mismoTelefono.length === 0) return { tipo: 'ninguno' }
 
+  // Mismo teléfono y mismo nombre = la misma persona. Para adultos es un duplicado
+  // (bloqueo); para pareja es el caso normal del modelo (decisión de Sonia,
+  // 28-09-2026): se ofrece vincular la ficha existente como paciente de pareja.
   const mismoNombre = mismoTelefono.find((p) => normalizarNombre(p.nombre) === nombreNuevo)
-  if (mismoNombre) return { tipo: 'bloquear', paciente: mismoNombre, motivo: 'mismo_telefono_y_nombre' }
+  if (mismoNombre && nuevo.tipoConsulta !== 'pareja') {
+    return { tipo: 'bloquear', paciente: mismoNombre, motivo: 'mismo_telefono_y_nombre' }
+  }
 
-  const candidato = mismoTelefono[0]
+  const candidato = mismoNombre ?? mismoTelefono[0]
   const columna = COLUMNA_PSICOLOGO[nuevo.tipoConsulta]
   const ocupadaPor = candidato[columna]
   if (ocupadaPor === nuevo.psicologoId) return { tipo: 'bloquear', paciente: candidato, motivo: 'ya_en_tu_lista' }

@@ -70,6 +70,20 @@ describe('evaluarDuplicado', () => {
     )
     expect(r).toMatchObject({ tipo: 'bloquear', motivo: 'mismo_telefono_y_nombre', paciente: { id: 'p1' } })
   })
+  it('pareja: mismo teléfono y mismo nombre, otro psicólogo → confirmar suave (decisión de Sonia, 28-09-2026)', () => {
+    const r = evaluarDuplicado(
+      { nombre: 'Ana Belén', telefono: '600111222', fechaNacimiento: '1990-05-04', esMenor: false, tipoConsulta: 'pareja', psicologoId: 'psi-B' },
+      [base()],
+    )
+    expect(r).toMatchObject({ tipo: 'confirmar', fuerza: 'suave', paciente: { id: 'p1' }, columnaOcupadaPor: null })
+  })
+  it('pareja: mismo teléfono y mismo nombre, ya en pareja con ESTE psicólogo → bloquear ya_en_tu_lista', () => {
+    const r = evaluarDuplicado(
+      { nombre: 'Ana Belén', telefono: '600111222', fechaNacimiento: '1990-05-04', esMenor: false, tipoConsulta: 'pareja', psicologoId: 'psi-Z' },
+      [base({ psicologo_pareja_id: 'psi-Z' })],
+    )
+    expect(r).toMatchObject({ tipo: 'bloquear', motivo: 'ya_en_tu_lista' })
+  })
   it('pareja: mismo teléfono, otro nombre → confirmar suave, columna libre', () => {
     const r = evaluarDuplicado(
       { nombre: 'Luis Gómez', telefono: '600111222', fechaNacimiento: '1980-01-01', esMenor: false, tipoConsulta: 'pareja', psicologoId: 'psi-B' },

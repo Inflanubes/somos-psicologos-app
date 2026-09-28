@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-09-28">28-09-2026</time><span>Psicólogos desactivados: siguen entrando y gestionando su agenda, pero no pueden añadir pacientes nuevos. Los agentes pueden seguir agendándoles y asignándoles pacientes; el call center y Dante, no. <a href="#altas">Ver qué pasa al desactivar</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Modelo nuevo de pacientes y psicólogos: un paciente puede tener psicólogo de adultos, de pareja y de infantil; cada psicólogo es una sola ficha con sus centros y tipos de consulta; su horario vale para todos sus centros; nuevas reglas de repetidos en el alta; los agentes cambian los psicólogos de un paciente desde Pacientes. <a href="#varios-psicologos">Ver el modelo</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Estados del paciente aclarados: cuáles ya tienen uso en Comunicaciones aunque nadie los active, cuál no tiene uso y de dónde falta confirmar que sale «Inactivo». <a href="#cita">Ver estados</a>.</span></li>
         <li><time datetime="2026-09-27">27-09-2026</time><span>Primera versión del manual: <a href="#montado">todo el sistema tal y como está hoy</a>.</span></li>
@@ -277,7 +278,7 @@ footer img{width:28px; height:28px}
       <dl>
         <dt>Quién es</dt><dd>El equipo interno de Somos.</dd>
         <dt>Empieza en</dt><dd>Panel General.</dd>
-        <dt>Puede</dt><dd>Todo. Es el único rol que da de alta usuarios, los activa o desactiva y restablece contraseñas. En Citas elige cualquier centro y psicólogo y usa todas las acciones, bloqueos incluidos.</dd>
+        <dt>Puede</dt><dd>Todo. Es el único rol que da de alta usuarios, los activa o desactiva y restablece contraseñas. En Citas elige cualquier centro y psicólogo, también los desactivados, y usa todas las acciones, bloqueos incluidos.</dd>
         <dt>Detalle</dt><dd>Al agendar, la app le avisa si se sale del horario del psicólogo, pero le deja seguir. Ver <a href="#disponibilidad">Horarios y disponibilidad</a>.</dd>
       </dl>
     </article>
@@ -287,7 +288,7 @@ footer img{width:28px; height:28px}
         <dt>Quién es</dt><dd>Cada psicólogo de la clínica.</dd>
         <dt>Empieza en</dt><dd>Citas, fijado a su propia agenda.</dd>
         <dt>Puede</dt><dd>Agendar, cambiar y cancelar sus citas, dar de alta pacientes, pedir vacaciones, asuntos propios o baja, ver sus pacientes y escribirles por WhatsApp.</dd>
-        <dt>No puede</dt><dd>Bloquear o desbloquear su agenda, salvo que un agente le dé ese permiso. Ver datos de otros psicólogos.</dd>
+        <dt>No puede</dt><dd>Bloquear o desbloquear su agenda, salvo que un agente le dé ese permiso. Ver datos de otros psicólogos. Si está desactivado, dar de alta pacientes nuevos.</dd>
       </dl>
     </article>
     <article class="ficha">
@@ -295,7 +296,7 @@ footer img{width:28px; height:28px}
       <dl>
         <dt>Quién es</dt><dd>Las personas que atienden el teléfono.</dd>
         <dt>Empieza en</dt><dd>Calendario, para ver de un vistazo la disponibilidad.</dd>
-        <dt>Puede</dt><dd>Agendar, cambiar y cancelar citas y dar de alta pacientes, en cualquier centro y con cualquier psicólogo. Ver su propia actividad.</dd>
+        <dt>Puede</dt><dd>Agendar, cambiar y cancelar citas y dar de alta pacientes, en cualquier centro y con cualquier psicólogo activo. Ver su propia actividad.</dd>
         <dt>No puede</dt><dd>Crear ni cambiar bloqueos (sí los ve en el Calendario), ver datos globales ni gestionar usuarios.</dd>
       </dl>
     </article>
@@ -318,13 +319,13 @@ footer img{width:28px; height:28px}
     </tbody>
   </table></div>
 
-  <p class="subtitulo">Altas, bajas y contraseñas</p>
+  <p class="subtitulo" id="altas">Altas, bajas y contraseñas</p>
   <div class="dos">
     <article class="ficha">
       <h3>Dar de alta a alguien</h3>
       <p>Lo hace un agente desde <a href="#p-usuarios">Usuarios</a>: elige Psicólogo, Agente o Call center, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
       <p>Cada psicólogo es <b>una sola ficha</b>, aunque trabaje en varios centros. Al darlo de alta hay que indicar su calendario de Google, al menos un centro y al menos un tipo de consulta: adultos, pareja o infantil. Centros y tipos se pueden cambiar después.</p>
-      <p class="nota">Desactivar a alguien no borra su cuenta ni le impide entrar: deja de aparecer en los desplegables. En call center conviene una cuenta por persona, porque todo lo que hace queda firmado con su nombre.</p>
+      <p class="nota">Desactivar a alguien no borra su cuenta ni le impide entrar. Un psicólogo desactivado sigue gestionando sus citas y su agenda, pero no puede añadir pacientes nuevos; los agentes lo ven en Citas como <code class="ui"><var>Marta</var> (inactivo)</code> y pueden hacer de todo con él; el call center y Dante no lo ven. En call center conviene una cuenta por persona, porque todo lo que hace queda firmado con su nombre.</p>
     </article>
     <article class="ficha">
       <h3>Cuando alguien olvida su contraseña</h3>
@@ -374,6 +375,10 @@ footer img{width:28px; height:28px}
           <li><code class="ui">Ahora mismo no podemos consultar la disponibilidad. Contacta con nosotros para agendar esta cita.</code><span class="donde">Si falla la consulta de horarios: no deja agendar a ciegas</span></li>
           <li><code class="ui">La hora elegida ya no está disponible. Elige otra.</code><span class="donde">Error al enviar</span></li>
           <li><code class="ui">Espera un momento: se está cargando la disponibilidad.</code><span class="donde">Error al enviar</span></li>
+
+          <li class="grupo">Psicólogo desactivado</li>
+          <li><code class="ui">Tu ficha está desactivada: puedes gestionar tus citas y tu agenda, pero no añadir pacientes nuevos.</code><span class="donde">Psicólogos · aviso encima de la acción; «Añadir nuevo paciente» no aparece</span></li>
+          <li><code class="ui">Este psicólogo está desactivado. Puedes gestionarlo con normalidad, pero el call center y Dante no pueden agendarle citas ni asignarle pacientes.</code><span class="donde">Agentes · al elegir un psicólogo desactivado</span></li>
 
           <li class="grupo">Todos los roles</li>
           <li><code class="ui">Cargando disponibilidad…</code><span class="donde">Texto del desplegable de hora mientras carga</span></li>
@@ -719,6 +724,7 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Qué no hace</h3><span class="chip r-dante">Dante</span></div>
       <ul>
         <li>No bloquea agendas: si se lo piden, pasa la conversación al equipo.</li>
+        <li>No agenda, cambia ni anula citas con un psicólogo desactivado, igual que el call center: pasa la conversación al equipo sin contarle el motivo al paciente.</li>
         <li>No lee imágenes. Responde «Por favor, escríbeme o mándame un audio. No puedo procesar imágenes. 😊».</li>
         <li>Si el paciente ya tiene una cita, no le da otra: le ofrece cambiarla.</li>
         <li>Solo ofrece horas en punto o y media, entre las 08:00 y las 21:30.</li>

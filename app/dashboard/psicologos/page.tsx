@@ -253,6 +253,9 @@ export default function PsicologosPage() {
 
   // Logged-in identity (to fix the form to a psychologist and stamp who acted)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
+  // Sin fila en perfiles = agente, así que hace falta saber si ya se ha cargado
+  // para no enseñar psicólogos inactivos al call center mientras llega su perfil.
+  const [perfilCargado, setPerfilCargado] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const esPsicologo = perfil?.rol === 'psicologo'
@@ -284,7 +287,9 @@ export default function PsicologosPage() {
     async function fetchData() {
       const [{ data: c }, { data: p }, { data: pc }] = await Promise.all([
         supabase.from('centros').select('*').order('nombre'),
-        supabase.from('psicologos').select('*').eq('activo', true).order('nombre'),
+        // Todos, también los desactivados: el agente puede seguir gestionándolos
+        // (el call center solo ve activos, se filtra abajo).
+        supabase.from('psicologos').select('*').order('nombre'),
         supabase.from('psicologos_centros').select('psicologo_id, centro_id'),
       ])
       setCentros((c ?? []) as Centro[])
@@ -297,14 +302,15 @@ export default function PsicologosPage() {
   useEffect(() => {
     if (centroId) {
       const enCentro = new Set(psicologosCentros.filter((pc) => pc.centro_id === centroId).map((pc) => pc.psicologo_id))
-      setFilteredPsicologos(psicologos.filter((p) => enCentro.has(p.id)))
+      const veInactivos = perfilCargado && perfil?.rol !== 'call_center'
+      setFilteredPsicologos(psicologos.filter((p) => enCentro.has(p.id) && (p.activo || veInactivos)))
     } else {
       setFilteredPsicologos([])
     }
     setPsicologoId('')
     setPacientes([])
     setPacienteId('')
-  }, [centroId, psicologos, psicologosCentros])
+  }, [centroId, psicologos, psicologosCentros, perfilCargado, perfil?.rol])
 
   // Load patients filtered by selected psychologist
   useEffect(() => {
@@ -331,7 +337,11 @@ export default function PsicologosPage() {
   // Un usuario psicólogo solo ve Bloquear/Desbloquear agenda si su ficha lo permite;
   // los agentes gestionan cualquier agenda sin restricción. El call center solo
   // gestiona citas (agendar, cambiar, cancelar) y altas de paciente, sin bloqueos.
+  // Un psicólogo desactivado sigue gestionando su agenda pero no puede darse de
+  // alta pacientes nuevos (el agente sí puede asignárselos).
+  const psicologoInactivo = psicologoSeleccionado !== null && !psicologoSeleccionado.activo
   const accionesDisponibles = ACCIONES.filter((a) => {
+    if (a === 'Añadir nuevo paciente' && esPsicologo && psicologoInactivo) return false
     if (esCallCenter) return ACCIONES_CITA.includes(a) || a === 'Añadir nuevo paciente'
     return (
       !ACCIONES_BLOQUEO_GENERAL.includes(a) ||
@@ -396,7 +406,10 @@ export default function PsicologosPage() {
       setUserId(user?.id ?? null)
       setUserEmail(user?.email ?? null)
     })
-    getPerfilActual().then(setPerfil)
+    getPerfilActual().then((p) => {
+      setPerfil(p)
+      setPerfilCargado(true)
+    })
   }, [])
 
   // Psicólogo logueado: su ficha (por email, con respaldo en perfil) y sus centros.
@@ -408,7 +421,9 @@ export default function PsicologosPage() {
     async function cargar() {
       let ficha: Psicologo | null = null
       if (userEmail) {
-        const { data } = await supabase.from('psicologos').select('*').eq('email', userEmail).eq('activo', true).maybeSingle()
+        // Si hubiera más de una ficha con ese email, se prefiere la activa.
+        const { data } = await supabase.from('psicologos').select('*').eq('email', userEmail)
+          .order('activo', { ascending: false }).limit(1).maybeSingle()
         ficha = (data as Psicologo | null) ?? null
       }
       if (!ficha && perfil?.psicologo_id) {
@@ -819,6 +834,10 @@ export default function PsicologosPage() {
       !(psicologoSeleccionado?.puede_bloquear ?? false)
     ) {
       setError('No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.')
+      return
+    }
+    if (isNuevoPaciente && esPsicologo && psicologoInactivo) {
+      setError('Tu ficha está desactivada: no puedes añadir pacientes nuevos. Habla con el equipo.')
       return
     }
     if (isCitaAction && !pacienteId) {
@@ -1317,12 +1336,20 @@ export default function PsicologosPage() {
                 </option>
                 {filteredPsicologos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.nombre}
+                    {p.nombre}{p.activo ? '' : ' (inactivo)'}
                   </option>
                 ))}
               </select>
             </FormField>
           </div>
+          )}
+
+          {psicologoInactivo && (
+            <InfoBox>
+              {esPsicologo
+                ? 'Tu ficha está desactivada: puedes gestionar tus citas y tu agenda, pero no añadir pacientes nuevos.'
+                : 'Este psicólogo está desactivado. Puedes gestionarlo con normalidad, pero el call center y Dante no pueden agendarle citas ni asignarle pacientes.'}
+            </InfoBox>
           )}
 
           {/* Divider */}

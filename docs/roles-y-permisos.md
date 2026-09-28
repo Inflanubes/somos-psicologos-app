@@ -1,6 +1,6 @@
 # Roles y permisos de la app Somos Psicología
 
-Última revisión: 26-09-2026 (horarios de psicólogos, medias horas y disponibilidad en Citas).
+Última revisión: 28-09-2026 (psicólogos desactivados en Citas y Dante).
 
 ## Una sola app
 
@@ -88,6 +88,21 @@ trabajo según el horario definido en Usuarios. Solo se ve lo gestionado desde l
 apunte a mano en Google Calendar no aparece. El filtro por tipo de cita depende de que Make guarde
 `tipo_cita` al agendar (hecho desde el 26-09-2026; ver `docs/make-cambios-2026-09-25.md`, apartado F,
 fuera del repo).
+
+## Psicólogos desactivados
+
+Desactivar un psicólogo (`psicologos.activo = false`, desde Usuarios o Psicólogos) no le quita el acceso.
+Desde el 28-09-2026 el formulario de Citas trata así a un psicólogo desactivado:
+
+| Quién | ¿Lo puede elegir? | Citas y bloqueos | Añadir nuevo paciente |
+|---|:-:|:-:|:-:|
+| Agente | Sí, aparece como "Nombre (inactivo)" | Sí | Sí |
+| El propio psicólogo | Entra en su agenda como siempre | Sí | **No** (la acción no aparece y se rechaza al enviar) |
+| Call center | No, no aparece en el desplegable | No | No |
+| Dante | No sale en `ListarPsicologos`; `EjecutarAccion` y `RegistrarPaciente` lo rechazan | No, deriva al equipo | No |
+
+El Calendario sigue mostrando solo psicólogos activos en su filtro (decisión del 28-09-2026). Si en algún
+momento deben seguir apareciendo sus citas ahí, hay que cambiar `app/dashboard/calendario/page.tsx`.
 
 ## Quién ha añadido cada paciente
 

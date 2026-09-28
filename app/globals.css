@@ -265,3 +265,92 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Esqueleto de carga (global; algunos loading.tsx lo redefinen) --- */
+.skeleton {
+  background: linear-gradient(90deg, #eef1f6 25%, #e3e8f0 50%, #eef1f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-brillo 1.5s infinite;
+}
+@keyframes skeleton-brillo {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- Psicólogos: filas que abren la ficha lateral --- */
+.fila-clic {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.fila-clic:hover,
+.fila-clic[aria-selected="true"] {
+  background: #f7f9fd;
+}
+.etiqueta-mini {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #eef2fb;
+  color: #254d99;
+}
+.etiqueta-mini.ambar {
+  background: #fff4e0;
+  color: #8a5a00;
+}
+
+/* Ficha lateral fija a la derecha; en móvil ocupa toda la pantalla. */
+.ficha-lateral {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  background: #ffffff;
+  border-left: 1px solid rgba(47, 90, 174, 0.13);
+  box-shadow: -8px 0 24px rgba(47, 90, 174, 0.1);
+  display: flex;
+  flex-direction: column;
+  z-index: 75;
+}
+/* En pantallas anchas se deja sitio a la ficha para que no tape la tabla. */
+@media (min-width: 1280px) {
+  .con-ficha {
+    margin-right: 420px;
+  }
+}
+
+/* --- Usuarios: pestañas --- */
+.pestanas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(47, 90, 174, 0.13);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.pestana {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #667799;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.pestana:hover {
+  color: #254d99;
+}
+.pestana[aria-selected="true"] {
+  color: #254d99;
+  border-bottom-color: #2f5aae;
+}
+.pestana small {
+  font-weight: 500;
+  color: #8899bb;
+  margin-left: 4px;
+}

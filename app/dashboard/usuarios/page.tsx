@@ -1,159 +1,44 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
-import HorarioEditor from './HorarioEditor'
-import { resumenHorario, type Tramo } from '@/lib/horarios'
+import { useEffect, useState } from 'react'
 import { ETIQUETA_TIPO, TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
 import type { TipoCita } from '@/types/database'
+import {
+  ActionButton, Aviso, EstadoBadge, FilasEsqueleto, Interruptor, card, cargarGestion, h1, input, patchUsuario,
+  subtitulo, td, th,
+  type AgenteGestion, type CentroGestion, type PsicologoGestion, type TipoUsuario,
+} from '../_components/gestion'
 
-// Tabla con scroll horizontal y una segunda barra de scroll ARRIBA sincronizada,
-// para poder desplazarse aunque haya muchas filas (la barra de abajo queda fuera de pantalla).
-function ScrollBox({ children }: { children: React.ReactNode }) {
-  const topRef = useRef<HTMLDivElement>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const spacerRef = useRef<HTMLDivElement>(null)
-  const activo = useRef<'top' | 'bottom' | null>(null)
+// Usuarios: solo cuentas para entrar en la app (alta, enviar acceso, contraseña
+// temporal y activar agentes / call center). Cómo trabaja cada psicólogo
+// (centros, horario, permisos de agenda…) se gestiona en Psicólogos (/dashboard/equipo).
 
-  useEffect(() => {
-    const bottom = bottomRef.current
-    const spacer = spacerRef.current
-    if (!bottom || !spacer) return
-    const update = () => { spacer.style.width = bottom.scrollWidth + 'px' }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(bottom)
-    if (bottom.firstElementChild) ro.observe(bottom.firstElementChild)
-    return () => ro.disconnect()
-  })
-
-  const onTop = () => {
-    if (activo.current === 'bottom') return
-    activo.current = 'top'
-    if (topRef.current && bottomRef.current) bottomRef.current.scrollLeft = topRef.current.scrollLeft
-    activo.current = null
-  }
-  const onBottom = () => {
-    if (activo.current === 'top') return
-    activo.current = 'bottom'
-    if (topRef.current && bottomRef.current) topRef.current.scrollLeft = bottomRef.current.scrollLeft
-    activo.current = null
-  }
-
-  return (
-    <>
-      <div ref={topRef} onScroll={onTop} style={{ overflowX: 'auto', overflowY: 'hidden' }}>
-        <div ref={spacerRef} style={{ height: 1 }} />
-      </div>
-      <div ref={bottomRef} onScroll={onBottom} style={{ overflowX: 'auto' }}>
-        {children}
-      </div>
-    </>
-  )
-}
-
-// Una ficha por psicólogo (migración 014): sus centros y tipos de consulta son listas.
-type Psicologo = {
-  id: string; nombre: string; email: string | null; telefono: string | null
-  centro_ids: string[]; centros_nombres: string[]; tipos_consulta: TipoCita[]
-  calendar_id: string | null; activo: boolean
-  puede_bloquear: boolean | null
-  citas_media_hora: boolean | null
-  horarios: Tramo[]
-}
-type Agente = {
-  id: string; nombre: string; email: string | null; telefono: string | null
-  centro_id: string | null; activo: boolean; auth_user_id: string | null
-}
-type Centro = { id: string; nombre: string }
-type Tipo = 'psicologo' | 'agente' | 'call_center'
-
-const card: React.CSSProperties = {
-  background: '#fff', borderRadius: 12, border: '1px solid rgba(47,90,174,0.13)',
-  boxShadow: '0 2px 8px rgba(47,90,174,0.06)', overflow: 'hidden', marginBottom: 28,
-}
-const th: React.CSSProperties = {
-  padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700,
-  color: '#667799', textTransform: 'uppercase', letterSpacing: '0.07em',
-}
-const td: React.CSSProperties = { padding: '14px 20px', fontSize: 13, color: '#4a5870' }
-const input: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13,
-  border: '1px solid rgba(47,90,174,0.25)', fontFamily: 'inherit',
-}
-
-// Botones de acción con aspecto de botón real y transición al pasar el ratón.
-const btnBase: React.CSSProperties = {
-  padding: '7px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-  fontFamily: 'inherit', border: '1.5px solid', whiteSpace: 'nowrap',
-  transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-}
-const btnVariants = {
-  default: {
-    normal: { borderColor: 'rgba(47,90,174,0.3)', background: '#fff', color: '#2f5aae' },
-    hover:  { borderColor: '#2f5aae', background: '#eef2fb', color: '#254d99' },
-  },
-  success: {
-    normal: { borderColor: 'rgba(30,125,79,0.4)', background: '#fff', color: '#1e7d4f' },
-    hover:  { borderColor: '#1e7d4f', background: '#eafaf1', color: '#155f3b' },
-  },
-  danger: {
-    normal: { borderColor: 'rgba(185,28,28,0.3)', background: '#fff', color: '#b91c1c' },
-    hover:  { borderColor: '#b91c1c', background: '#fef2f2', color: '#991b1b' },
-  },
-} as const
-
-function ActionButton({ children, onClick, disabled, variant = 'default', title }: {
-  children: React.ReactNode
-  onClick: () => void
-  disabled?: boolean
-  variant?: keyof typeof btnVariants
-  title?: string
-}) {
-  const [hover, setHover] = useState(false)
-  const v = btnVariants[variant]
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        ...btnBase,
-        ...(hover && !disabled ? v.hover : v.normal),
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
-    >
-      {children}
-    </button>
-  )
-}
+const PESTANAS: { tipo: TipoUsuario; etiqueta: string; singular: string }[] = [
+  { tipo: 'psicologo', etiqueta: 'Psicólogos', singular: 'Psicólogo' },
+  { tipo: 'agente', etiqueta: 'Agentes', singular: 'Agente' },
+  { tipo: 'call_center', etiqueta: 'Call center', singular: 'Call center' },
+]
 
 export default function UsuariosPage() {
-  const [psicologos, setPsicologos] = useState<Psicologo[]>([])
-  const [agentes, setAgentes] = useState<Agente[]>([])
-  const [callCenter, setCallCenter] = useState<Agente[]>([])
-  const [centros, setCentros] = useState<Centro[]>([])
-  const [filtroCentro, setFiltroCentro] = useState<string>('todos')
+  const [psicologos, setPsicologos] = useState<PsicologoGestion[]>([])
+  const [agentes, setAgentes] = useState<AgenteGestion[]>([])
+  const [callCenter, setCallCenter] = useState<AgenteGestion[]>([])
+  const [centros, setCentros] = useState<CentroGestion[]>([])
+  const [pestana, setPestana] = useState<TipoUsuario>('psicologo')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  // Filas con una operación en curso: solo se bloquean esas.
+  const [ocupados, setOcupados] = useState<Set<string>>(new Set())
+  const [creando, setCreando] = useState(false)
+  const [mostrarAlta, setMostrarAlta] = useState(false)
   // Resultado de un alta o restablecimiento, para mostrarlo una vez.
   // emailSent = se envió el email; password = contraseña temporal de respaldo.
   const [resultado, setResultado] = useState<
     { email: string; password?: string; emailSent?: boolean; contexto: 'alta' | 'reset' } | null
   >(null)
-  // Ficha cuyo horario se está editando (abre el modal) y aviso de la API si
-  // falta la migración 012.
-  const [editandoHorario, setEditandoHorario] = useState<Psicologo | null>(null)
-  const [avisoHorarios, setAvisoHorarios] = useState<string | null>(null)
-  // Panel inline bajo la fila de un psicólogo para cambiar sus centros o sus tipos de consulta.
-  const [panel, setPanel] = useState<{ id: string; que: 'centros' | 'tipos'; seleccion: string[] } | null>(null)
 
   // Formulario de alta
-  const [tipo, setTipo] = useState<Tipo>('psicologo')
+  const [tipo, setTipo] = useState<TipoUsuario>('psicologo')
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -171,32 +56,30 @@ export default function UsuariosPage() {
     setTiposConsulta((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
   }
 
+  // Sin esqueleto al recargar tras un alta: la tabla se queda y se actualiza al llegar.
   async function cargar() {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/usuarios')
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error ?? 'Error cargando'); return }
-      setPsicologos(data.psicologos)
-      setAgentes(data.agentes)
-      setCallCenter(data.call_center ?? [])
-      setCentros(data.centros ?? [])
-      setAvisoHorarios(data.aviso_horarios ?? null)
-    } catch {
-      setError('Error de conexión al cargar')
-    } finally {
-      setLoading(false)
+    const { datos, error } = await cargarGestion()
+    if (datos) {
+      setPsicologos(datos.psicologos)
+      setAgentes(datos.agentes)
+      setCallCenter(datos.call_center)
+      setCentros(datos.centros)
     }
+    if (error) setError(error)
+    setLoading(false)
   }
 
   useEffect(() => { cargar() }, [])
+
+  function marcar(id: string, si: boolean) {
+    setOcupados((s) => { const n = new Set(s); if (si) n.add(id); else n.delete(id); return n })
+  }
 
   async function crear(e: React.FormEvent) {
     e.preventDefault()
     if (tipo === 'psicologo' && centroIds.length === 0) { setError('Selecciona al menos un centro para el psicólogo'); return }
     if (tipo === 'psicologo' && tiposConsulta.length === 0) { setError('Selecciona al menos un tipo de consulta'); return }
-    setBusy(true); setError(null)
+    setCreando(true); setError(null)
     try {
       const res = await fetch('/api/usuarios', {
         method: 'POST',
@@ -214,96 +97,33 @@ export default function UsuariosPage() {
       if (!res.ok) { setError(data.error ?? 'Error'); return }
       setResultado({ email: data.email ?? email, password: data.password, emailSent: data.emailSent, contexto: 'alta' })
       setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId(''); setCentroIds([]); setTiposConsulta(['adulto'])
+      setMostrarAlta(false)
+      setPestana(tipo)
       await cargar()
     } catch {
       setError('Error de conexión al crear')
     } finally {
-      setBusy(false)
+      setCreando(false)
     }
   }
 
-  // PATCH compartido para editar/desactivar: siempre limpia busy y muestra errores.
-  // Devuelve true si se guardó.
-  async function patchUsuario(id: string, body: Record<string, unknown>): Promise<boolean> {
-    setBusy(true); setError(null)
-    try {
-      const res = await fetch(`/api/usuarios/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error ?? 'No se pudo guardar el cambio')
-        return false
-      }
-      await cargar()
-      return true
-    } catch {
-      setError('Error de conexión al guardar')
-      return false
-    } finally {
-      setBusy(false)
-    }
+  async function toggleActivoAgente(t: 'agente' | 'call_center', a: AgenteGestion) {
+    if (a.activo && !window.confirm(`¿Desactivar a ${a.nombre}? Quedará marcado como inactivo, pero podrá seguir entrando en la app.`)) return
+    marcar(a.id, true); setError(null)
+    const err = await patchUsuario(a.id, { tipo: t, activo: !a.activo })
+    marcar(a.id, false)
+    if (err) { setError(err); return }
+    const actualizar = (lista: AgenteGestion[]) => lista.map((x) => (x.id === a.id ? { ...x, activo: !a.activo } : x))
+    if (t === 'agente') setAgentes(actualizar)
+    else setCallCenter(actualizar)
   }
 
-  async function toggleActivo(t: Tipo, id: string, activo: boolean) {
-    await patchUsuario(id, { tipo: t, activo: !activo })
-  }
-
-  // Permite / quita que el psicólogo pueda bloquear y desbloquear su agenda.
-  async function toggleBloqueo(id: string, actual: boolean) {
-    await patchUsuario(id, { tipo: 'psicologo', puede_bloquear: !actual })
-  }
-
-  // Permite / quita las citas a y media.
-  async function toggleMediaHora(id: string, actual: boolean) {
-    await patchUsuario(id, { tipo: 'psicologo', citas_media_hora: !actual })
-  }
-
-  // Abre el panel inline de centros o tipos con la selección actual del psicólogo.
-  function abrirPanel(p: Psicologo, que: 'centros' | 'tipos') {
-    setPanel({ id: p.id, que, seleccion: que === 'centros' ? [...p.centro_ids] : [...p.tipos_consulta] })
-  }
-  function togglePanel(valor: string) {
-    setPanel((prev) => prev && {
-      ...prev,
-      seleccion: prev.seleccion.includes(valor) ? prev.seleccion.filter((v) => v !== valor) : [...prev.seleccion, valor],
-    })
-  }
-  async function guardarPanel() {
-    if (!panel) return
-    if (panel.seleccion.length === 0) {
-      setError(panel.que === 'centros' ? 'Un psicólogo necesita al menos un centro' : 'Un psicólogo necesita al menos un tipo de consulta')
-      return
-    }
-    const body = panel.que === 'centros'
-      ? { tipo: 'psicologo', centro_ids: panel.seleccion }
-      : { tipo: 'psicologo', tipos_consulta: panel.seleccion }
-    const ok = await patchUsuario(panel.id, body)
-    if (ok) setPanel(null)
-  }
-
-  // Guarda el horario de la ficha abierta en el editor y lo cierra si fue bien.
-  async function guardarHorario(tramos: Tramo[]) {
-    if (!editandoHorario) return
-    const ok = await patchUsuario(editandoHorario.id, { tipo: 'psicologo', horarios: tramos })
-    if (ok) setEditandoHorario(null)
-  }
-
-  async function editarCalendario(id: string, actual: string | null) {
-    const nuevo = window.prompt('Nuevo calendar_id:', actual ?? '')
-    if (nuevo === null) return
-    if (!nuevo.trim()) { setError('El calendar_id no puede quedar vacío'); return }
-    await patchUsuario(id, { tipo: 'psicologo', calendar_id: nuevo.trim() })
-  }
-
-  async function restablecer(t: Tipo, id: string, metodo: 'email' | 'generar') {
+  async function restablecer(t: TipoUsuario, id: string, metodo: 'email' | 'generar') {
     const confirmMsg = metodo === 'email'
       ? '¿Enviar a este usuario un email para que cree su contraseña?'
       : '¿Generar una contraseña temporal? La anterior dejará de funcionar y tendrás que entregársela tú al usuario.'
     if (!window.confirm(confirmMsg)) return
-    setBusy(true); setError(null)
+    marcar(id, true); setError(null)
     try {
       const res = await fetch(`/api/usuarios/${id}`, {
         method: 'POST',
@@ -316,46 +136,41 @@ export default function UsuariosPage() {
     } catch {
       setError('Error de conexión al restablecer el acceso')
     } finally {
-      setBusy(false)
+      marcar(id, false)
     }
   }
 
-  const psicologosFiltrados =
-    filtroCentro === 'todos' ? psicologos : psicologos.filter((p) => p.centro_ids.includes(filtroCentro))
+  function botonesAcceso(t: TipoUsuario, id: string) {
+    const ocupado = ocupados.has(id)
+    return (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <ActionButton onClick={() => restablecer(t, id, 'email')} disabled={ocupado} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
+        <ActionButton onClick={() => restablecer(t, id, 'generar')} disabled={ocupado} title="Generar una contraseña temporal para entregar tú">Generar contraseña</ActionButton>
+      </div>
+    )
+  }
 
-  const pill = (activo: boolean): React.CSSProperties => ({
-    padding: '6px 14px', borderRadius: 20, border: '1.5px solid',
-    borderColor: activo ? '#2f5aae' : 'rgba(47,90,174,0.2)',
-    background: activo ? '#eef2fb' : '#fff', color: activo ? '#254d99' : '#4a5870',
-    fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-  })
+  const nombreCentro = new Map(centros.map((c) => [c.id, c.nombre]))
+  const cuenta: Record<TipoUsuario, number> = { psicologo: psicologos.length, agente: agentes.length, call_center: callCenter.length }
+  const listaAgentes = pestana === 'agente' ? agentes : callCenter
 
   return (
-    <div className="page-pad" style={{ maxWidth: 960 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'var(--font-lora, "Lora", Georgia, serif)', fontSize: 26, fontWeight: 600, color: '#272626', margin: 0, marginBottom: 6 }}>
-          Usuarios
-        </h1>
-        <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
-          Crea accesos, gestiona calendarios y genera contraseñas
-        </p>
+    <div className="page-pad" style={{ maxWidth: 1000 }}>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={h1}>Usuarios</h1>
+          <p style={subtitulo}>Cuentas para entrar en la app: altas, accesos y contraseñas</p>
+        </div>
+        <ActionButton variant={mostrarAlta ? 'default' : 'primary'} onClick={() => setMostrarAlta((v) => !v)}>
+          {mostrarAlta ? 'Cerrar' : '+ Nuevo usuario'}
+        </ActionButton>
       </div>
 
-      {error && (
-        <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 18, fontSize: 13 }}>
-          {error}
-        </div>
-      )}
-
-      {avisoHorarios && (
-        <div style={{ background: '#fff7e6', border: '1.5px solid #f5d08a', color: '#8a5a00', padding: '10px 14px', borderRadius: 8, marginBottom: 18, fontSize: 13 }}>
-          {avisoHorarios}
-        </div>
-      )}
+      {error && <Aviso tipo="error" onCerrar={() => setError(null)}>{error}</Aviso>}
 
       {resultado && (
         <div style={{ background: '#eef2fb', border: '1.5px solid #2f5aae', borderRadius: 10, padding: '16px 18px', marginBottom: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: '#254d99', marginBottom: 8 }}>
                 {resultado.contexto === 'alta' ? 'Usuario creado' : 'Acceso restablecido'}
@@ -383,246 +198,149 @@ export default function UsuariosPage() {
                   )}
                 </div>
               )}
+              {resultado.contexto === 'alta' && tipo === 'psicologo' && (
+                <div style={{ fontSize: 12, color: '#667799', marginTop: 8 }}>
+                  Su horario y sus permisos de agenda se configuran en Psicólogos.
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {resultado.password && (
-                <button
-                  onClick={() => navigator.clipboard?.writeText(`Email: ${resultado.email}\nContraseña: ${resultado.password}`)}
-                  style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid #2f5aae', background: '#fff', color: '#254d99', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-                >
+                <ActionButton onClick={() => navigator.clipboard?.writeText(`Email: ${resultado.email}\nContraseña: ${resultado.password}`)}>
                   Copiar
-                </button>
+                </ActionButton>
               )}
-              <button
-                onClick={() => setResultado(null)}
-                style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#2f5aae', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Hecho
-              </button>
+              <ActionButton variant="primary" onClick={() => setResultado(null)}>Hecho</ActionButton>
             </div>
           </div>
         </div>
       )}
 
       {/* Alta */}
-      <form onSubmit={crear} style={{ ...card, padding: 20, display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: '#4a5870' }}>
-            <input type="radio" checked={tipo === 'psicologo'} onChange={() => setTipo('psicologo')} /> Psicólogo
-          </label>
-          <label style={{ fontSize: 13, fontWeight: 600, color: '#4a5870' }}>
-            <input type="radio" checked={tipo === 'agente'} onChange={() => setTipo('agente')} /> Agente
-          </label>
-          <label style={{ fontSize: 13, fontWeight: 600, color: '#4a5870' }}>
-            <input type="radio" checked={tipo === 'call_center'} onChange={() => setTipo('call_center')} /> Call center
-          </label>
-        </div>
-        {tipo === 'call_center' && (
-          <div style={{ fontSize: 12, color: '#667799', background: '#eef2fb', borderRadius: 8, padding: '8px 12px' }}>
-            Un usuario de call center solo ve el formulario de Citas y puede agendar, cambiar o cancelar
-            citas de cualquier centro y psicólogo. Crea un acceso por persona para saber quién hizo cada cita.
-          </div>
-        )}
-        <input style={input} placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-        <input style={input} placeholder="Email de acceso" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input style={input} placeholder="Teléfono (opcional)" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-        {tipo === 'psicologo' ? (
-          <div style={{ border: '1px solid rgba(47,90,174,0.25)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', marginBottom: 8 }}>
-              Centros (uno o varios)
-            </div>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              {centros.map((c) => (
-                <label key={c.id} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={centroIds.includes(c.id)} onChange={() => toggleCentroAlta(c.id)} />
-                  {c.nombre}
-                </label>
-              ))}
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', margin: '12px 0 8px' }}>Tipos de consulta</div>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              {TIPOS_CONSULTA.map((t) => (
-                <label key={t} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={tiposConsulta.includes(t)} onChange={() => toggleTipoAlta(t)} />
-                  {ETIQUETA_TIPO[t]}
-                </label>
-              ))}
-            </div>
-            <div style={{ fontSize: 11.5, color: '#8899bb', marginTop: 8 }}>
-              Una sola ficha; los centros y los tipos se pueden cambiar después.
-            </div>
-          </div>
-        ) : (
-          <select style={input} value={centroId} onChange={(e) => setCentroId(e.target.value)}>
-            <option value="">Centro (opcional)</option>
-            {centros.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-        )}
-        {tipo === 'psicologo' && (
-          <input style={input} placeholder="calendar_id (Google Calendar)" value={calendarId} onChange={(e) => setCalendarId(e.target.value)} required />
-        )}
-        <button type="submit" disabled={busy} style={{ justifySelf: 'start', padding: '9px 20px', borderRadius: 8, border: 'none', background: '#2f5aae', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.6 : 1 }}>
-          {busy ? 'Creando...' : 'Crear y enviar acceso'}
-        </button>
-      </form>
-
-      {/* Listas */}
-      {loading ? (
-        <div style={{ ...card, padding: 40, textAlign: 'center', color: '#8899bb', fontSize: 14 }}>Cargando...</div>
-      ) : (
-        <>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#272626', margin: '0 0 12px' }}>Psicólogos</h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-            <button onClick={() => setFiltroCentro('todos')} style={pill(filtroCentro === 'todos')}>Todos los centros</button>
-            {centros.map((c) => (
-              <button key={c.id} onClick={() => setFiltroCentro(c.id)} style={pill(filtroCentro === c.id)}>{c.nombre}</button>
+      {mostrarAlta && (
+        <form onSubmit={crear} style={{ ...card, padding: 20, display: 'grid', gap: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#272626' }}>Nuevo usuario</div>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            {PESTANAS.map((p) => (
+              <label key={p.tipo} style={{ fontSize: 13, fontWeight: 600, color: '#4a5870' }}>
+                <input type="radio" checked={tipo === p.tipo} onChange={() => setTipo(p.tipo)} /> {p.singular}
+              </label>
             ))}
           </div>
-          <p style={{ fontSize: 13, color: '#667799', margin: '0 0 12px' }}>
-            {psicologosFiltrados.filter((p) => p.activo).length} activo{psicologosFiltrados.filter((p) => p.activo).length !== 1 ? 's' : ''} de {psicologosFiltrados.length} psicólogo{psicologosFiltrados.length !== 1 ? 's' : ''}
-          </p>
-          <div style={card}>
-            <ScrollBox>
-            <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
-              <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Centros y tipos', 'Horario', 'Email', 'Calendario', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
-              </tr></thead>
-              <tbody>
-                {psicologosFiltrados.length === 0 ? (
-                  <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={6}>No hay psicólogos en este centro</td></tr>
-                ) : psicologosFiltrados.map((p) => (
-                  <Fragment key={p.id}>
-                    <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
-                      <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{p.nombre}</td>
-                      <td style={{ ...td, paddingBottom: 6 }}>
-                        <div>{p.centros_nombres.length > 0 ? p.centros_nombres.join(' · ') : <span style={{ color: '#b91c1c' }}>Sin centro</span>}</div>
-                        <div style={{ fontSize: 11.5, color: p.tipos_consulta.length > 0 ? '#667799' : '#b91c1c', marginTop: 2 }}>
-                          {p.tipos_consulta.length > 0 ? p.tipos_consulta.map((t) => ETIQUETA_TIPO[t]).join(' · ') : 'Sin tipos de consulta'}
-                        </div>
-                      </td>
-                      <td style={{ ...td, paddingBottom: 6, fontSize: 12.5, minWidth: 180 }}>
-                        {p.horarios.length > 0
-                          ? resumenHorario(p.horarios)
-                          : <span style={{ color: '#8899bb' }}>Sin horario</span>}
-                      </td>
-                      <td style={{ ...td, paddingBottom: 6 }}>{p.email ?? '—'}</td>
-                      <td style={{ ...td, paddingBottom: 6, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.calendar_id ?? '—'}</td>
-                      <td style={{ ...td, paddingBottom: 6, whiteSpace: 'nowrap' }}>
-                        <div>{p.activo ? 'Activo' : 'Inactivo'}</div>
-                        <div style={{ fontSize: 11.5, color: p.puede_bloquear ? '#1e7d4f' : '#8899bb', marginTop: 2 }}>
-                          {p.puede_bloquear ? '✓ Puede bloquear agenda' : 'Sin bloqueo de agenda'}
-                        </div>
-                        <div style={{ fontSize: 11.5, color: p.citas_media_hora ? '#1e7d4f' : '#8899bb', marginTop: 2 }}>
-                          {p.citas_media_hora ? '✓ Citas a y media' : 'Solo en punto'}
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colSpan={6} style={{ padding: '0 20px 16px' }}>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <ActionButton onClick={() => editarCalendario(p.id, p.calendar_id)} disabled={busy} title="Cambiar el calendario de Google del psicólogo">Calendario</ActionButton>
-                          <ActionButton onClick={() => abrirPanel(p, 'centros')} disabled={busy} title="Centros en los que pasa consulta">Centros</ActionButton>
-                          <ActionButton onClick={() => abrirPanel(p, 'tipos')} disabled={busy} title="Tipos de consulta que pasa: adultos, pareja, infantil">Tipos</ActionButton>
-                          <ActionButton onClick={() => setEditandoHorario(p)} disabled={busy} title="Días y horas en que trabaja (vale para todos sus centros)">Horario</ActionButton>
-                          <ActionButton onClick={() => toggleMediaHora(p.id, !!p.citas_media_hora)} disabled={busy} variant={p.citas_media_hora ? 'default' : 'success'} title="Permitir o quitar citas a las medias horas para este psicólogo">{p.citas_media_hora ? "Quitar 30'" : "30'"}</ActionButton>
-                          <ActionButton onClick={() => restablecer('psicologo', p.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
-                          <ActionButton onClick={() => restablecer('psicologo', p.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
-                          <ActionButton onClick={() => toggleBloqueo(p.id, !!p.puede_bloquear)} disabled={busy} variant={p.puede_bloquear ? 'default' : 'success'} title="Permitir o quitar que este psicólogo pueda bloquear y desbloquear su agenda">{p.puede_bloquear ? 'Quitar bloqueo' : 'Permitir bloqueo'}</ActionButton>
-                          <ActionButton onClick={() => toggleActivo('psicologo', p.id, p.activo)} disabled={busy} variant={p.activo ? 'danger' : 'success'}>{p.activo ? 'Desactivar' : 'Activar'}</ActionButton>
-                        </div>
-                      </td>
-                    </tr>
-                    {panel?.id === p.id && (
-                      <tr>
-                        <td colSpan={6} style={{ padding: '0 20px 16px' }}>
-                          <div style={{ border: '1px solid rgba(47,90,174,0.25)', borderRadius: 8, padding: '10px 12px', background: '#f8faff' }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', marginBottom: 8 }}>
-                              {panel.que === 'centros' ? `Centros de ${p.nombre}` : `Tipos de consulta de ${p.nombre}`}
-                            </div>
-                            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                              {(panel.que === 'centros'
-                                ? centros.map((c) => ({ valor: c.id, etiqueta: c.nombre }))
-                                : TIPOS_CONSULTA.map((t) => ({ valor: t, etiqueta: ETIQUETA_TIPO[t] }))
-                              ).map((o) => (
-                                <label key={o.valor} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                                  <input type="checkbox" checked={panel.seleccion.includes(o.valor)} onChange={() => togglePanel(o.valor)} />
-                                  {o.etiqueta}
-                                </label>
-                              ))}
-                            </div>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                              <ActionButton onClick={guardarPanel} disabled={busy} variant="success">Guardar</ActionButton>
-                              <ActionButton onClick={() => setPanel(null)} disabled={busy}>Cancelar</ActionButton>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-            </ScrollBox>
-          </div>
-
-          {/* Agentes y call center comparten ficha (tabla `agentes`); solo cambia el rol. */}
-          {(
-            [
-              { titulo: 'Agentes', tipoLista: 'agente' as const, lista: agentes, vacio: 'No hay agentes' },
-              { titulo: 'Call center', tipoLista: 'call_center' as const, lista: callCenter, vacio: 'Todavía no hay usuarios de call center' },
-            ]
-          ).map(({ titulo, tipoLista, lista, vacio }) => (
-            <Fragment key={tipoLista}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#272626', margin: '0 0 12px' }}>{titulo}</h2>
-              <div style={card}>
-                <ScrollBox>
-                <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
-                  <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                    {['Nombre', 'Email', 'Teléfono', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
-                  </tr></thead>
-                  <tbody>
-                    {lista.length === 0 ? (
-                      <tr><td style={{ ...td, textAlign: 'center', color: '#8899bb' }} colSpan={4}>{vacio}</td></tr>
-                    ) : lista.map((a) => (
-                      <Fragment key={a.id}>
-                        <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
-                          <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{a.nombre}</td>
-                          <td style={{ ...td, paddingBottom: 6 }}>{a.email ?? '—'}</td>
-                          <td style={{ ...td, paddingBottom: 6 }}>{a.telefono ?? '—'}</td>
-                          <td style={{ ...td, paddingBottom: 6 }}>{a.activo ? 'Activo' : 'Inactivo'}</td>
-                        </tr>
-                        <tr>
-                          <td colSpan={4} style={{ padding: '0 20px 16px' }}>
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                              <ActionButton onClick={() => restablecer(tipoLista, a.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
-                              <ActionButton onClick={() => restablecer(tipoLista, a.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
-                              <ActionButton onClick={() => toggleActivo(tipoLista, a.id, a.activo)} disabled={busy} variant={a.activo ? 'danger' : 'success'}>{a.activo ? 'Desactivar' : 'Activar'}</ActionButton>
-                            </div>
-                          </td>
-                        </tr>
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
-                </ScrollBox>
+          {tipo === 'call_center' && (
+            <div style={{ fontSize: 12, color: '#667799', background: '#eef2fb', borderRadius: 8, padding: '8px 12px' }}>
+              Un usuario de call center solo ve el formulario de Citas y puede agendar, cambiar o cancelar
+              citas de cualquier centro y psicólogo. Crea un acceso por persona para saber quién hizo cada cita.
+            </div>
+          )}
+          <input style={input} placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+          <input style={input} placeholder="Email de acceso" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input style={input} placeholder="Teléfono (opcional)" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+          {tipo === 'psicologo' ? (
+            <div style={{ border: '1px solid rgba(47,90,174,0.25)', borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', marginBottom: 8 }}>
+                Centros (uno o varios)
               </div>
-            </Fragment>
-          ))}
-        </>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                {centros.map((c) => (
+                  <label key={c.id} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={centroIds.includes(c.id)} onChange={() => toggleCentroAlta(c.id)} />
+                    {c.nombre}
+                  </label>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', margin: '12px 0 8px' }}>Tipos de consulta</div>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                {TIPOS_CONSULTA.map((t) => (
+                  <label key={t} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={tiposConsulta.includes(t)} onChange={() => toggleTipoAlta(t)} />
+                    {ETIQUETA_TIPO[t]}
+                  </label>
+                ))}
+              </div>
+              <div style={{ fontSize: 11.5, color: '#8899bb', marginTop: 8 }}>
+                Una sola ficha; los centros, los tipos y el horario se cambian después en Psicólogos.
+              </div>
+            </div>
+          ) : (
+            <select style={input} value={centroId} onChange={(e) => setCentroId(e.target.value)}>
+              <option value="">Centro (opcional)</option>
+              {centros.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          )}
+          {tipo === 'psicologo' && (
+            <input style={input} placeholder="calendar_id (Google Calendar)" value={calendarId} onChange={(e) => setCalendarId(e.target.value)} required />
+          )}
+          <div>
+            <ActionButton type="submit" variant="primary" disabled={creando}>
+              {creando ? 'Creando…' : 'Crear y enviar acceso'}
+            </ActionButton>
+          </div>
+        </form>
       )}
 
-      {editandoHorario && (
-        <HorarioEditor
-          titulo={editandoHorario.nombre}
-          subtitulo={`Centros: ${editandoHorario.centros_nombres.join(' · ') || '—'}. El horario es del psicólogo y vale para todos sus centros.`}
-          tramosIniciales={editandoHorario.horarios}
-          busy={busy}
-          onGuardar={guardarHorario}
-          onCancelar={() => setEditandoHorario(null)}
-        />
-      )}
+      <div className="pestanas" role="tablist">
+        {PESTANAS.map((p) => (
+          <button key={p.tipo} type="button" role="tab" className="pestana" aria-selected={pestana === p.tipo} onClick={() => setPestana(p.tipo)}>
+            {p.etiqueta}{!loading && <small>{cuenta[p.tipo]}</small>}
+          </button>
+        ))}
+      </div>
+
+      <div style={card}>
+        {pestana === 'psicologo' ? (
+          <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
+              <th style={th}>Nombre</th><th style={th}>Email</th><th style={th}>Centros</th><th style={th}>Estado</th>
+              <th style={{ ...th, textAlign: 'right' }}>Acceso</th>
+            </tr></thead>
+            <tbody>
+              {loading ? <FilasEsqueleto columnas={5} /> : psicologos.length === 0 ? (
+                <tr><td colSpan={5} data-label="" style={{ ...td, textAlign: 'center', color: '#8899bb', padding: 40 }}>No hay psicólogos</td></tr>
+              ) : psicologos.map((p) => (
+                <tr key={p.id} style={{ borderTop: '1px solid rgba(47,90,174,0.07)' }}>
+                  <td data-label="Nombre" style={{ ...td, fontWeight: 600, color: '#272626' }}>{p.nombre}</td>
+                  <td data-label="Email" style={td}>{p.email ?? '—'}</td>
+                  <td data-label="Centros" style={{ ...td, fontSize: 12, color: '#667799' }}>{p.centros_nombres.join(' · ') || '—'}</td>
+                  <td data-label="Estado" style={td}><EstadoBadge activo={p.activo} title="Se cambia en Psicólogos" /></td>
+                  <td data-label="" style={td}>{botonesAcceso('psicologo', p.id)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
+              <th style={th}>Nombre</th><th style={th}>Email</th><th style={th}>Centro</th><th style={th}>Activo</th>
+              <th style={{ ...th, textAlign: 'right' }}>Acceso</th>
+            </tr></thead>
+            <tbody>
+              {loading ? <FilasEsqueleto columnas={5} /> : listaAgentes.length === 0 ? (
+                <tr><td colSpan={5} data-label="" style={{ ...td, textAlign: 'center', color: '#8899bb', padding: 40 }}>
+                  {pestana === 'agente' ? 'No hay agentes' : 'Todavía no hay usuarios de call center'}
+                </td></tr>
+              ) : listaAgentes.map((a) => (
+                <tr key={a.id} style={{ borderTop: '1px solid rgba(47,90,174,0.07)' }}>
+                  <td data-label="Nombre" style={{ ...td, fontWeight: 600, color: '#272626' }}>{a.nombre}</td>
+                  <td data-label="Email" style={td}>{a.email ?? '—'}</td>
+                  <td data-label="Centro" style={{ ...td, fontSize: 12, color: '#667799' }}>{(a.centro_id && nombreCentro.get(a.centro_id)) || '—'}</td>
+                  <td data-label="Activo" style={td}>
+                    <Interruptor
+                      activo={a.activo}
+                      disabled={ocupados.has(a.id)}
+                      etiqueta={`${a.activo ? 'Desactivar' : 'Activar'} a ${a.nombre}`}
+                      onChange={() => toggleActivoAgente(pestana as 'agente' | 'call_center', a)}
+                    />
+                  </td>
+                  <td data-label="" style={td}>{botonesAcceso(pestana, a.id)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }

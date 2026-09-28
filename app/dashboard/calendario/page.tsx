@@ -250,7 +250,7 @@ export default function CalendarioPage() {
           <div style={{ fontSize: 12, color: '#667799', marginTop: 10 }}>
             {tramos.length > 0
               ? 'Las celdas sombreadas en azul son las horas de trabajo de este psicólogo.'
-              : 'Este psicólogo no tiene horario definido en Usuarios.'}
+              : 'Este psicólogo no tiene horario definido en Psicólogos.'}
           </div>
         )}
       </div>

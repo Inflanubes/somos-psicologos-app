@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-09-28">28-09-2026</time><span>Usuarios y Psicólogos, cada uno con lo suyo: Usuarios queda solo para cuentas (altas, enviar acceso y contraseñas) y todo lo que define cómo trabaja un psicólogo (centros, tipos, horario, 30', bloqueo de agenda, calendario y activo) pasa a su ficha en Psicólogos. Las dos pantallas van más rápidas: cada cambio actualiza solo su fila. <a href="#p-psicologos">Ver Psicólogos</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Psicólogos desactivados: siguen entrando y gestionando su agenda, pero no pueden añadir pacientes nuevos. Los agentes pueden seguir agendándoles y asignándoles pacientes; el call center y Dante, no. <a href="#altas">Ver qué pasa al desactivar</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Modelo nuevo de pacientes y psicólogos: un paciente puede tener psicólogo de adultos, de pareja y de infantil; cada psicólogo es una sola ficha con sus centros y tipos de consulta; su horario vale para todos sus centros; nuevas reglas de repetidos en el alta; los agentes cambian los psicólogos de un paciente desde Pacientes. <a href="#varios-psicologos">Ver el modelo</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Estados del paciente aclarados: cuáles ya tienen uso en Comunicaciones aunque nadie los active, cuál no tiene uso y de dónde falta confirmar que sale «Inactivo». <a href="#cita">Ver estados</a>.</span></li>
@@ -324,7 +325,7 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <h3>Dar de alta a alguien</h3>
       <p>Lo hace un agente desde <a href="#p-usuarios">Usuarios</a>: elige Psicólogo, Agente o Call center, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
-      <p>Cada psicólogo es <b>una sola ficha</b>, aunque trabaje en varios centros. Al darlo de alta hay que indicar su calendario de Google, al menos un centro y al menos un tipo de consulta: adultos, pareja o infantil. Centros y tipos se pueden cambiar después.</p>
+      <p>Cada psicólogo es <b>una sola ficha</b>, aunque trabaje en varios centros. Al darlo de alta hay que indicar su calendario de Google, al menos un centro y al menos un tipo de consulta: adultos, pareja o infantil. Centros, tipos, horario y permisos se cambian después en <a href="#p-psicologos">Psicólogos</a>.</p>
       <p class="nota">Desactivar a alguien no borra su cuenta ni le impide entrar. Un psicólogo desactivado sigue gestionando sus citas y su agenda, pero no puede añadir pacientes nuevos; los agentes lo ven en Citas como <code class="ui"><var>Marta</var> (inactivo)</code> y pueden hacer de todo con él; el call center y Dante no lo ven. En call center conviene una cuenta por persona, porque todo lo que hace queda firmado con su nombre.</p>
     </article>
     <article class="ficha">
@@ -334,7 +335,7 @@ footer img{width:28px; height:28px}
         <thead><tr><th>Botón</th><th>Qué hace</th><th>Cuándo</th></tr></thead>
         <tbody>
           <tr><td><code class="ui">Enviar acceso</code></td><td>Le llega un correo para crear una contraseña nueva. La actual sigue valiendo hasta que la cambie.</td><td>Lo normal.</td></tr>
-          <tr><td><code class="ui">Generar</code> (en Agentes, <code class="ui">Generar contraseña</code>)</td><td>Crea una contraseña temporal que se ve una sola vez en pantalla. La anterior deja de funcionar.</td><td>Si el correo no llega o hay prisa. Hay que entregarla a mano.</td></tr>
+          <tr><td><code class="ui">Generar contraseña</code></td><td>Crea una contraseña temporal que se ve una sola vez en pantalla. La anterior deja de funcionar.</td><td>Si el correo no llega o hay prisa. Hay que entregarla a mano.</td></tr>
         </tbody>
       </table></div>
     </article>
@@ -385,7 +386,7 @@ footer img{width:28px; height:28px}
           <li><code class="ui">Indica la fecha y la hora de la cita.</code><span class="donde">Error al enviar</span></li>
           <li><code class="ui">Selecciona el tipo de cita.</code><span class="donde">Error al enviar</span></li>
           <li><code class="ui">Este psicólogo no atiende este tipo de paciente.</code><span class="donde">El tipo de cita o de consulta no está entre los que pasa ese psicólogo</span></li>
-          <li><code class="ui">Esta ficha no tiene tipos de consulta configurados: se muestran los tres. Pide al equipo que los complete en Usuarios.</code></li>
+          <li><code class="ui">Esta ficha no tiene tipos de consulta configurados: se muestran los tres. Pide al equipo que los complete en Psicólogos.</code></li>
           <li><code class="ui">No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.</code></li>
           <li><code class="ui">No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.</code><span class="donde">Psicólogo sin permiso de bloqueo</span></li>
           <li><code class="ui">Lo que dejes vacío se mantiene como está.</code><span class="donde">Al modificar un bloqueo personal</span></li>
@@ -416,7 +417,7 @@ footer img{width:28px; height:28px}
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
           <li><code class="ui">Las celdas sombreadas en azul son las horas de trabajo de este psicólogo.</code><span class="donde">Al filtrar por un psicólogo con horario</span></li>
-          <li><code class="ui">Este psicólogo no tiene horario definido en Usuarios.</code><span class="donde">Al filtrar por un psicólogo sin horario</span></li>
+          <li><code class="ui">Este psicólogo no tiene horario definido en Psicólogos.</code><span class="donde">Al filtrar por un psicólogo sin horario</span></li>
           <li><code class="ui">No hay citas ni bloqueos esta semana con los filtros elegidos.</code></li>
           <li><code class="ui">No se pudo cargar la semana</code><span class="donde">Error de carga (a veces sale el mensaje técnico de la base de datos)</span></li>
           <li>Cada cita: <code class="ui" data-nocheck><var>10:00</var> <var>Marta</var></code> y debajo <code class="ui" data-nocheck><var>AB (Ana)</var> · <var>Adulto</var></code>. Cada bloqueo: el nombre del psicólogo y el motivo, o <code class="ui">Bloqueo</code> si no tiene motivo.</li>
@@ -499,28 +500,22 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-usuarios">
       <div class="ficha-cab"><h3>Usuarios</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>Dar de alta a psicólogos, agentes y call center, y gestionar su acceso, horario y permisos.</dd>
-        <dt>Columnas</dt><dd>Centros y tipos, por ejemplo «San Blas · Online» y «Adulto · Pareja»; si faltan, <code class="ui">Sin centro</code> en rojo o <code class="ui">Sin tipos de consulta</code>. Horario, con un resumen del tipo <code class="ui" data-nocheck>L, X 09:00–14:00 · V 16:00–20:00</code> o <code class="ui">Sin horario</code>. Estado: activo o no, <code class="ui">✓ Puede bloquear agenda</code> o <code class="ui">Sin bloqueo de agenda</code>, <code class="ui">✓ Citas a y media</code> o <code class="ui">Solo en punto</code>.</dd>
-        <dt>Botones</dt><dd><code class="ui">Centros</code> y <code class="ui">Tipos</code> abren un panel con casillas bajo la fila. Además, <code class="ui">Calendario</code> (cambia su Google Calendar), <code class="ui">Horario</code>, <code class="ui">30'</code> / <code class="ui">Quitar 30'</code> (citas a y media), <code class="ui">Enviar acceso</code>, <code class="ui">Generar</code>, permitir o quitar el bloqueo de agenda, <code class="ui">Activar</code> / <code class="ui">Desactivar</code>.</dd>
-        <dt>Editor de horario</dt><dd>Título <code class="ui">Horario de <var>Marta</var></code> y debajo <code class="ui">Centros: <var>San Blas · Online</var>. El horario es del psicólogo y vale para todos sus centros.</code> Cada día puede quedar en <code class="ui">No trabaja</code> o tener uno o varios tramos con <code class="ui">+ Añadir tramo</code> y <code class="ui">Quitar</code>. Se cierra con <code class="ui">Cancelar</code> o <code class="ui">Guardar horario</code>.</dd>
+        <dt>Para qué</dt><dd>Solo las cuentas para entrar en la app: dar de alta a psicólogos, agentes y call center, y enviarles el acceso o una contraseña nueva. Cómo trabaja cada psicólogo se gestiona en <a href="#p-psicologos">Psicólogos</a>.</dd>
+        <dt>Pestañas</dt><dd><code class="ui">Psicólogos</code>, <code class="ui">Agentes</code> y <code class="ui">Call center</code>, cada una con su número de personas. Se ven el nombre, el email, los centros y el estado.</dd>
+        <dt>Botones</dt><dd><code class="ui">+ Nuevo usuario</code> abre el formulario de alta. En cada fila, <code class="ui">Enviar acceso</code> y <code class="ui">Generar contraseña</code>. En Agentes y Call center hay además un interruptor para activar o desactivar. El estado de un psicólogo se ve aquí, pero se cambia en Psicólogos.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
-          <li class="grupo">Editor de horario</li>
-          <li><code class="ui">En <var>Martes</var> la hora de fin debe ser posterior a la de inicio.</code></li>
-          <li><code class="ui">Los tramos de <var>Lunes</var> se solapan.</code></li>
-          <li><code class="ui">Hora no válida en <var>Jueves</var>.</code></li>
-          <li><code class="ui">Día de la semana no válido.</code></li>
-          <li><code class="ui">No se pudo guardar el horario: <var>detalle técnico</var></code></li>
-          <li><code class="ui">Horario no válido</code></li>
           <li class="grupo">Altas</li>
           <li><code class="ui">Selecciona al menos un centro para el psicólogo</code></li>
           <li><code class="ui">Selecciona al menos un tipo de consulta</code></li>
-          <li><code class="ui">Un psicólogo necesita al menos un centro</code><span class="donde">Al quitar todos los centros en el panel</span></li>
-          <li><code class="ui">Un psicólogo necesita al menos un tipo de consulta</code><span class="donde">Al quitar todos los tipos en el panel</span></li>
           <li><code class="ui">El calendar_id es obligatorio para un psicólogo</code><span class="donde">Es el identificador de su Google Calendar</span></li>
           <li><code class="ui">Alguno de los centros seleccionados no existe</code></li>
+          <li><code class="ui">Su horario y sus permisos de agenda se configuran en Psicólogos.</code><span class="donde">Tras dar de alta a un psicólogo</span></li>
+          <li class="grupo">Accesos</li>
+          <li><code class="ui">¿Enviar a este usuario un email para que cree su contraseña?</code><span class="donde">Confirmación antes de enviar</span></li>
           <li><code class="ui">¿Generar una contraseña temporal? La anterior dejará de funcionar y tendrás que entregársela tú al usuario.</code><span class="donde">Confirmación antes de generar</span></li>
+          <li><code class="ui">¿Desactivar a <var>Laura</var>? Quedará marcado como inactivo, pero podrá seguir entrando en la app.</code><span class="donde">Al desactivar un agente o un usuario de call center</span></li>
         </ul>
       </details>
     </article>
@@ -528,8 +523,28 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-psicologos">
       <div class="ficha-cab"><h3>Psicólogos</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>Ver el equipo de psicólogos, una fila por psicólogo con todos sus centros, filtrar por centro y activar o desactivar a cada uno.</dd>
+        <dt>Para qué</dt><dd>Dónde, cuándo y qué consulta pasa cada psicólogo: centros, tipos de consulta, horario, citas a y media, permiso para bloquear su agenda, su Google Calendar y si está activo.</dd>
+        <dt>Tabla</dt><dd>Se filtra por centro. Cada fila muestra centros y tipos, por ejemplo «San Blas · Online» y «Adulto · Pareja»; si faltan, <code class="ui">Sin centro</code> o <code class="ui">Sin tipos de consulta</code> en rojo. El horario sale resumido, del tipo <code class="ui" data-nocheck>L, X 09:00–14:00 · V 16:00–20:00</code>, o <code class="ui">Sin horario</code>. Junto al nombre, las etiquetas <code class="ui">30'</code> y <code class="ui">Bloquea agenda</code> si tiene esos permisos. El interruptor de la derecha lo activa o desactiva.</dd>
+        <dt>Ficha</dt><dd>Al pulsar una fila se abre su ficha a la derecha, en tres partes. <b>Consulta</b>: centros y tipos, <code class="ui">Editar horario</code> y el interruptor <code class="ui">Citas a las medias horas</code>. <b>Agenda</b>: <code class="ui">Puede bloquear su agenda</code> y su Google Calendar. <b>Estado</b>: <code class="ui">Activo</code>. Los interruptores se guardan al pulsarlos; centros, tipos y calendario, con <code class="ui">Guardar cambios</code>.</dd>
+        <dt>Editor de horario</dt><dd>Título <code class="ui">Horario de <var>Marta</var></code> y debajo <code class="ui">Centros: <var>San Blas · Online</var>. El horario es del psicólogo y vale para todos sus centros.</code> Cada día puede quedar en <code class="ui">No trabaja</code> o tener uno o varios tramos con <code class="ui">+ Añadir tramo</code> y <code class="ui">Quitar</code>. Se cierra con <code class="ui">Cancelar</code> o <code class="ui">Guardar horario</code>.</dd>
       </dl>
+      <details><summary>Ver mensajes</summary>
+        <ul class="lista-msg">
+          <li class="grupo">Ficha</li>
+          <li><code class="ui">Un psicólogo necesita al menos un centro</code><span class="donde">Al quitar todos los centros</span></li>
+          <li><code class="ui">Un psicólogo necesita al menos un tipo de consulta</code><span class="donde">Al quitar todos los tipos</span></li>
+          <li><code class="ui">El calendario de Google no puede quedar vacío</code></li>
+          <li><code class="ui">Tienes cambios sin guardar</code></li>
+          <li><code class="ui">¿Desactivar a <var>Marta</var>? Dejará de aparecer para nuevas citas. Sus citas ya dadas no cambian.</code><span class="donde">Confirmación antes de desactivar</span></li>
+          <li class="grupo">Editor de horario</li>
+          <li><code class="ui">En <var>Martes</var> la hora de fin debe ser posterior a la de inicio.</code></li>
+          <li><code class="ui">Los tramos de <var>Lunes</var> se solapan.</code></li>
+          <li><code class="ui">Hora no válida en <var>Jueves</var>.</code></li>
+          <li><code class="ui">Día de la semana no válido.</code></li>
+          <li><code class="ui">No se pudo guardar el horario: <var>detalle técnico</var></code></li>
+          <li><code class="ui">Horario no válido</code></li>
+        </ul>
+      </details>
     </article>
 
     <article class="ficha" id="p-agentes">
@@ -658,7 +673,7 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <h3>Las reglas</h3>
       <ol>
-        <li>El horario es <b>semanal y del psicólogo</b>: días de la semana con uno o varios tramos, válido en todos sus centros. Lo editan los agentes en <a href="#p-usuarios">Usuarios</a>.</li>
+        <li>El horario es <b>semanal y del psicólogo</b>: días de la semana con uno o varios tramos, válido en todos sus centros. Lo editan los agentes en <a href="#p-psicologos">Psicólogos</a>.</li>
         <li>Un psicólogo <b>sin horario</b> no tiene restricción: solo se ocultan sus horas ya ocupadas. Así nadie se queda bloqueado mientras se rellenan.</li>
         <li>Toda cita dura <b>60 minutos</b>.</li>
         <li>Se ofrecen las horas <b>en punto de 08:00 a 21:00</b>. Si el psicólogo tiene activado <code class="ui">30'</code>, también las <b>y media hasta las 21:30</b>. Por defecto nadie lo tiene.</li>
@@ -782,7 +797,7 @@ footer img{width:28px; height:28px}
   <span class="num">08</span><h2>Glosario</h2>
   <p class="entrada">Palabras que se usan en la app y en este manual con un sentido concreto.</p>
   <dl>
-    <div><dt>30'</dt><dd>Permiso de un psicólogo para recibir citas a las medias horas (10:30, 11:30…). Se activa en Usuarios y vale para todos sus centros.</dd></div>
+    <div><dt>30'</dt><dd>Permiso de un psicólogo para recibir citas a las medias horas (10:30, 11:30…). Se activa en Psicólogos y vale para todos sus centros.</dd></div>
     <div><dt>Bloqueo</dt><dd>Tiempo en que un psicólogo no atiende: bloqueo general, vacaciones, asuntos propios o baja laboral. Aunque se pida por horas, para la app cuenta como el día completo.</dd></div>
     <div><dt>Centro</dt><dd>Cada sede de la clínica: Hortaleza, San Blas, Moratalaz, Vallecas, Salamanca, Las Rosas. «Online» funciona como un centro más.</dd></div>
     <div><dt>Cita activa</dt><dd>Una cita agendada que no se ha cancelado, de hoy en adelante.</dd></div>
@@ -794,11 +809,11 @@ footer img{width:28px; height:28px}
     <div><dt>Iniciales</dt><dd>Cómo se identifica a un paciente en el calendario, por ejemplo «MGL (María)». Nunca se muestra el nombre completo.</dd></div>
     <div><dt>Menor</dt><dd>Paciente de 15 años o menos. La app lo calcula con la fecha de nacimiento.</dd></div>
     <div><dt>Origen</dt><dd>Quién hizo cada acción: un psicólogo, un agente, alguien del call center o Dante. Queda guardado siempre.</dd></div>
-    <div><dt>Permiso de bloqueo</dt><dd>Permiso de un psicólogo para bloquear y desbloquear su agenda él mismo. Se da en Usuarios.</dd></div>
+    <div><dt>Permiso de bloqueo</dt><dd>Permiso de un psicólogo para bloquear y desbloquear su agenda él mismo. Se da en Psicólogos.</dd></div>
     <div><dt>Proveedor externo de calendario</dt><dd>Un servicio externo que recibe un aviso automático con cada cita y cada bloqueo.</dd></div>
     <div><dt>Recomendado</dt><dd>Paciente que trae el propio psicólogo, marcado con la casilla «Nueva recomendación».</dd></div>
     <div><dt>Tipo de cita</dt><dd>Adulto, Pareja o Menor. Solo se ofrecen los tipos que pasa el psicólogo. Todas duran 60 minutos.</dd></div>
-    <div><dt>Tipo de consulta</dt><dd>Lo que atiende un psicólogo: adultos, pareja, infantil. Se marca en Usuarios.</dd></div>
+    <div><dt>Tipo de consulta</dt><dd>Lo que atiende un psicólogo: adultos, pareja, infantil. Se marca en Psicólogos.</dd></div>
   </dl>
 </div></section>
 

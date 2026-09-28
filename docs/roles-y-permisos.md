@@ -28,9 +28,9 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 | Panel General | `/dashboard` | Sí (datos globales) | No | Sí, pero solo **su actividad** ("Mi actividad") |
 | Estadísticas | `/dashboard/psicologos/stats` | Sí | No | No |
 | Pacientes | `/dashboard/pacientes` | Todos los pacientes | Solo los suyos (todas sus filas de psicólogo, por email) | No |
-| Psicólogos (equipo) | `/dashboard/equipo` | Sí | No | No |
+| Psicólogos (centros, tipos, horario, permisos de agenda, activo) | `/dashboard/equipo` | Sí | No | No |
 | Agentes | `/dashboard/agentes` | Sí | No | No |
-| Usuarios (altas y accesos) | `/dashboard/usuarios` | Sí | No | No |
+| Usuarios (cuentas: altas, accesos y contraseñas) | `/dashboard/usuarios` | Sí | No | No |
 | Citas (formulario de agenda) | `/dashboard/psicologos` | Cualquier centro y psicólogo, todas las acciones | Fijado a su propia agenda | Cualquier centro y psicólogo, solo citas y altas de paciente |
 | Comunicaciones (call center / avisos) | `/dashboard/mensajes` | Sí | No | No |
 | Mensajes a pacientes (reseña Google, libre) | `/dashboard/mensajes-psicologo` | No | Sí | No |
@@ -46,7 +46,7 @@ incluido Bloquear/Desbloquear agenda sin restricción.
 
 Cuando alguien olvida su contraseña, un agente puede restablecerla desde dos sitios:
 
-- **Usuarios** (`/dashboard/usuarios`): en cada fila de psicólogo, agente o call center.
+- **Usuarios** (`/dashboard/usuarios`): en cada fila de las pestañas Psicólogos, Agentes y Call center.
 - **Agentes** (`/dashboard/agentes`): en cada fila de agente (añadido el 25-09-2026, antes solo se podía activar/desactivar).
 
 En ambos hay los mismos dos botones, que llaman a `POST /api/usuarios/[id]`:
@@ -67,7 +67,7 @@ Al entrar aterriza en Citas. Su centro y su psicólogo vienen fijados por el ema
 pacientes y solo puede enviar mensajes a sus pacientes.
 
 Matiz: las acciones **Bloquear agenda** y **Desbloquear agenda** solo aparecen si su ficha en
-`psicologos` tiene `puede_bloquear = true` (se activa desde Usuarios). Vacaciones, asuntos propios,
+`psicologos` tiene `puede_bloquear = true` (se activa en la ficha del psicólogo, en Psicólogos). Vacaciones, asuntos propios,
 baja y modificar bloqueo personal están siempre disponibles.
 
 ### Call center
@@ -84,14 +84,14 @@ En **Calendario** ve la agenda semanal de todos los psicólogos: cada cita activ
 de una hora con el color de su centro, el nombre del psicólogo, las **iniciales** del paciente (nunca el
 nombre) y el tipo de cita; los bloqueos (vacaciones, asuntos propios, baja, bloqueo) ocupan la fila "Día".
 Se filtra por centro, tipo de cita y psicólogo; al filtrar por un psicólogo se sombrean sus horas de
-trabajo según el horario definido en Usuarios. Solo se ve lo gestionado desde la app: lo que un psicólogo
+trabajo según el horario definido en Psicólogos. Solo se ve lo gestionado desde la app: lo que un psicólogo
 apunte a mano en Google Calendar no aparece. El filtro por tipo de cita depende de que Make guarde
 `tipo_cita` al agendar (hecho desde el 26-09-2026; ver `docs/make-cambios-2026-09-25.md`, apartado F,
 fuera del repo).
 
 ## Psicólogos desactivados
 
-Desactivar un psicólogo (`psicologos.activo = false`, desde Usuarios o Psicólogos) no le quita el acceso.
+Desactivar un psicólogo (`psicologos.activo = false`, desde Psicólogos; en Usuarios solo se ve el estado) no le quita el acceso.
 Desde el 28-09-2026 el formulario de Citas trata así a un psicólogo desactivado:
 
 | Quién | ¿Lo puede elegir? | Citas y bloqueos | Añadir nuevo paciente |
@@ -131,11 +131,14 @@ de consulta en `psicologos.tipos_consulta` (`adulto`, `pareja`, `menor`). Su hor
 permiso `psicologos.citas_media_hora` (citas a y media) también es de la ficha. Un psicólogo con
 varios centros elige en Citas en cuál está hoy (se recuerda en el navegador).
 
-- Los **agentes** lo gestionan en Usuarios: columna **Horarios** (resumen tipo `L, X 09:00–14:00 · V 16:00–20:00`),
-  botón **Horario** (editor de siete días), botón **30'** (medias horas), y botones **Centros** y
-  **Tipos** (panel con casillas bajo la fila). Nadie más puede editarlo.
+- Los **agentes** lo gestionan en **Psicólogos** (`/dashboard/equipo`; hasta el 28-09-2026 estaba en Usuarios).
+  La tabla muestra centros, tipos, horario (resumen tipo `L, X 09:00–14:00 · V 16:00–20:00`), las etiquetas
+  **30'** y **Bloquea agenda** y un interruptor **Activo**. Al pulsar una fila se abre la ficha lateral:
+  centros y tipos y calendario de Google (se guardan con **Guardar cambios**), **Editar horario** (editor de
+  siete días) e interruptores de medias horas, bloqueo de agenda y activo (se guardan al pulsarlos).
+  Nadie más puede editarlo. Usuarios queda solo para cuentas: alta, Enviar acceso y Generar contraseña.
 - Una ficha **sin horario** no restringe nada: solo se ocultan las horas ya ocupadas. Una ficha **sin
-  tipos de consulta** ofrece los tres tipos en Citas (y así se ve en Usuarios, en rojo, para completarla).
+  tipos de consulta** ofrece los tres tipos en Citas (y así se ve en Psicólogos, en rojo, para completarla).
 - Toda cita dura **60 minutos**. Se ofrecen las horas de 08:00 a 21:00 en punto y, si la persona tiene 30',
   también las y media hasta 21:30.
 - En Citas (Agendar y Cambiar cita):
@@ -151,7 +154,7 @@ varios centros elige en Citas en cuál está hoy (se recuerda en el navegador).
   - Si la app no consigue consultar la disponibilidad (fallo de base de datos), psicólogo y call center ven el
     selector de hora desactivado con el texto "Ahora mismo no podemos consultar la disponibilidad. Contacta con
     nosotros para agendar esta cita." y no pueden enviar; el agente ve todas las horas sin avisos y puede seguir.
-  - El formulario carga el horario y las citas del psicólogo al elegirlo. Si se cambia el horario en Usuarios con
+  - El formulario carga el horario y las citas del psicólogo al elegirlo. Si se cambia el horario en Psicólogos con
     Citas ya abierto, hay que recargar Citas para que lo tenga en cuenta.
 - Lógica: `lib/horarios.ts` (tramos, validación, resumen), `lib/disponibilidad.ts` (huecos y avisos; con tests
   en `npm test`), `lib/disponibilidad-datos.ts` (carga desde Supabase) y `app/dashboard/psicologos/useDisponibilidad.ts`.

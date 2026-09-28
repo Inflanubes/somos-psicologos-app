@@ -359,9 +359,9 @@ export default function PsicologosPage() {
   const pacienteSeleccionado = pacientes.find((p) => p.id === pacienteId) ?? null
   // Tipos de cita que se ofrecen: los del psicólogo, acotados por la edad del paciente.
   const tiposCita = tiposDisponibles(psicologoSeleccionado, pacienteSeleccionado ? pacienteSeleccionado.es_menor : null)
-  // Ficha sin tipos de consulta: se ofrecen los tres, pero se avisa para que se complete en Usuarios.
+  // Ficha sin tipos de consulta: se ofrecen los tres, pero se avisa para que se complete en Psicólogos.
   const sinTiposConfigurados = !!psicologoSeleccionado && (psicologoSeleccionado.tipos_consulta?.length ?? 0) === 0
-  const avisoSinTipos = 'Esta ficha no tiene tipos de consulta configurados: se muestran los tres. Pide al equipo que los complete en Usuarios.'
+  const avisoSinTipos = 'Esta ficha no tiene tipos de consulta configurados: se muestran los tres. Pide al equipo que los complete en Psicólogos.'
 
   // Actions that act on an existing event → need the event selector
   const requiereSelectorCita = accion === 'Cancelar cita' || accion === 'Cambiar cita'

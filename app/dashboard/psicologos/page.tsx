@@ -688,7 +688,8 @@ export default function PsicologosPage() {
         centro_id:           effCentroId,
         ...asignacion,
         recomendado_por:     npEsRecomendado ? effPsicologoId : null,
-        estado:              'Nuevo paciente' as const,
+        // Una recomendación queda pendiente de que un agente la valide en Comunicaciones.
+        estado:              npEsRecomendado ? ('Revisar recomendado' as const) : ('Nuevo paciente' as const),
         fecha_incorporacion: new Date().toISOString().split('T')[0],
         // Quién ha añadido al paciente (login): alimenta "Añadido por" en Pacientes.
         created_by:    perfil?.nombre ?? psicologoNombreEff ?? null,
@@ -1470,7 +1471,7 @@ export default function PsicologosPage() {
                 <span>
                   Nueva recomendación{' '}
                   <span style={{ fontWeight: 400, color: '#888', fontSize: 13 }}>
-                    — el paciente queda recomendado por este psicólogo
+                    — el paciente queda recomendado por este psicólogo, en estado &quot;Revisar recomendado&quot; hasta que el equipo lo valide
                   </span>
                 </span>
               </label>

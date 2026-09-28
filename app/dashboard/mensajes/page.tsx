@@ -15,6 +15,7 @@ type PacienteBase = {
   psicologo_id: string | null
   centro_id: string | null
   fecha_cambio_estado: string | null
+  recomendado_por: string | null
 }
 
 /** Psicólogo del paciente en un tipo de consulta (migración 014: hasta tres). */
@@ -23,11 +24,12 @@ type PsicologoDePaciente = { tipo: TipoCita; id: string; nombre: string; telefon
 type PacienteConExtra = PacienteBase & {
   psicologo_nombre: string
   psicologos_paciente: PsicologoDePaciente[]
+  recomendado_por_nombre: string | null
   centro_nombre: string
   dias_espera: number
 }
 
-type Tab = 'psicologo' | 'dudoso' | 'espera' | 'sin-disp'
+type Tab = 'psicologo' | 'dudoso' | 'espera' | 'sin-disp' | 'recomendado'
 
 const MENSAJES_ESPERA: Record<string, string> = {
   'En espera':
@@ -86,8 +88,9 @@ export default function MensajesPage() {
       const [{ data: pac }, { data: psi }, { data: cen }] = await Promise.all([
         supabase
           .from('pacientes')
-          .select('id,nombre,telefono,email,estado,psicologo_adultos_id,psicologo_pareja_id,psicologo_infantil_id,centro_id,fecha_cambio_estado')
+          .select('id,nombre,telefono,email,estado,psicologo_adultos_id,psicologo_pareja_id,psicologo_infantil_id,centro_id,fecha_cambio_estado,recomendado_por')
           .in('estado', [
+            'Revisar recomendado',
             'Psicólogo',
             'En espera',
             'Cambio solicitado',
@@ -123,6 +126,8 @@ export default function MensajesPage() {
         psicologo_id: psicologoId,
         centro_id: p.centro_id,
         fecha_cambio_estado: p.fecha_cambio_estado,
+        recomendado_por: p.recomendado_por ?? null,
+        recomendado_por_nombre: p.recomendado_por ? (psiMap[p.recomendado_por] ?? '—') : null,
         psicologo_nombre: psicologosPaciente.map(x => `${ETIQUETA_TIPO[x.tipo]}: ${x.nombre}`).join(' · ') || '—',
         psicologos_paciente: psicologosPaciente,
         centro_nombre: p.centro_id ? (cenMap[p.centro_id] ?? '—') : '—',
@@ -176,6 +181,40 @@ export default function MensajesPage() {
     p => ['En espera', 'Cambio solicitado', 'Psicólogo sin disponibilidad'].includes(p.estado)
   )
   const pacientesSinDisp = pacientes.filter(p => p.estado === 'Sin disponibilidad')
+  // Altas marcadas como "Nueva recomendación": esperan a que un agente confirme la recomendación.
+  const pacientesRecomendados = pacientes.filter(p => p.estado === 'Revisar recomendado')
+
+  // Validar (o descartar) una recomendación: el paciente pasa a Nuevo paciente y sigue su curso.
+  const [validando, setValidando] = useState<Record<string, boolean>>({})
+  async function resolverRecomendacion(p: PacienteConExtra, correcta: boolean) {
+    const pregunta = correcta
+      ? `¿Confirmar la recomendación de ${p.recomendado_por_nombre ?? 'este psicólogo'} para ${p.nombre}?`
+      : `¿Quitar la recomendación de ${p.nombre}? El paciente seguirá dado de alta, sin psicólogo recomendador.`
+    if (!window.confirm(pregunta)) return
+    setValidando(prev => ({ ...prev, [p.id]: true }))
+    const ahora = new Date().toISOString()
+    const cambios = correcta
+      ? { estado: 'Nuevo paciente' as const, fecha_cambio_estado: ahora }
+      : { estado: 'Nuevo paciente' as const, fecha_cambio_estado: ahora, recomendado_por: null }
+    const { error } = await supabase.from('pacientes').update(cambios).eq('id', p.id)
+    if (error) {
+      alert('No se pudo guardar: ' + error.message)
+      setValidando(prev => ({ ...prev, [p.id]: false }))
+      return
+    }
+    await supabase.from('historial_estados').insert({
+      paciente_id: p.id,
+      estado_anterior: 'Revisar recomendado',
+      estado_nuevo: 'Nuevo paciente',
+      fecha_cambio: ahora,
+      origen: 'comunicaciones',
+      comentario: correcta
+        ? `Recomendación confirmada (${p.recomendado_por_nombre ?? '—'}) desde panel de comunicaciones`
+        : 'Recomendación descartada desde panel de comunicaciones',
+    })
+    setPacientes(prev => prev.map(x => (x.id === p.id ? { ...x, ...cambios, recomendado_por_nombre: correcta ? x.recomendado_por_nombre : null } : x)))
+    setValidando(prev => ({ ...prev, [p.id]: false }))
+  }
 
   // ── Update patient in Supabase after sending ─────────────────────────────
   async function actualizarPaciente(pacienteId: string, tipo: 'psicologo' | 'dudoso' | 'espera' | 'sin-disp') {
@@ -277,6 +316,7 @@ export default function MensajesPage() {
     { key: 'dudoso', label: 'Dudosos', count: pacientesDudoso.length, color: '#6366f1' },
     { key: 'espera', label: 'En Espera', count: pacientesEspera.length, color: '#2f5aae' },
     { key: 'sin-disp', label: 'Sin disponibilidad', count: pacientesSinDisp.length, color: '#dc2626' },
+    { key: 'recomendado', label: 'Recomendaciones', count: pacientesRecomendados.length, color: '#a855f7' },
   ]
 
   return (
@@ -471,6 +511,53 @@ export default function MensajesPage() {
                               />
                             )}
                           </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Tab: Recomendaciones ── */}
+          {tab === 'recomendado' && (
+            <div>
+              <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
+                Pacientes dados de alta con la casilla <strong>Nueva recomendación</strong>. Quedan en
+                estado <strong>Revisar recomendado</strong> hasta que alguien del equipo confirme que la
+                recomendación es real. Al confirmarla (o quitarla) pasan a <strong>Nuevo paciente</strong>.
+              </p>
+              {pacientesRecomendados.length === 0 ? (
+                <Empty text="No hay recomendaciones pendientes de revisar" />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {pacientesRecomendados.map(p => (
+                    <Card key={p.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: '#272626', marginBottom: 4 }}>{p.nombre}</div>
+                          <div style={{ fontSize: 13, color: '#4a5870' }}>📞 {p.telefono} · {p.centro_nombre}</div>
+                          <div style={{ fontSize: 13, color: '#4a5870', marginTop: 2 }}>
+                            Recomendado por: <strong>{p.recomendado_por_nombre ?? '—'}</strong> · Psicólogo asignado: <strong>{p.psicologo_nombre}</strong>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <Badge text={`${p.dias_espera} día${p.dias_espera !== 1 ? 's' : ''} pendiente`} color="amber" />
+                          <SendButton
+                            loading={!!validando[p.id]}
+                            label="Recomendación correcta"
+                            onClick={() => resolverRecomendacion(p, true)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => resolverRecomendacion(p, false)}
+                            disabled={!!validando[p.id]}
+                            title="No es una recomendación: se quita el psicólogo recomendador y el paciente sigue como Nuevo paciente"
+                            style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid rgba(185,28,28,0.3)', background: '#fff', color: '#b91c1c', fontSize: 12.5, fontWeight: 600, cursor: validando[p.id] ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: validando[p.id] ? 0.5 : 1 }}
+                          >
+                            Quitar recomendación
+                          </button>
                         </div>
                       </div>
                     </Card>

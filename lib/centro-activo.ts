@@ -1,7 +1,7 @@
 // Selección de centro activo para psicólogos que trabajan en varios centros.
-// Cada centro tiene su propia fila en `psicologos` (mismo email), así que elegir
-// centro equivale a elegir la fila de psicólogo con la que opera el formulario.
-// Se guarda por usuario en localStorage para sobrevivir recargas sin re-login.
+// Desde la migración 014 un psicólogo es una sola fila; sus centros están en
+// `psicologos_centros`. Se guarda el centro elegido por usuario en localStorage
+// para sobrevivir recargas sin re-login (`psicologoId` es siempre el único id).
 
 export type CentroActivo = {
   psicologoId: string

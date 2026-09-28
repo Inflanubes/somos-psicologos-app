@@ -128,7 +128,7 @@ export default async function DashboardPage({
   const psicologosData = psi
     .map((p) => ({
       nombre: p.nombre,
-      count: pac.filter((pa) => pa.psicologo_id === p.id).length,
+      count: pac.filter((pa) => pa.psicologo_adultos_id === p.id || pa.psicologo_pareja_id === p.id || pa.psicologo_infantil_id === p.id).length,
     }))
     .filter((p) => p.count > 0)
     .sort((a, b) => b.count - a.count)
@@ -141,7 +141,7 @@ export default async function DashboardPage({
     nombre: p.nombre,
     telefono: p.telefono,
     estado: p.estado,
-    psicologo_nombre: psicologoMap[p.psicologo_id] ?? 'Sin asignar',
+    psicologo_nombre: psicologoMap[p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id ?? ''] ?? 'Sin asignar',
     fecha_cita: p.fecha_cita,
     hora_cita: p.hora_cita,
     es_menor: p.es_menor,

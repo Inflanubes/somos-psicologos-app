@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { todayISODate } from '@/lib/eventos-activos'
-import type { Centro, Psicologo } from '@/types/database'
+import type { Centro, Psicologo, PsicologoCentro } from '@/types/database'
 import type { Tramo } from '@/lib/horarios'
 import {
   lunesDeSemana, sumarDias, diasDeSemana, etiquetaRangoSemana, etiquetaDia, filtrarEventos, colorCentro,
@@ -36,6 +36,7 @@ const btnNav: React.CSSProperties = {
 export default function CalendarioPage() {
   const [centros, setCentros] = useState<Centro[]>([])
   const [psicologos, setPsicologos] = useState<Psicologo[]>([])
+  const [psicologosCentros, setPsicologosCentros] = useState<PsicologoCentro[]>([])
   const [lunes, setLunes] = useState(() => lunesDeSemana(todayISODate()))
   const [filtros, setFiltros] = useState<FiltrosCalendario>({ centroId: '', tipoCita: '', psicologoId: '' })
   const [eventos, setEventos] = useState<EventoCalendario[]>([])
@@ -61,15 +62,18 @@ export default function CalendarioPage() {
     return () => mq.removeEventListener('change', aplicar)
   }, [])
 
-  // Centros y TODAS las fichas de psicólogo (también inactivas, para nombrar citas antiguas).
+  // Centros, TODAS las fichas de psicólogo (también inactivas, para nombrar citas
+  // antiguas) y en qué centros trabaja cada uno (migración 014).
   useEffect(() => {
     Promise.all([
       supabase.from('centros').select('*').order('nombre'),
       supabase.from('psicologos').select('*').order('nombre'),
-    ]).then(([c, p]) => {
-      if (c.error || p.error) setError(c.error?.message ?? p.error?.message ?? 'Error al cargar')
+      supabase.from('psicologos_centros').select('psicologo_id, centro_id'),
+    ]).then(([c, p, pc]) => {
+      if (c.error || p.error || pc.error) setError(c.error?.message ?? p.error?.message ?? pc.error?.message ?? 'Error al cargar')
       setCentros((c.data ?? []) as Centro[])
       setPsicologos((p.data ?? []) as Psicologo[])
+      setPsicologosCentros((pc.data ?? []) as PsicologoCentro[])
       setCargandoBase(false)
     })
   }, [])
@@ -85,7 +89,7 @@ export default function CalendarioPage() {
       const [citas, bloqueos] = await Promise.all([
         supabase
           .from('acciones_psicologos')
-          .select('id, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita')
+          .select('id, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id')
           .eq('accion', 'Agendar cita')
           .eq('activo', true)
           .gte('fecha_cita', lunes)
@@ -117,7 +121,8 @@ export default function CalendarioPage() {
         const p = c.psicologo_id ? psi.get(c.psicologo_id) : undefined
         lista.push({
           id: c.id, tipo: 'cita', psicologoId: c.psicologo_id ?? '', psicologoNombre: p?.nombre ?? 'Psicólogo',
-          centroId: p?.centro_id ?? null, fecha: c.fecha_cita, hora: c.hora_cita.slice(0, 5), tipoCita: c.tipo_cita,
+          // Centro de la cita (migración 014); una cita antigua sin centro solo se ve en "Todos".
+          centroId: c.centro_id ?? null, fecha: c.fecha_cita, hora: c.hora_cita.slice(0, 5), tipoCita: c.tipo_cita,
           iniciales: c.paciente_id ? (iniciales.get(c.paciente_id) ?? null) : null, inicio: null, fin: null, motivo: null,
         })
       }
@@ -126,7 +131,8 @@ export default function CalendarioPage() {
         const p = b.psicologo_id ? psi.get(b.psicologo_id) : undefined
         lista.push({
           id: b.id, tipo: 'bloqueo', psicologoId: b.psicologo_id ?? '', psicologoNombre: p?.nombre ?? 'Psicólogo',
-          centroId: p?.centro_id ?? null, fecha: null, hora: null, tipoCita: null, iniciales: null,
+          // Los bloqueos no tienen centro: afectan a toda la agenda del psicólogo.
+          centroId: null, fecha: null, hora: null, tipoCita: null, iniciales: null,
           inicio: b.fecha_bloqueo_inicio, fin: b.fecha_bloqueo_fin, motivo: b.motivo_bloqueo,
         })
       }
@@ -167,7 +173,13 @@ export default function CalendarioPage() {
   const dias = useMemo(() => diasDeSemana(lunes), [lunes])
   const indiceCentro = useMemo(() => new Map(centros.map((c, i) => [c.id, i])), [centros])
   const nombreCentro = useMemo(() => new Map(centros.map((c) => [c.id, c.nombre])), [centros])
-  const psicologosFiltro = psicologos.filter((p) => p.activo && (!filtros.centroId || p.centro_id === filtros.centroId))
+  const centrosDe = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const pc of psicologosCentros) m.set(pc.psicologo_id, [...(m.get(pc.psicologo_id) ?? []), pc.centro_id])
+    return m
+  }, [psicologosCentros])
+  const trabajaEn = (psicologoId: string, centroId: string) => (centrosDe.get(psicologoId) ?? []).includes(centroId)
+  const psicologosFiltro = psicologos.filter((p) => p.activo && (!filtros.centroId || trabajaEn(p.id, filtros.centroId)))
   const visibles = useMemo(() => filtrarEventos(eventos, filtros), [eventos, filtros])
   const hoy = todayISODate()
   const diasVisibles = esMovil ? [dias[Math.min(Math.max(diaMovil, 0), 6)]] : dias
@@ -177,7 +189,7 @@ export default function CalendarioPage() {
       const siguiente = { ...prev, [campo]: valor }
       // Al cambiar de centro, el psicólogo elegido solo se conserva si sigue en la lista.
       if (campo === 'centroId' && prev.psicologoId) {
-        const sigue = psicologos.some((p) => p.id === prev.psicologoId && (!valor || p.centro_id === valor))
+        const sigue = psicologos.some((p) => p.id === prev.psicologoId && (!valor || trabajaEn(p.id, valor)))
         if (!sigue) siguiente.psicologoId = ''
       }
       return siguiente
@@ -219,7 +231,7 @@ export default function CalendarioPage() {
           <select value={filtros.psicologoId} onChange={(e) => cambiarFiltro('psicologoId', e.target.value)} style={selectStyle} aria-label="Psicólogo">
             <option value="">Todos los psicólogos</option>
             {psicologosFiltro.map((p) => (
-              <option key={p.id} value={p.id}>{p.nombre}{filtros.centroId ? '' : ` · ${nombreCentro.get(p.centro_id) ?? ''}`}</option>
+              <option key={p.id} value={p.id}>{p.nombre}{filtros.centroId ? '' : ` · ${(centrosDe.get(p.id) ?? []).map((id) => nombreCentro.get(id) ?? '').filter(Boolean).join(' · ')}`}</option>
             ))}
           </select>
         </div>
@@ -237,7 +249,7 @@ export default function CalendarioPage() {
         {filtros.psicologoId && (
           <div style={{ fontSize: 12, color: '#667799', marginTop: 10 }}>
             {tramos.length > 0
-              ? 'Las celdas sombreadas en azul son las horas de trabajo de este psicólogo en este centro.'
+              ? 'Las celdas sombreadas en azul son las horas de trabajo de este psicólogo.'
               : 'Este psicólogo no tiene horario definido en Usuarios.'}
           </div>
         )}

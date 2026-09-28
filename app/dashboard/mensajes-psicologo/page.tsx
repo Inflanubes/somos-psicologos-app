@@ -3,16 +3,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getPerfilActual } from '@/lib/perfil'
+import { filtroPacientesDePsicologo } from '@/lib/pacientes-tipos'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-// Un psicólogo multi-centro tiene una fila en `psicologos` por centro (mismo
-// email). Cada fila es una "variante"; elegir centro == elegir variante, y los
-// pacientes se filtran por el psicologo_id de esa variante.
-type Variante = {
+// Ficha única del psicólogo (migración 014); sus centros vienen de
+// `psicologos_centros`. El centro elegido solo decide el enlace de reseña.
+type Ficha = {
   id: string
   nombre: string
-  centro_id: string
-  centro: string | null
 }
 
 type CentroMsg = {
@@ -38,7 +36,7 @@ const PLANTILLA_RESENA =
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MensajesPsicologoPage() {
-  const [variantes, setVariantes] = useState<Variante[]>([])
+  const [ficha, setFicha] = useState<Ficha | null>(null)
   const [centros, setCentros] = useState<CentroMsg[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -65,45 +63,46 @@ export default function MensajesPsicologoPage() {
         return
       }
 
-      const { data: vars } = await supabase
+      const { data: fila } = await supabase
         .from('psicologos')
-        .select('id, nombre, centro_id, centro')
+        .select('id, nombre')
         .eq('email', user.email)
         .eq('activo', true)
-      let lista = (vars ?? []) as Variante[]
+        .maybeSingle()
+      let mia = (fila as Ficha | null) ?? null
 
-      // Fallback para fichas antiguas sin email: la fila que apunta el perfil.
-      if (lista.length === 0) {
+      // Fallback para fichas sin email: la fila que apunta el perfil.
+      if (!mia) {
         const perfil = await getPerfilActual()
         if (perfil?.psicologo_id) {
-          const { data: fila } = await supabase
+          const { data: porPerfil } = await supabase
             .from('psicologos')
-            .select('id, nombre, centro_id, centro')
+            .select('id, nombre')
             .eq('id', perfil.psicologo_id)
             .maybeSingle()
-          if (fila) lista = [fila as Variante]
+          mia = (porPerfil as Ficha | null) ?? null
         }
       }
 
-      setVariantes(lista)
-      if (lista.length > 0) {
-        const { data: cen } = await supabase
-          .from('centros')
-          .select('id, nombre, google_review_url')
-          .in('id', lista.map(v => v.centro_id))
+      setFicha(mia)
+      if (mia) {
+        const { data: pcs } = await supabase.from('psicologos_centros').select('centro_id').eq('psicologo_id', mia.id)
+        const ids = (pcs ?? []).map(r => r.centro_id)
+        const { data: cen } = ids.length
+          ? await supabase.from('centros').select('id, nombre, google_review_url').in('id', ids).order('nombre')
+          : { data: [] }
         setCentros((cen ?? []) as CentroMsg[])
+        if (ids.length === 1) setCentroId(ids[0])
       }
-      if (lista.length === 1) setCentroId(lista[0].centro_id)
       setLoading(false)
     }
     load()
   }, [])
 
-  // Pacientes de la variante del centro elegido (solo con teléfono).
+  // Pacientes del psicólogo, en cualquier tipo de consulta (solo con teléfono).
   useEffect(() => {
-    const variante = variantes.find(v => v.centro_id === centroId)
     setPacienteId('')
-    if (!variante) {
+    if (!ficha) {
       setPacientes([])
       return
     }
@@ -112,7 +111,7 @@ export default function MensajesPsicologoPage() {
     supabase
       .from('pacientes')
       .select('id, nombre, telefono, email')
-      .eq('psicologo_id', variante.id)
+      .or(filtroPacientesDePsicologo(ficha.id))
       .order('nombre')
       .then(({ data }) => {
         if (cancelled) return
@@ -123,9 +122,9 @@ export default function MensajesPsicologoPage() {
     return () => {
       cancelled = true
     }
-  }, [centroId, variantes])
+  }, [ficha])
 
-  const varianteActiva = variantes.find(v => v.centro_id === centroId)
+  const varianteActiva = ficha
   const centroActivo = centros.find(c => c.id === centroId)
   const paciente = pacientes.find(p => p.id === pacienteId)
   const nombrePila = paciente ? paciente.nombre.split(' ')[0] : ''
@@ -136,9 +135,6 @@ export default function MensajesPsicologoPage() {
         .replace('{{link}}', centroActivo?.google_review_url ?? '')
     : ''
 
-  function nombreCentro(v: Variante): string {
-    return centros.find(c => c.id === v.centro_id)?.nombre ?? v.centro ?? 'Centro'
-  }
 
   // ── Send webhook ─────────────────────────────────────────────────────────
   async function enviar(key: string, payload: Record<string, unknown> & { tipo: string }) {
@@ -175,7 +171,7 @@ export default function MensajesPsicologoPage() {
     enviar(`libre-${paciente.id}`, {
       tipo: 'mensaje_libre',
       paciente: { nombre: paciente.nombre, telefono: paciente.telefono, email: paciente.email },
-      centro: centroActivo?.nombre ?? varianteActiva.centro ?? '',
+      centro: centroActivo?.nombre ?? '',
       psicologo: { nombre: varianteActiva.nombre },
       mensaje: mensajeLibre.trim(),
     })
@@ -205,21 +201,23 @@ export default function MensajesPsicologoPage() {
 
       {loading ? (
         <div style={{ color: '#8899bb', fontSize: 14 }}>Cargando...</div>
-      ) : variantes.length === 0 ? (
+      ) : !ficha ? (
         <Empty text="No se encontró tu ficha de psicólogo. Contacta con el equipo." />
+      ) : centros.length === 0 ? (
+        <Empty text="Tu ficha no tiene ningún centro asignado. Contacta con el equipo." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Paso 1: centro (solo multi-centro) */}
-          {variantes.length > 1 && (
+          {/* Paso 1: centro (solo multi-centro): decide el enlace de reseña */}
+          {centros.length > 1 && (
             <Card>
               <Label text="Centro" />
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {variantes.map(v => {
-                  const activa = v.centro_id === centroId
+                {centros.map(c => {
+                  const activa = c.id === centroId
                   return (
                     <button
-                      key={v.id}
-                      onClick={() => setCentroId(v.centro_id)}
+                      key={c.id}
+                      onClick={() => setCentroId(c.id)}
                       style={{
                         padding: '7px 18px',
                         borderRadius: 30,
@@ -233,7 +231,7 @@ export default function MensajesPsicologoPage() {
                         fontFamily: 'inherit',
                       }}
                     >
-                      {nombreCentro(v)}
+                      {c.nombre}
                     </button>
                   )
                 })}

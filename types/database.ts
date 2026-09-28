@@ -36,27 +36,32 @@ export type Centro = {
 export type Psicologo = {
   id: string
   nombre: string
-  centro_id: string
   activo: boolean
   telefono: string | null
-  centro: string | null
   calendar_id: string | null
   email: string | null
   puede_bloquear: boolean | null
   /** true = admite citas a y media. Botón "30'" en Usuarios. Migración 012. */
   citas_media_hora: boolean | null
+  /** Tipos de consulta que pasa (migración 014). Mismos valores que TipoCita. */
+  tipos_consulta: TipoCita[]
 }
+
+/** Fila de psicologos_centros (migración 014): un psicólogo trabaja en N centros. */
+export type PsicologoCentro = { psicologo_id: string; centro_id: string }
+
+/** Fila de la vista psicologos_por_centro: una por psicólogo × centro. */
+export type PsicologoPorCentro = Psicologo & { centro_id: string; centro: string }
 
 export type PsicologoInsert = {
   nombre: string
   email?: string | null
   telefono?: string | null
-  centro_id?: string | null
-  centro?: string | null
   calendar_id?: string | null
   activo?: boolean
   puede_bloquear?: boolean | null
   citas_media_hora?: boolean | null
+  tipos_consulta?: TipoCita[]
 }
 
 export type Agente = {
@@ -81,7 +86,10 @@ export type Paciente = {
   consentimiento: boolean | null
   DNI: string | null
   centro_id: string
-  psicologo_id: string
+  /** Psicólogos por tipo de consulta (migración 014). Al menos uno relleno. */
+  psicologo_adultos_id: string | null
+  psicologo_pareja_id: string | null
+  psicologo_infantil_id: string | null
   estado: EstadoPaciente
   fecha_cita: string | null
   hora_cita: string | null
@@ -116,6 +124,8 @@ export type TipoCita = 'adulto' | 'pareja' | 'menor'
 export type AccionPsicologo = {
   id: string
   psicologo_id: string | null
+  /** Centro donde se atiende la cita (migración 014). Bloqueos: null. */
+  centro_id: string | null
   paciente_id: string | null
   accion: string
   fecha_bloqueo_inicio: string | null
@@ -152,6 +162,8 @@ export type AccionHistorial = {
   accion: string
   psicologo_id: string | null
   paciente_id: string | null
+  /** Centro de la cita (migración 014); lo copia el trigger de historial. */
+  centro_id: string | null
   gcal_event_id: string | null
   tipo_cita: TipoCita | null
   fecha_cita: string | null
@@ -189,7 +201,9 @@ export type PacienteInsert = {
   fecha_nacimiento?: string | null
   es_menor?: boolean | null
   centro_id: string
-  psicologo_id?: string | null
+  psicologo_adultos_id?: string | null
+  psicologo_pareja_id?: string | null
+  psicologo_infantil_id?: string | null
   estado: EstadoPaciente
   fecha_cita?: string | null
   hora_cita?: string | null
@@ -234,6 +248,7 @@ export type AccionCallCenterInsert = {
 
 export type AccionPsicologoInsert = {
   psicologo_id: string
+  centro_id?: string | null
   paciente_id?: string | null
   accion: string
   fecha_bloqueo_inicio?: string | null
@@ -270,6 +285,9 @@ export type AsociadoMenor = {
   T2_consentimiento: boolean | null
   T1_dni: string | null
   T2_dni: string | null
+  /** Tutor que ya es paciente (migración 014). */
+  T1_paciente_id: string | null
+  T2_paciente_id: string | null
   Otros: string | null
 }
 
@@ -285,6 +303,8 @@ export type AsociadoMenorInsert = {
   T2_consentimiento?: boolean | null
   T1_dni?: string | null
   T2_dni?: string | null
+  T1_paciente_id?: string | null
+  T2_paciente_id?: string | null
   Otros?: string | null
 }
 
@@ -321,6 +341,12 @@ export type Database = {
         Row: Psicologo
         Insert: PsicologoInsert
         Update: Partial<PsicologoInsert>
+        Relationships: []
+      }
+      psicologos_centros: {
+        Row: PsicologoCentro
+        Insert: PsicologoCentro
+        Update: Partial<PsicologoCentro>
         Relationships: []
       }
       pacientes: {
@@ -384,7 +410,12 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: Record<string, { Row: Record<string, unknown>; Relationships: [] }>
+    Views: {
+      psicologos_por_centro: {
+        Row: PsicologoPorCentro
+        Relationships: []
+      }
+    }
     Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>
   }
 }

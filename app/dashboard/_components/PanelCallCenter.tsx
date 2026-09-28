@@ -103,6 +103,7 @@ type AccionRow = {
   fecha_cita: string | null
   hora_cita: string | null
   tipo_cita: string | null
+  centro_id: string | null
   creado_en: string | null
 }
 
@@ -148,11 +149,11 @@ export default async function PanelCallCenter({
     // y con la fecha real, aunque la cita se haya anulado o cambiado después.
     supabase
       .from('acciones_historial')
-      .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, creado_en')
+      .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id, creado_en')
       .eq('realizado_por_id', userId)
       .gte('creado_en', desdeIso)
       .order('creado_en', { ascending: false }),
-    supabase.from('psicologos').select('id, nombre, centro_id'),
+    supabase.from('psicologos').select('id, nombre'),
     supabase.from('centros').select('id, nombre'),
   ])
 
@@ -161,7 +162,7 @@ export default async function PanelCallCenter({
     const f = fechaMadrid(a.creado_en)
     return f >= inicio && f <= hoy
   })
-  const psicologos = (psicologosRes.data ?? []) as Pick<Psicologo, 'id' | 'nombre' | 'centro_id'>[]
+  const psicologos = (psicologosRes.data ?? []) as Pick<Psicologo, 'id' | 'nombre'>[]
   const centros = (centrosRes.data ?? []) as Pick<Centro, 'id' | 'nombre'>[]
   const psicologoMap = Object.fromEntries(psicologos.map((p) => [p.id, p]))
   const centroMap = Object.fromEntries(centros.map((c) => [c.id, c.nombre]))
@@ -206,7 +207,8 @@ export default async function PanelCallCenter({
     const psi = a.psicologo_id ? psicologoMap[a.psicologo_id] : undefined
     const nombrePsi = psi?.nombre ?? 'Sin psicólogo'
     porPsicologo[nombrePsi] = (porPsicologo[nombrePsi] ?? 0) + 1
-    const nombreCentro = psi?.centro_id ? centroMap[psi.centro_id] ?? 'Sin centro' : 'Sin centro'
+    // Centro de la cita (migración 014), no del psicólogo.
+    const nombreCentro = a.centro_id ? centroMap[a.centro_id] ?? 'Sin centro' : 'Sin centro'
     porCentro[nombreCentro] = (porCentro[nombreCentro] ?? 0) + 1
   }
   const listaPsicologos = Object.entries(porPsicologo).sort((a, b) => b[1] - a[1]).slice(0, 8)
@@ -340,8 +342,8 @@ export default async function PanelCallCenter({
                       <td style={td}>{a.paciente_id ? pacienteNombre[a.paciente_id] ?? '—' : '—'}</td>
                       <td style={td}>
                         {psi?.nombre ?? '—'}
-                        {psi?.centro_id && centroMap[psi.centro_id] && (
-                          <div style={{ fontSize: 11.5, color: '#8899bb' }}>{centroMap[psi.centro_id]}</div>
+                        {a.centro_id && centroMap[a.centro_id] && (
+                          <div style={{ fontSize: 11.5, color: '#8899bb' }}>{centroMap[a.centro_id]}</div>
                         )}
                       </td>
                       <td style={{ ...td, whiteSpace: 'nowrap' }}>

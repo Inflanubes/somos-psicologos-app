@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Paciente, Psicologo, Centro } from '@/types/database'
 import PacientesClient from './PacientesClient'
 import type { PacienteTableRow } from './PacientesClient'
+import { filtroPacientesDePsicologo, ETIQUETA_TIPO, TIPOS_CONSULTA, COLUMNA_PSICOLOGO } from '@/lib/pacientes-tipos'
 
 export default async function PacientesPage() {
   const supabase = await createSupabaseServerClient()
@@ -22,18 +23,11 @@ export default async function PacientesPage() {
   const psi = (psicologos ?? []) as Psicologo[]
   const cen = (centros ?? []) as Centro[]
 
-  // Multi-centro: la misma persona puede tener una fila de psicólogo por centro
-  // (mismo email). Reunimos todas sus filas para no ocultar pacientes de un centro.
-  let misPsicologoIds: string[] = []
+  // Ficha única del psicólogo (migración 014): por email, con respaldo en el perfil.
+  let miPsicologoId: string | null = null
   if (esPsicologo) {
-    const porEmail = user?.email
-      ? psi.filter((p) => p.email === user.email).map((p) => p.id)
-      : []
-    misPsicologoIds = porEmail.length
-      ? porEmail
-      : perfil?.psicologo_id
-        ? [perfil.psicologo_id]
-        : []
+    const ficha = user?.email ? psi.find((p) => p.email === user.email) : undefined
+    miPsicologoId = ficha?.id ?? perfil?.psicologo_id ?? null
   }
 
   let pacientesQuery = supabase
@@ -41,7 +35,8 @@ export default async function PacientesPage() {
     .select('*')
     .order('fecha_incorporacion', { ascending: false })
   if (esPsicologo) {
-    pacientesQuery = pacientesQuery.in('psicologo_id', misPsicologoIds)
+    // Pacientes en los que este psicólogo es el de adultos, pareja o infantil.
+    pacientesQuery = pacientesQuery.or(filtroPacientesDePsicologo(miPsicologoId ?? '00000000-0000-0000-0000-000000000000'))
   }
   const { data: pacientes } = await pacientesQuery
 
@@ -56,7 +51,12 @@ export default async function PacientesPage() {
     telefono: p.telefono,
     email: p.email,
     centro_nombre: centroMap[p.centro_id] ?? '—',
-    psicologo_nombre: psicologoMap[p.psicologo_id] ?? 'Sin asignar',
+    // "Adultos: Marta · Pareja: Juan": un psicólogo por tipo de consulta.
+    psicologo_nombre: TIPOS_CONSULTA
+      .map((t) => [t, p[COLUMNA_PSICOLOGO[t]]] as const)
+      .filter((x): x is readonly [typeof x[0], string] => !!x[1])
+      .map(([t, id]) => `${ETIQUETA_TIPO[t]}: ${psicologoMap[id] ?? '—'}`)
+      .join(' · ') || 'Sin asignar',
     anadido_por: p.created_by ?? null,
     origen: p.origen ?? null,
     estado: p.estado,

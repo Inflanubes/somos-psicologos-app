@@ -18,23 +18,15 @@ export type DatosDisponibilidad = {
 }
 
 /**
- * Carga lo que hace falta para calcular los huecos de una ficha de psicólogo:
- * - sus tramos de horario (solo de ESTA ficha: cada centro tiene su horario);
- * - las citas activas futuras y los bloqueos activos de TODAS las fichas de la
- *   misma persona (mismo calendar_id), porque comparten calendario y una cita
- *   en un centro la ocupa también en los demás.
+ * Carga lo que hace falta para calcular los huecos de un psicólogo:
+ * - sus tramos de horario (por psicólogo; vale para todos sus centros);
+ * - sus citas activas futuras y sus bloqueos activos (una sola ficha desde la
+ *   migración 014: una cita en cualquier centro ocupa la hora en todos).
  * Lanza el error de Supabase si alguna consulta falla (el hook lo traduce a
  * "sin restricción" + mensaje).
  */
 export async function cargarDatosDisponibilidad(p: PsicologoDisponibilidad): Promise<DatosDisponibilidad> {
   const hoy = todayISODate()
-
-  let fichas = [p.id]
-  if (p.calendar_id) {
-    const { data, error } = await supabase.from('psicologos').select('id').eq('calendar_id', p.calendar_id)
-    if (error) throw error
-    fichas = Array.from(new Set([p.id, ...(data ?? []).map((r) => r.id)]))
-  }
 
   const [tramosRes, citasRes, bloqueosRes] = await Promise.all([
     supabase
@@ -46,14 +38,14 @@ export async function cargarDatosDisponibilidad(p: PsicologoDisponibilidad): Pro
     supabase
       .from('acciones_psicologos')
       .select('id, fecha_cita, hora_cita')
-      .in('psicologo_id', fichas)
+      .eq('psicologo_id', p.id)
       .eq('accion', 'Agendar cita')
       .eq('activo', true)
       .gte('fecha_cita', hoy),
     supabase
       .from('acciones_psicologos')
       .select('fecha_bloqueo_inicio, fecha_bloqueo_fin, motivo_bloqueo')
-      .in('psicologo_id', fichas)
+      .eq('psicologo_id', p.id)
       .eq('accion', 'Bloquear agenda')
       .eq('activo', true)
       .or(`fecha_bloqueo_fin.gte.${hoy},fecha_bloqueo_fin.is.null`),

@@ -81,7 +81,7 @@ export default function MensajesPage() {
       const [{ data: pac }, { data: psi }, { data: cen }] = await Promise.all([
         supabase
           .from('pacientes')
-          .select('id,nombre,telefono,email,estado,psicologo_id,centro_id,fecha_cambio_estado')
+          .select('id,nombre,telefono,email,estado,psicologo_adultos_id,psicologo_pareja_id,psicologo_infantil_id,centro_id,fecha_cambio_estado')
           .in('estado', [
             'Psicólogo',
             'En espera',
@@ -100,19 +100,23 @@ export default function MensajesPage() {
       const psiMap = Object.fromEntries(psiList.map(p => [p.id, p.nombre]))
       const cenMap = Object.fromEntries(cenList.map(c => [c.id, c.nombre]))
 
-      const lista: PacienteConExtra[] = (pac ?? []).map(p => ({
+      const lista: PacienteConExtra[] = (pac ?? []).map(p => {
+        // Psicólogo de referencia: el primero que tenga (adultos, pareja, infantil).
+        const psicologoId = p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id ?? null
+        return {
         id: p.id,
         nombre: p.nombre,
         telefono: p.telefono,
         email: p.email ?? '',
         estado: p.estado,
-        psicologo_id: p.psicologo_id,
+        psicologo_id: psicologoId,
         centro_id: p.centro_id,
         fecha_cambio_estado: p.fecha_cambio_estado,
-        psicologo_nombre: p.psicologo_id ? (psiMap[p.psicologo_id] ?? '—') : '—',
+        psicologo_nombre: psicologoId ? (psiMap[psicologoId] ?? '—') : '—',
         centro_nombre: p.centro_id ? (cenMap[p.centro_id] ?? '—') : '—',
         dias_espera: diasDesde(p.fecha_cambio_estado),
-      }))
+        }
+      })
 
       setPacientes(lista)
       setPsicologos(psiList)

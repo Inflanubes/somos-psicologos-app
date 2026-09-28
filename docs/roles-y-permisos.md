@@ -109,19 +109,23 @@ citas saldrán con el mismo nombre.
 
 ## Horarios de psicólogos y disponibilidad en Citas
 
-Desde la migración `Supabase/migrations/012_horarios_psicologos.sql` cada **ficha** de psicólogo
-(persona × centro) tiene su horario semanal en la tabla `horarios_psicologos` (día de la semana y
-uno o varios tramos), y la persona tiene el permiso `psicologos.citas_media_hora` (citas a y media).
+Desde la migración `Supabase/migrations/014_modelo_pacientes_psicologos.sql` (28-09-2026) cada
+psicólogo es **una sola ficha** en `psicologos`, con sus centros en `psicologos_centros` y sus tipos
+de consulta en `psicologos.tipos_consulta` (`adulto`, `pareja`, `menor`). Su horario semanal está en
+`horarios_psicologos` (día de la semana y uno o varios tramos) y vale para todos sus centros; el
+permiso `psicologos.citas_media_hora` (citas a y media) también es de la ficha. Un psicólogo con
+varios centros elige en Citas en cuál está hoy (se recuerda en el navegador).
 
 - Los **agentes** lo gestionan en Usuarios: columna **Horarios** (resumen tipo `L, X 09:00–14:00 · V 16:00–20:00`),
-  botón **Horario** (editor de siete días) y botón **30'** (medias horas; se aplica a todas las fichas
-  de la persona, como el permiso de bloqueo). Nadie más puede editarlo.
-- Una ficha **sin horario** no restringe nada: solo se ocultan las horas ya ocupadas.
+  botón **Horario** (editor de siete días), botón **30'** (medias horas), y botones **Centros** y
+  **Tipos** (panel con casillas bajo la fila). Nadie más puede editarlo.
+- Una ficha **sin horario** no restringe nada: solo se ocultan las horas ya ocupadas. Una ficha **sin
+  tipos de consulta** ofrece los tres tipos en Citas (y así se ve en Usuarios, en rojo, para completarla).
 - Toda cita dura **60 minutos**. Se ofrecen las horas de 08:00 a 21:00 en punto y, si la persona tiene 30',
   también las y media hasta 21:30.
 - En Citas (Agendar y Cambiar cita):
-  - **Psicólogo y call center** solo ven los huecos libres: dentro del horario del psicólogo en ese centro,
-    sin cita activa que se solape (contando todas las fichas de la persona, porque comparten calendario) y sin
+  - **Psicólogo y call center** solo ven los huecos libres: dentro del horario del psicólogo,
+    sin cita activa que se solape (en cualquiera de sus centros, porque comparten calendario) y sin
     bloqueo de agenda ese día. Si el día no es laborable o está bloqueado, el selector de hora se desactiva y
     se explica el motivo.
   - **Agente** puede elegir cualquier fecha y hora fuera del horario, en una media hora no activa o en un día
@@ -137,6 +141,31 @@ uno o varios tramos), y la persona tiene el permiso `psicologos.citas_media_hora
 - Lógica: `lib/horarios.ts` (tramos, validación, resumen), `lib/disponibilidad.ts` (huecos y avisos; con tests
   en `npm test`), `lib/disponibilidad-datos.ts` (carga desde Supabase) y `app/dashboard/psicologos/useDisponibilidad.ts`.
 - Make no interviene: el horario solo lo lee la app.
+
+
+## Pacientes con varios psicólogos y alta de paciente (migración 014)
+
+- Un paciente tiene hasta tres psicólogos, uno por tipo de consulta: `psicologo_adultos_id`,
+  `psicologo_pareja_id` y `psicologo_infantil_id` (al menos uno relleno). `pacientes.centro_id` es el
+  centro del alta y no decide nada. Cada cita guarda su centro en `acciones_psicologos.centro_id`
+  (lo envía la app o Dante y lo escribe Make); los bloqueos no tienen centro y se ven en todos los
+  filtros del Calendario.
+- **Mis pacientes**, el panel general, Mensajes y el desplegable de Citas muestran al psicólogo los
+  pacientes en los que aparece en cualquiera de las tres columnas; la columna "Psicólogos" indica el
+  tipo ("Adultos: Marta · Pareja: Juan").
+- **Alta de paciente** (Citas › Añadir nuevo paciente): nombre, fecha de nacimiento (obligatoria) y
+  correo. Si tiene 15 años o menos es **menor**: no se pide teléfono (el contacto es el del tutor 1,
+  que se copia a `pacientes.telefono`), se piden los tutores y cada tutor tiene el botón **Ya es
+  paciente** para buscar su ficha y copiar sus datos (`asociados_menores.T1_paciente_id` /
+  `T2_paciente_id`). Si es adulto: teléfono obligatorio y selector **Tipo de consulta** (adultos o
+  pareja, solo los que el psicólogo pasa).
+- **Duplicados**: menor con mismo nombre y misma fecha, o adulto con mismo teléfono y mismo nombre →
+  bloqueo ("Este paciente ya existe. Revisa los datos…") y aviso al equipo por Make. Adulto con el
+  mismo teléfono y otro nombre → pregunta "¿Es la misma persona?": **Sí** vincula la ficha existente
+  (rellena la columna del tipo; si ya tenía otro psicólogo de ese tipo, avisa y lo sustituye), **No**
+  crea ficha nueva. Los nombres se comparan sin tildes, mayúsculas ni espacios de más.
+- **Tipo de cita** en Agendar/Cambiar: solo los tipos que el psicólogo pasa (menor → solo `menor`);
+  con un único tipo posible se preselecciona.
 
 ## Cómo se aplica en el código
 

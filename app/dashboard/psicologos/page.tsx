@@ -560,12 +560,13 @@ export default function PsicologosPage() {
   }
 
   async function candidatosDuplicado(): Promise<PacienteExistente[]> {
-    const cols = 'id, nombre, telefono, fecha_nacimiento, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id'
+    const cols = 'id, nombre, telefono, fecha_nacimiento, es_menor, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id'
     if (npEsMenor) {
       const { data } = await supabase.from('pacientes').select(cols).eq('fecha_nacimiento', npFechaNacimiento)
       return (data ?? []) as PacienteExistente[]
     }
-    const { data } = await supabase.from('pacientes').select(cols).eq('telefono', npTelefono.trim())
+    // Solo adultos: un menor lleva el teléfono de su tutor y no es candidato.
+    const { data } = await supabase.from('pacientes').select(cols).eq('telefono', npTelefono.trim()).eq('es_menor', false)
     return (data ?? []) as PacienteExistente[]
   }
 

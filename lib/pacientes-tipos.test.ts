@@ -105,6 +105,13 @@ describe('evaluarDuplicado', () => {
     )
     expect(r).toMatchObject({ tipo: 'bloquear', motivo: 'menor_mismo_nombre_fecha' })
   })
+  it('adulto: un candidato menor (teléfono del tutor) se ignora aunque coincida el teléfono', () => {
+    const r = evaluarDuplicado(
+      { nombre: 'Luis Gómez', telefono: '600111222', fechaNacimiento: '1980-01-01', esMenor: false, tipoConsulta: 'adulto', psicologoId: 'psi-B' },
+      [base({ id: 'menor-1', nombre: 'Lucas Gómez', es_menor: true })],
+    )
+    expect(r.tipo).toBe('ninguno')
+  })
   it('menor: misma fecha pero otro nombre → ninguno', () => {
     const r = evaluarDuplicado(
       { nombre: 'Pedro Ruiz', telefono: '', fechaNacimiento: '1990-05-04', esMenor: true, tipoConsulta: 'menor', psicologoId: 'psi-B' },

@@ -60,6 +60,8 @@ export type PacienteExistente = PacienteTipos & {
   nombre: string
   telefono: string | null
   fecha_nacimiento: string | null
+  /** Un menor lleva el teléfono de su tutor: nunca es candidato a duplicado de un adulto. */
+  es_menor?: boolean | null
 }
 
 export type NuevoPaciente = {
@@ -92,7 +94,9 @@ export function evaluarDuplicado(nuevo: NuevoPaciente, existentes: PacienteExist
   }
 
   const telefono = nuevo.telefono.trim()
-  const mismoTelefono = telefono ? existentes.filter((p) => (p.telefono ?? '').trim() === telefono) : []
+  // Los menores se guardan con el teléfono del tutor 1: no cuentan como duplicado de un adulto.
+  const adultos = existentes.filter((p) => p.es_menor !== true)
+  const mismoTelefono = telefono ? adultos.filter((p) => (p.telefono ?? '').trim() === telefono) : []
   if (mismoTelefono.length === 0) return { tipo: 'ninguno' }
 
   const mismoNombre = mismoTelefono.find((p) => normalizarNombre(p.nombre) === nombreNuevo)

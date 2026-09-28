@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **NO empezar hasta que Sonia lo autorice explícitamente.** La especificación está aprobada; la ejecución no.
+- ~~NO empezar hasta que Sonia lo autorice explícitamente.~~ Autorizado y ejecutado el 28-09-2026 (migraciones 014 y 014b aplicadas; merge en main 22de08c). Pendientes marcados sin [x]: Make (Tarea 8), importar Dante (Tarea 9 paso 7), pruebas de aceptación (Tarea 10). Ver `docs/make-cambios-2026-09-28.md`.
 - **La migración 014 conserva psicólogos reales (con calendario), agentes, perfiles, centros y horarios.** Solo borra pacientes, citas, historial y las fichas de psicólogo sin calendario. Nunca ampliar el borrado.
 - Antes de la Tarea 1: escenario de Make **desactivado** y cola del webhook vacía; workflow de Dante **inactivo**; Elias avisado (§0 de la especificación).
 - Valores de tipo de consulta en todo el sistema: exactamente `adulto`, `pareja`, `menor` (los de `TipoCita` en `types/database.ts`). Nunca "adultos", "infantil" ni mayúsculas en datos; solo en etiquetas de pantalla.
@@ -65,7 +65,7 @@
 **Interfaces:**
 - Produces: tabla `psicologos_centros(psicologo_id, centro_id)`; vista `psicologos_por_centro`; columnas `psicologos.tipos_consulta text[]`, `pacientes.psicologo_adultos_id|psicologo_pareja_id|psicologo_infantil_id`, `asociados_menores."T1_paciente_id"|"T2_paciente_id"`, `acciones_psicologos.centro_id`, `acciones_historial.centro_id`. Elimina `psicologos.centro_id`, `psicologos.centro`, `pacientes.psicologo_id`.
 
-- [ ] **Step 1: Escribir el archivo de migración**
+- [x] **Step 1: Escribir el archivo de migración**
 
 ```sql
 -- ============================================================================
@@ -316,9 +316,9 @@ COMMIT;
 -- SELECT column_name FROM information_schema.columns WHERE table_name='pacientes' AND column_name LIKE 'psicologo_%';  -- 3 filas
 ```
 
-- [ ] **Step 2: Ejecutar en el SQL Editor de Supabase** (lo hace Sonia o el agente con acceso). Aceptar el aviso de operaciones destructivas.
+- [x] **Step 2: Ejecutar en el SQL Editor de Supabase** (lo hace Sonia o el agente con acceso). Aceptar el aviso de operaciones destructivas.
 
-- [ ] **Step 3: Verificar** con las cuatro consultas del final del archivo. Además, desde el repo:
+- [x] **Step 3: Verificar** con las cuatro consultas del final del archivo. Además, desde el repo:
 
 Run:
 ```bash
@@ -326,7 +326,7 @@ cd somos-app && URL=$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2
 ```
 Expected: lista con una fila por psicólogo real × centro (sin error PGRST). Si devuelve error de permisos, ejecutar `ALTER VIEW public.psicologos_por_centro OWNER TO postgres; GRANT SELECT ON public.psicologos_por_centro TO anon, authenticated;`.
 
-- [ ] **Step 4: Comprobar la Review Focus 5** (cita sin centro): insertar y borrar una fila de prueba en el SQL Editor, usando el id de un psicólogo real:
+- [x] **Step 4: Comprobar la Review Focus 5** (cita sin centro): insertar y borrar una fila de prueba en el SQL Editor, usando el id de un psicólogo real:
 
 ```sql
 INSERT INTO acciones_psicologos (psicologo_id, accion, activo) VALUES ('<id de un psicólogo real>', 'Bloquear agenda', true);
@@ -337,7 +337,7 @@ Nota: el aviso a Elias se dispara con ese insert; avisarle de que es una prueba.
 
 - [ ] **Step 4b: Cuentas de Auth de las fichas de prueba borradas** — en Supabase › Authentication, borrar a mano los usuarios cuyos emails ya no tienen perfil (`SELECT email FROM auth.users u WHERE NOT EXISTS (SELECT 1 FROM perfiles p WHERE p.id = u.id)`). Los agentes y psicólogos reales conservan su cuenta.
 
-- [ ] **Step 5: Commit del archivo** (la carpeta `Supabase/` no está en git; guardar el archivo y anotarlo en `docs/make-cambios-2026-09-26.md` de la Tarea 8 como "ejecutada el <fecha>").
+- [x] **Step 5: Commit del archivo** (la carpeta `Supabase/` no está en git; guardar el archivo y anotarlo en `docs/make-cambios-2026-09-26.md` de la Tarea 8 como "ejecutada el <fecha>").
 
 ---
 
@@ -349,7 +349,7 @@ Nota: el aviso a Elias se dispara con ese insert; avisarle de que es una prueba.
 **Interfaces:**
 - Produces: `Psicologo` (sin `centro_id`/`centro`, con `tipos_consulta: TipoCita[]`), `PsicologoCentro`, `PsicologoPorCentro`, `Paciente` (tres columnas), `AsociadoMenor` con `T1_paciente_id`/`T2_paciente_id`, `AccionPsicologo.centro_id`, `AccionHistorial.centro_id`, tabla `psicologos_centros` y vista `psicologos_por_centro` en `Database`.
 
-- [ ] **Step 1: Cambiar `Psicologo` y añadir tipos nuevos**
+- [x] **Step 1: Cambiar `Psicologo` y añadir tipos nuevos**
 
 Sustituir el tipo `Psicologo` por:
 
@@ -377,7 +377,7 @@ export type PsicologoPorCentro = Psicologo & { centro_id: string; centro: string
 
 En `PsicologoInsert` quitar `centro_id` y `centro` si existen y añadir `tipos_consulta?: TipoCita[]`.
 
-- [ ] **Step 2: Cambiar `Paciente`**
+- [x] **Step 2: Cambiar `Paciente`**
 
 Quitar `psicologo_id: string` y añadir, en su lugar:
 
@@ -390,7 +390,7 @@ Quitar `psicologo_id: string` y añadir, en su lugar:
 
 Hacer lo mismo en `PacienteInsert` (opcionales).
 
-- [ ] **Step 3: `AccionPsicologo`, `AccionHistorial`, `AsociadoMenor`**
+- [x] **Step 3: `AccionPsicologo`, `AccionHistorial`, `AsociadoMenor`**
 
 Añadir `centro_id: string | null` a `AccionPsicologo` (tras `psicologo_id`) y a `AccionHistorial` (tras `paciente_id`), y en sus `Insert`. Añadir a `AsociadoMenor` y `AsociadoMenorInsert`:
 
@@ -400,7 +400,7 @@ Añadir `centro_id: string | null` a `AccionPsicologo` (tras `psicologo_id`) y a
 ```
 (en `AsociadoMenor` sin `?`, tipo `string | null`).
 
-- [ ] **Step 4: Registrar tabla y vista en `Database`**
+- [x] **Step 4: Registrar tabla y vista en `Database`**
 
 Junto a la entrada `psicologos` del bloque `Tables`:
 
@@ -424,12 +424,12 @@ Y en `Views` (crear el bloque si no existe, al mismo nivel que `Tables`):
     }
 ```
 
-- [ ] **Step 5: Type-check (fallará en los usos de `psicologo_id`/`centro_id`; es la lista de trabajo de las tareas 4-7)**
+- [x] **Step 5: Type-check (fallará en los usos de `psicologo_id`/`centro_id`; es la lista de trabajo de las tareas 4-7)**
 
 Run: `cd somos-app && npx tsc --noEmit -p tsconfig.json 2>&1 | grep -c "error TS"`
 Expected: número > 0. Guardar la salida completa en `docs/superpowers/plans/tsc-tarea2.txt` para consultarla en las tareas siguientes (no commitear ese txt).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git checkout -b modelo-pacientes-psicologos main
@@ -456,7 +456,7 @@ git commit -m "Tipos: psicólogo con centros y tipos de consulta, paciente con t
   - `tiposDisponibles(psicologo: { tipos_consulta: TipoConsulta[] } | null, esMenor: boolean | null): TipoConsulta[]`
   - `evaluarDuplicado(nuevo: NuevoPaciente, existentes: PacienteExistente[]): DecisionDuplicado`
 
-- [ ] **Step 1: Escribir los tests (fallan porque el módulo no existe)**
+- [x] **Step 1: Escribir los tests (fallan porque el módulo no existe)**
 
 ```ts
 // lib/pacientes-tipos.test.ts
@@ -576,12 +576,12 @@ describe('evaluarDuplicado', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar y ver que falla**
+- [x] **Step 2: Ejecutar y ver que falla**
 
 Run: `cd somos-app && npm test -- lib/pacientes-tipos.test.ts`
 Expected: FAIL, "Cannot find module './pacientes-tipos'".
 
-- [ ] **Step 3: Implementar el módulo**
+- [x] **Step 3: Implementar el módulo**
 
 ```ts
 // lib/pacientes-tipos.ts
@@ -697,12 +697,12 @@ export function evaluarDuplicado(nuevo: NuevoPaciente, existentes: PacienteExist
 }
 ```
 
-- [ ] **Step 4: Ejecutar los tests**
+- [x] **Step 4: Ejecutar los tests**
 
 Run: `cd somos-app && npm test -- lib/pacientes-tipos.test.ts`
 Expected: PASS (12 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/pacientes-tipos.ts lib/pacientes-tipos.test.ts
@@ -722,7 +722,7 @@ git commit -m "Lógica pura de tipos de consulta y duplicados de pacientes con t
 - Consumes: `Psicologo`, `PsicologoCentro`, `TipoCita` (Tarea 2); `ETIQUETA_TIPO`, `TIPOS_CONSULTA` (Tarea 3).
 - Produces: `POST /api/usuarios` acepta `tipos_consulta: TipoCita[]` y `centro_ids: string[]` y crea UNA fila; `GET /api/usuarios` devuelve en cada psicólogo `centro_ids: string[]`, `centros_nombres: string[]`, `tipos_consulta: TipoCita[]`; `PATCH /api/usuarios/[id]` acepta `centro_ids` y `tipos_consulta`.
 
-- [ ] **Step 1: GET — devolver centros y tipos de cada psicólogo**
+- [x] **Step 1: GET — devolver centros y tipos de cada psicólogo**
 
 En `route.ts` GET, cambiar el `select` de psicólogos a `'id, nombre, email, telefono, calendar_id, activo, puede_bloquear, citas_media_hora, tipos_consulta'` y añadir una consulta `admin.from('psicologos_centros').select('psicologo_id, centro_id')`. Componer cada fila de salida con:
 
@@ -741,7 +741,7 @@ tipos_consulta: p.tipos_consulta ?? [],
 ```
 Eliminar cualquier agrupación por email/`centro_id` que quede en el GET (buscar `centro_id` en el archivo: la única referencia válida tras esta tarea es la de agentes).
 
-- [ ] **Step 2: POST — una fila + centros + tipos**
+- [x] **Step 2: POST — una fila + centros + tipos**
 
 En `CrearBody` añadir `tipos_consulta?: TipoCita[] | null` (importar `TipoCita` de `@/types/database`). Tras la validación de `centroIds`, añadir:
 
@@ -791,7 +791,7 @@ Sustituir el "Paso 3" por:
     return NextResponse.json({ ok: true, id: psicologoId, email, password, emailSent }, { status: 201 })
 ```
 
-- [ ] **Step 3: PATCH — centros, tipos y permisos por id**
+- [x] **Step 3: PATCH — centros, tipos y permisos por id**
 
 En `EditarBody` sustituir `centro_id?: string | null` por `centro_ids?: string[]` y añadir `tipos_consulta?: TipoCita[]`. En la rama `psicologo`:
 - Quitar el bloque `if (body.centro_id !== undefined) {…}` entero.
@@ -808,7 +808,7 @@ En `EditarBody` sustituir `centro_id?: string | null` por `centro_ids?: string[]
 ```
 - Simplificar `puede_bloquear` y `citas_media_hora`: quitar la búsqueda por email y dejar solo `admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('id', id)` (ídem medias horas). Actualizar el comentario de horarios: "horario del psicólogo (único)".
 
-- [ ] **Step 4: Pantalla Usuarios**
+- [x] **Step 4: Pantalla Usuarios**
 
 En `page.tsx`:
 - Tipo de fila de psicólogo (líneas ~50-58): sustituir `centro_id: string | null` por `centro_ids: string[]; centros_nombres: string[]; tipos_consulta: TipoCita[]`.
@@ -837,12 +837,12 @@ En `page.tsx`:
 - Listado de psicólogos: donde se muestra el centro, mostrar `p.centros_nombres.join(' · ')` y debajo, en pequeño, `p.tipos_consulta.map((t) => ETIQUETA_TIPO[t]).join(' · ') || 'Sin tipos'`. Añadir dos `ActionButton`: "Centros" (prompt con checkboxes → `patchUsuario(id, { tipo: 'psicologo', centro_ids })`) y "Tipos" (ídem con `tipos_consulta`). Si la pantalla no tiene un diálogo reutilizable, usar un pequeño panel inline con checkboxes como el del alta (mismo patrón que `editandoHorario`).
 - Quitar `centroId` para psicólogos (solo lo usan agentes y call center).
 
-- [ ] **Step 5: Type-check y prueba manual**
+- [x] **Step 5: Type-check y prueba manual**
 
 Run: `cd somos-app && npx tsc --noEmit -p tsconfig.json 2>&1 | grep "app/api/usuarios\|app/dashboard/usuarios"`
 Expected: sin líneas. Luego `npm run dev`, entrar como agente, crear un psicólogo de prueba con dos centros y dos tipos: en Supabase, una fila en `psicologos`, dos en `psicologos_centros`, `tipos_consulta = {adulto,pareja}`, perfil creado. Editar centros y tipos y comprobar que se sincronizan.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/api/usuarios app/dashboard/usuarios/page.tsx
@@ -862,7 +862,7 @@ git commit -m "Usuarios: una ficha por psicólogo con centros (psicologos_centro
 - Consumes: `filtroPacientesDePsicologo`, `tiposDisponibles`, `ETIQUETA_TIPO` (Tarea 3); `Psicologo.tipos_consulta` (Tarea 2).
 - Produces: `datosProcesados.psicologo_id` y `datosProcesados.centro_id` en el envío a Make (Agendar/Cambiar/Cancelar/bloqueos); `CentroActivo = { psicologoId: string; centroId: string }` (mismo tipo, `psicologoId` es siempre el único id).
 
-- [ ] **Step 1: `lib/centro-activo.ts`** — sustituir el comentario de cabecera por:
+- [x] **Step 1: `lib/centro-activo.ts`** — sustituir el comentario de cabecera por:
 
 ```ts
 // Selección de centro activo para psicólogos que trabajan en varios centros.
@@ -871,9 +871,9 @@ git commit -m "Usuarios: una ficha por psicólogo con centros (psicologos_centro
 ```
 No cambia la API (`CentroActivo`, `getCentroActivo`, `setCentroActivo`, `clearCentroActivo`).
 
-- [ ] **Step 2: `lib/disponibilidad-datos.ts`** — quitar la búsqueda de fichas por `calendar_id` (líneas 32-37) y usar `.eq('psicologo_id', p.id)` en citas y bloqueos. Actualizar el comentario: "citas y bloqueos del psicólogo (una sola ficha desde la 014)".
+- [x] **Step 2: `lib/disponibilidad-datos.ts`** — quitar la búsqueda de fichas por `calendar_id` (líneas 32-37) y usar `.eq('psicologo_id', p.id)` en citas y bloqueos. Actualizar el comentario: "citas y bloqueos del psicólogo (una sola ficha desde la 014)".
 
-- [ ] **Step 3: Citas — cargar la ficha única y sus centros**
+- [x] **Step 3: Citas — cargar la ficha única y sus centros**
 
 Sustituir el `useEffect` "Multi-centro" (líneas 372-392) por:
 
@@ -914,16 +914,16 @@ Estados: sustituir `misVariantes` por `const [miFicha, setMiFicha] = useState<Ps
 - `psiCentroId = centroActivo?.centroId ?? (misCentros.length === 1 ? misCentros[0] : null) ?? perfil?.centro_id ?? null`
 - La pantalla de "elige centro" itera `misCentros` y muestra `centros.find(c => c.id === id)?.nombre`; `elegirCentro(centroId)` guarda `{ psicologoId: miFicha!.id, centroId }`.
 
-- [ ] **Step 4: Desplegable de pacientes** (líneas ~285-300): sustituir `.eq('psicologo_id', psicologoId)` por `.or(filtroPacientesDePsicologo(psicologoId))` y en el `select` añadir las tres columnas `psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id`.
+- [x] **Step 4: Desplegable de pacientes** (líneas ~285-300): sustituir `.eq('psicologo_id', psicologoId)` por `.or(filtroPacientesDePsicologo(psicologoId))` y en el `select` añadir las tres columnas `psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id`.
 
-- [ ] **Step 5: Tipo de cita limitado** — donde se renderiza el `<select>` de tipo de cita (buscar `setTipoCita(e.target.value`), calcular:
+- [x] **Step 5: Tipo de cita limitado** — donde se renderiza el `<select>` de tipo de cita (buscar `setTipoCita(e.target.value`), calcular:
 
 ```ts
   const tiposCita = tiposDisponibles(psicologoSeleccionado, pacienteSeleccionado ? pacienteSeleccionado.es_menor : null)
 ```
 y renderizar solo `tiposCita.map((t) => <option key={t} value={t}>{ETIQUETA_TIPO[t]}</option>)`. Cambiar el `useEffect` de preselección (394-399) a: `setTipoCita(tiposCita.length === 1 ? tiposCita[0] : (pacienteSeleccionado.es_menor ? 'menor' : 'adulto'))`, solo si el valor calculado está en `tiposCita`. Si `tiposCita.length === 0` mostrar bajo el select el aviso "Este psicólogo no atiende este tipo de paciente." y no dejar enviar.
 
-- [ ] **Step 6: Envío a Make** — en `datosProcesados` (línea ~744) añadir, tras `psicologo_nombre`:
+- [x] **Step 6: Envío a Make** — en `datosProcesados` (línea ~744) añadir, tras `psicologo_nombre`:
 
 ```ts
         psicologo_id:         effPsicologoId,
@@ -931,12 +931,12 @@ y renderizar solo `tiposCita.map((t) => <option key={t} value={t}>{ETIQUETA_TIPO
 ```
 También en el envío de "Añadir nuevo paciente" (línea ~702) y en el de "Paciente duplicado" (~600).
 
-- [ ] **Step 7: Type-check y prueba manual**
+- [x] **Step 7: Type-check y prueba manual**
 
 Run: `cd somos-app && npx tsc --noEmit -p tsconfig.json 2>&1 | grep "psicologos/page.tsx\|lib/"`
 Expected: sin líneas (las de la alta de paciente se resuelven en la Tarea 6; si quedan, anotarlas). Manual con el psicólogo de la Tarea 4: entra, elige centro, ve solo sus tipos de cita, agenda (Make apagado: el envío se queda en la cola del webhook; verlo en Make › Webhooks › Queue y **borrarlo**).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add lib/centro-activo.ts lib/disponibilidad-datos.ts app/dashboard/psicologos/page.tsx
@@ -954,7 +954,7 @@ git commit -m "Citas: ficha única de psicólogo, centro activo por psicologos_c
 - Consumes: `evaluarDuplicado`, `COLUMNA_PSICOLOGO`, `tiposDisponibles`, `ETIQUETA_TIPO`, `normalizarNombre` (Tarea 3); `AsociadoMenorInsert.T1_paciente_id/T2_paciente_id` (Tarea 2).
 - Produces: inserts en `pacientes` con la columna del tipo; vinculación (`update`) cuando el usuario confirma; `asociados_menores` con `Tn_paciente_id`.
 
-- [ ] **Step 1: Estado nuevo**
+- [x] **Step 1: Estado nuevo**
 
 ```ts
   const [npTipoConsulta, setNpTipoConsulta] = useState<TipoConsulta>('adulto')
@@ -966,7 +966,7 @@ git commit -m "Citas: ficha única de psicólogo, centro activo por psicologos_c
 ```
 (importar `TipoConsulta`, `DecisionDuplicado`, `PacienteExistente` de `@/lib/pacientes-tipos`). Añadir los resets en `resetForm`.
 
-- [ ] **Step 2: JSX del alta**
+- [x] **Step 2: JSX del alta**
 
 - Teléfono: si `npEsMenor`, sustituir el `<input>` por `<div style={inputStyle}>El contacto será el teléfono del tutor 1</div>` (mismo estilo de campo, texto en gris `#7a9090`) y no exigirlo.
 - Donde hoy se muestra el estado "es menor" (buscar `npEsMenor` en el JSX del alta): si `!npEsMenor` y hay fecha de nacimiento, renderizar:
@@ -1002,7 +1002,7 @@ async function buscarTutor(texto: string): Promise<PacienteExistente[]> {
   - si `columnaOcupadaPor`: añadir ` ${p.nombre} ya tiene psicólogo de ${ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}: ${nombreOcupa}. Si continúas, pasará a ser tuyo.`
   y dos botones: "Sí, vincular a mi lista" → `vincularExistente()`; "No, es otra persona" → `crearPaciente({ omitirDuplicados: true })`; y "Cancelar".
 
-- [ ] **Step 3: Lógica del alta** — reestructurar el bloque `if (isNuevoPaciente) {…}` del `handleSubmit` en tres funciones dentro del componente:
+- [x] **Step 3: Lógica del alta** — reestructurar el bloque `if (isNuevoPaciente) {…}` del `handleSubmit` en tres funciones dentro del componente:
 
 ```ts
   async function candidatosDuplicado(): Promise<PacienteExistente[]> {
@@ -1077,14 +1077,14 @@ donde `nombreDePsicologo(p)` devuelve el nombre del primer psicólogo no nulo de
 
 `handleSubmit` recibe el flag: crear `const [omitirDuplicados, setOmitirDuplicados] = useState(false)` y el botón "No, es otra persona" hace `setOmitirDuplicados(true); setNpConfirmacion(null)` y reenvía el formulario (`formRef.current?.requestSubmit()`); `resetForm` vuelve a ponerlo a false.
 
-- [ ] **Step 4: Validaciones** — en el bloque de validación del alta: el teléfono solo es obligatorio si `!npEsMenor`; si `npEsMenor`, `npT1Telefono` obligatorio (ya lo es). Si `tiposDisponibles(psicologoSeleccionado, npEsMenor).length === 0`: error "Este psicólogo no atiende este tipo de paciente."
+- [x] **Step 4: Validaciones** — en el bloque de validación del alta: el teléfono solo es obligatorio si `!npEsMenor`; si `npEsMenor`, `npT1Telefono` obligatorio (ya lo es). Si `tiposDisponibles(psicologoSeleccionado, npEsMenor).length === 0`: error "Este psicólogo no atiende este tipo de paciente."
 
-- [ ] **Step 5: Type-check y pruebas manuales** (Make apagado; borrar los envíos de la cola después)
+- [x] **Step 5: Type-check y pruebas manuales** (Make apagado; borrar los envíos de la cola después)
 
 Run: `cd somos-app && npx tsc --noEmit -p tsconfig.json`
 Expected: 0 errores en `psicologos/page.tsx`. Manual, en orden: (a) adulto tipo adultos → fila con `psicologo_adultos_id`; (b) misma persona, tipo pareja con otro psicólogo → aviso suave → "Sí" → misma fila con `psicologo_pareja_id`, sin fila nueva; (c) mismo teléfono y nombre → bloqueo con el texto nuevo; (d) menor con tutor 1 "ya es paciente" → `asociados_menores.T1_paciente_id` relleno y `pacientes.telefono` = teléfono del tutor; (e) menor duplicado (mismo nombre y fecha) → bloqueo.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/dashboard/psicologos/page.tsx
@@ -1105,7 +1105,7 @@ git commit -m "Alta de paciente: tipo de consulta, duplicados con vinculación, 
 **Interfaces:**
 - Consumes: `filtroPacientesDePsicologo`, `tiposDePaciente`, `ETIQUETA_TIPO` (Tarea 3); `AccionPsicologo.centro_id` (Tarea 2).
 
-- [ ] **Step 1: Mis pacientes** — sustituir el bloque `misPsicologoIds` por la ficha única:
+- [x] **Step 1: Mis pacientes** — sustituir el bloque `misPsicologoIds` por la ficha única:
 
 ```ts
   let miPsicologoId: string | null = null
@@ -1118,16 +1118,16 @@ git commit -m "Alta de paciente: tipo de consulta, duplicados con vinculación, 
 ```
 y en `rows`: `psicologo_nombre` pasa a ser la lista `[['adulto', p.psicologo_adultos_id], ['pareja', p.psicologo_pareja_id], ['menor', p.psicologo_infantil_id]]` filtrada de nulos y formateada como `"${ETIQUETA_TIPO[t]}: ${psicologoMap[id] ?? '—'}"` unida por ` · `. `PacientesClient` no cambia de tipo (sigue siendo `string`); renombrar la cabecera de la columna a "Psicólogos".
 
-- [ ] **Step 2: Dashboard** — `psicologosData`: contar pacientes donde cualquiera de las tres columnas es `p.id`:
+- [x] **Step 2: Dashboard** — `psicologosData`: contar pacientes donde cualquiera de las tres columnas es `p.id`:
 
 ```ts
       count: pac.filter((pa) => pa.psicologo_adultos_id === p.id || pa.psicologo_pareja_id === p.id || pa.psicologo_infantil_id === p.id).length,
 ```
 y en `tableData`, el nombre de psicólogo con el primer id no nulo.
 
-- [ ] **Step 3: Mensajes a pacientes** — `Variante` pasa a ser la ficha única: cargar `psicologos` por email (`maybeSingle`), luego `psicologos_centros` para obtener `centro_id[]`, y `centros` (con `google_review_url`) por esos ids. `setCentroId` al único si hay uno. Pacientes: `.or(filtroPacientesDePsicologo(ficha.id))` (dependencia del efecto: `ficha?.id`, no `centroId`).
+- [x] **Step 3: Mensajes a pacientes** — `Variante` pasa a ser la ficha única: cargar `psicologos` por email (`maybeSingle`), luego `psicologos_centros` para obtener `centro_id[]`, y `centros` (con `google_review_url`) por esos ids. `setCentroId` al único si hay uno. Pacientes: `.or(filtroPacientesDePsicologo(ficha.id))` (dependencia del efecto: `ficha?.id`, no `centroId`).
 
-- [ ] **Step 4: Calendario** — en el `select` de citas añadir `centro_id`; en el mapeo `centroId: c.centro_id ?? null` (y para bloqueos `centroId: null`). Comprobar en `lib/calendario.ts` que el filtro por centro deja pasar los eventos con `centroId === null` cuando hay centro elegido solo si son bloqueos; si la función de filtro oculta `null`, ajustarla así y añadir un test en `lib/calendario.test.ts`:
+- [x] **Step 4: Calendario** — en el `select` de citas añadir `centro_id`; en el mapeo `centroId: c.centro_id ?? null` (y para bloqueos `centroId: null`). Comprobar en `lib/calendario.ts` que el filtro por centro deja pasar los eventos con `centroId === null` cuando hay centro elegido solo si son bloqueos; si la función de filtro oculta `null`, ajustarla así y añadir un test en `lib/calendario.test.ts`:
 
 ```ts
 it('un bloqueo sin centro se ve en cualquier filtro de centro', () => {
@@ -1137,14 +1137,14 @@ it('un bloqueo sin centro se ve en cualquier filtro de centro', () => {
 ```
 (adaptar `evento` y `filtrarEventos` a los nombres reales del módulo.)
 
-- [ ] **Step 5: Estadísticas** — eliminar el bloque "Agrupación por persona" (tipo `Persona`, `personaKey`, `personasMap`). El filtro por centro pasa a: `const idsEnCentro = selectedCentroId ? new Set((await supabase.from('psicologos_centros').select('psicologo_id').eq('centro_id', selectedCentroId)).data?.map((r) => r.psicologo_id) ?? []) : null` y `psicologos = idsEnCentro ? allPsicologos.filter((p) => idsEnCentro.has(p.id)) : allPsicologos`. `idsSeleccionados = selectedPsicologoId ? [selectedPsicologoId] : null`. La columna "Centro" de la tabla: nombres de `psicologos_centros` del psicólogo unidos por ` · ` (una consulta a `psicologos_centros` para todos). `perPsi` se indexa por `p.id`.
+- [x] **Step 5: Estadísticas** — eliminar el bloque "Agrupación por persona" (tipo `Persona`, `personaKey`, `personasMap`). El filtro por centro pasa a: `const idsEnCentro = selectedCentroId ? new Set((await supabase.from('psicologos_centros').select('psicologo_id').eq('centro_id', selectedCentroId)).data?.map((r) => r.psicologo_id) ?? []) : null` y `psicologos = idsEnCentro ? allPsicologos.filter((p) => idsEnCentro.has(p.id)) : allPsicologos`. `idsSeleccionados = selectedPsicologoId ? [selectedPsicologoId] : null`. La columna "Centro" de la tabla: nombres de `psicologos_centros` del psicólogo unidos por ` · ` (una consulta a `psicologos_centros` para todos). `perPsi` se indexa por `p.id`.
 
-- [ ] **Step 6: Type-check completo, tests y build**
+- [x] **Step 6: Type-check completo, tests y build**
 
 Run: `cd somos-app && npx tsc --noEmit -p tsconfig.json && npm test && npm run build`
 Expected: 0 errores, tests en verde, build OK. Si `tsc` señala más usos de `psicologo_id`/`centro_id` de psicólogo fuera de esta lista, corregirlos en este mismo paso (la salida guardada en la Tarea 2 sirve de guía).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/dashboard lib/calendario.ts lib/calendario.test.ts
@@ -1161,7 +1161,7 @@ git commit -m "Pantallas de lectura sobre el modelo nuevo: pacientes por tipo, f
 **Interfaces:**
 - Consumes: campos nuevos del envío (`psicologo_id`, `centro_id`, `tipo_consulta`, `paciente_id`) de las tareas 5 y 6.
 
-- [ ] **Step 1: Escribir el documento con esta tabla** (misma estructura que el de 25-09):
+- [x] **Step 1: Escribir el documento con esta tabla** (misma estructura que el de 25-09):
 
 | Módulo | Cambio |
 |---|---|
@@ -1188,17 +1188,17 @@ Incluir la sección "Dante" de la Tarea 9 y la lista de pruebas de la Tarea 10.
 **Interfaces:**
 - Consumes: vista `psicologos_por_centro`, columnas nuevas de `pacientes`, `evaluarDuplicado` (reimplementada en JS del nodo, misma tabla de reglas).
 
-- [ ] **Step 1: `ListarPsicologos`** — URL: `…/rest/v1/psicologos_por_centro?centro_id=eq.{centro_id}&activo=eq.true&select=id,nombre,centro,tipos_consulta&order=nombre.asc&apikey=…`. Descripción: añadir "devuelve tipos_consulta".
+- [x] **Step 1: `ListarPsicologos`** — URL: `…/rest/v1/psicologos_por_centro?centro_id=eq.{centro_id}&activo=eq.true&select=id,nombre,centro,tipos_consulta&order=nombre.asc&apikey=…`. Descripción: añadir "devuelve tipos_consulta".
 
-- [ ] **Step 2: `ConsultarPsicologo`** — `select=id,nombre,activo,calendar_id,tipos_consulta` sobre `psicologos`; añadir una segunda llamada (o incluir en la descripción) a `psicologos_centros?psicologo_id=eq.{id}&select=centro_id`.
+- [x] **Step 2: `ConsultarPsicologo`** — `select=id,nombre,activo,calendar_id,tipos_consulta` sobre `psicologos`; añadir una segunda llamada (o incluir en la descripción) a `psicologos_centros?psicologo_id=eq.{id}&select=centro_id`.
 
-- [ ] **Step 3: `ConsultarPaciente`** — `select` con `psicologo_adultos_id,psicologo_pareja_id,psicologo_infantil_id` en vez de `psicologo_id`. Descripción: "cada columna es el psicólogo de ese tipo; puede haber hasta tres".
+- [x] **Step 3: `ConsultarPaciente`** — `select` con `psicologo_adultos_id,psicologo_pareja_id,psicologo_infantil_id` en vez de `psicologo_id`. Descripción: "cada columna es el psicólogo de ese tipo; puede haber hasta tres".
 
-- [ ] **Step 4: `RegistrarPaciente`** (código del nodo) — parámetros nuevos `tipo_consulta` (`adulto|pareja`; `menor` se deduce por edad). Sustituir el bloque de duplicados por la misma tabla de reglas de `lib/pacientes-tipos.ts` (copiar `normalizarNombre` y `evaluarDuplicado` traducidas a JS sin tipos). En el insert: `[columna]: psicologoId` con `columna = { adulto: 'psicologo_adultos_id', pareja: 'psicologo_pareja_id', menor: 'psicologo_infantil_id' }[tipo]`; `telefono` = chat id (sin cambios). Comprobación de centro: `psicologos_centros?psicologo_id=eq.X&centro_id=eq.Y` debe devolver 1 fila (sustituye a `psico.centro_id !== centroId`). Envío a Make: añadir `psicologo_id`, `centro_id`, `tipo_consulta`. En el caso "confirmar" Dante no puede preguntar dentro del nodo: devolver `{ ok: false, necesita_confirmacion: true, paciente_existente: {...}, fuerza }` y que el prompt indique que pregunte al usuario y, si confirma, llame a la herramienta con `vincular_a: <paciente_id>` (el nodo entonces hace el `PATCH pacientes?id=eq.<id>` con la columna del tipo).
+- [x] **Step 4: `RegistrarPaciente`** (código del nodo) — parámetros nuevos `tipo_consulta` (`adulto|pareja`; `menor` se deduce por edad). Sustituir el bloque de duplicados por la misma tabla de reglas de `lib/pacientes-tipos.ts` (copiar `normalizarNombre` y `evaluarDuplicado` traducidas a JS sin tipos). En el insert: `[columna]: psicologoId` con `columna = { adulto: 'psicologo_adultos_id', pareja: 'psicologo_pareja_id', menor: 'psicologo_infantil_id' }[tipo]`; `telefono` = chat id (sin cambios). Comprobación de centro: `psicologos_centros?psicologo_id=eq.X&centro_id=eq.Y` debe devolver 1 fila (sustituye a `psico.centro_id !== centroId`). Envío a Make: añadir `psicologo_id`, `centro_id`, `tipo_consulta`. En el caso "confirmar" Dante no puede preguntar dentro del nodo: devolver `{ ok: false, necesita_confirmacion: true, paciente_existente: {...}, fuerza }` y que el prompt indique que pregunte al usuario y, si confirma, llame a la herramienta con `vincular_a: <paciente_id>` (el nodo entonces hace el `PATCH pacientes?id=eq.<id>` con la columna del tipo).
 
-- [ ] **Step 5: `EjecutarAccion`** — al agendar: `psicologoId` = columna de la ficha del paciente según `tipo_cita`; `centroId` = `pac.centro_id` si `psicologos_centros` tiene esa pareja, si no devolver `{ ok: false, error: 'Ese psicólogo no pasa consulta en el centro del paciente; pregunta el centro' }` y aceptar `centro_id` opcional como parámetro. Añadir `psicologo_id` y `centro_id` a `datosProcesados`.
+- [x] **Step 5: `EjecutarAccion`** — al agendar: `psicologoId` = columna de la ficha del paciente según `tipo_cita`; `centroId` = `pac.centro_id` si `psicologos_centros` tiene esa pareja, si no devolver `{ ok: false, error: 'Ese psicólogo no pasa consulta en el centro del paciente; pregunta el centro' }` y aceptar `centro_id` opcional como parámetro. Añadir `psicologo_id` y `centro_id` a `datosProcesados`.
 
-- [ ] **Step 6: Prompt** — párrafo nuevo: "Un paciente puede tener un psicólogo de adultos, otro de pareja y otro infantil. Para agendar, usa el que corresponda al tipo de cita. Las citas se hacen en el centro de la ficha del paciente salvo que el psicólogo no atienda allí."
+- [x] **Step 6: Prompt** — párrafo nuevo: "Un paciente puede tener un psicólogo de adultos, otro de pareja y otro infantil. Para agendar, usa el que corresponda al tipo de cita. Las citas se hacen en el centro de la ficha del paciente salvo que el psicólogo no atienda allí."
 
 - [ ] **Step 7: Importar el workflow en n8n**, activarlo y probar por Telegram: listar psicólogos de un centro, registrar paciente, agendar. Guardar el JSON final en `n8n/workflows/somos-main-agent.json`.
 
@@ -1209,7 +1209,7 @@ Incluir la sección "Dante" de la Tarea 9 y la lista de pruebas de la Tarea 10.
 **Files:**
 - Modify: `docs/make-cambios-2026-09-26.md` (anotar ids y resultados)
 
-- [ ] **Step 1: Desplegar la app** — PR de `modelo-pacientes-psicologos` a `main`, merge, comprobar el despliegue.
+- [x] **Step 1: Desplegar la app** — PR de `modelo-pacientes-psicologos` a `main`, merge, comprobar el despliegue.
 
 - [ ] **Step 2: Revisar los psicólogos reales** en `/dashboard/usuarios`: la migración los ha conservado con una sola ficha, nombre sin sufijo y centros fusionados. Completar `tipos_consulta` en los que hayan quedado vacíos y comprobar centros. Enviar a Elias la tabla de `migracion_014_ids` (`id_antiguo → id_nuevo`, solo las fichas fusionadas; el resto de ids no cambia) con la nota "cada aviso trae ahora `centro_id`". Crear psicólogos de prueba nuevos solo si hacen falta para las pruebas.
 
@@ -1222,7 +1222,7 @@ cd somos-app && URL=$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2
 ```
 Expected: la última fila con `tipo_cita = "pareja"`, `centro_id` no nulo, `activo = true`. Y `SELECT status_code FROM net._http_response ORDER BY created DESC LIMIT 1;` → 202.
 
-- [ ] **Step 5: Cerrar** — actualizar la memoria del proyecto (estado: implementado, fecha) y `docs/roles-y-permisos.md` si menciona fichas por centro.
+- [x] **Step 5: Cerrar** — actualizar la memoria del proyecto (estado: implementado, fecha) y `docs/roles-y-permisos.md` si menciona fichas por centro.
 
 ---
 

@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAgente } from '@/lib/require-agente'
 import { generateTempPassword } from '@/lib/temp-password'
+import { TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
+import type { TipoCita } from '@/types/database'
 
 export async function GET() {
   const guard = await requireAgente()
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status })
 
   const admin = createSupabaseAdmin()
-  // Dos cadenas literales (no plantilla): supabase-js infiere el tipo de fila a partir del texto del select.
-  const [psiesConMedias, ags, centros, horarios] = await Promise.all([
+  const [psies, psicologosCentros, ags, centros, horarios] = await Promise.all([
     admin
       .from('psicologos')
-      .select('id, nombre, email, telefono, centro_id, calendar_id, activo, puede_bloquear, citas_media_hora')
+      .select('id, nombre, email, telefono, calendar_id, activo, puede_bloquear, citas_media_hora, tipos_consulta')
       .order('nombre'),
+    admin.from('psicologos_centros').select('psicologo_id, centro_id'),
     admin.from('agentes').select('id, nombre, email, telefono, centro_id, activo, auth_user_id').order('nombre'),
     admin.from('centros').select('id, nombre').order('nombre'),
     admin
@@ -22,34 +24,15 @@ export async function GET() {
       .order('dia_semana')
       .order('hora_inicio'),
   ])
-
-  // Migración 012 aún no ejecutada: la columna citas_media_hora o la tabla
-  // horarios_psicologos no existen. La pantalla sigue funcionando y muestra un aviso.
-  let avisoHorarios: string | null = null
-  type PsiRow = {
-    id: string; nombre: string; email: string | null; telefono: string | null; centro_id: string | null
-    calendar_id: string | null; activo: boolean; puede_bloquear: boolean | null; citas_media_hora?: boolean | null
-  }
-  let psies: PsiRow[] = []
-  if (psiesConMedias.error && /citas_media_hora/.test(psiesConMedias.error.message)) {
-    const sinMedias = await admin
-      .from('psicologos')
-      .select('id, nombre, email, telefono, centro_id, calendar_id, activo, puede_bloquear')
-      .order('nombre')
-    if (sinMedias.error) return NextResponse.json({ error: sinMedias.error.message }, { status: 500 })
-    psies = (sinMedias.data ?? []).map((p) => ({ ...p, citas_media_hora: null }))
-    avisoHorarios = 'Falta ejecutar la migración 012 (horarios y medias horas): ' + psiesConMedias.error.message
-  } else if (psiesConMedias.error) {
-    return NextResponse.json({ error: psiesConMedias.error.message }, { status: 500 })
-  } else {
-    psies = psiesConMedias.data ?? []
-  }
+  if (psies.error) return NextResponse.json({ error: psies.error.message }, { status: 500 })
+  if (psicologosCentros.error) return NextResponse.json({ error: psicologosCentros.error.message }, { status: 500 })
   if (ags.error) return NextResponse.json({ error: ags.error.message }, { status: 500 })
   if (centros.error) return NextResponse.json({ error: centros.error.message }, { status: 500 })
 
+  let avisoHorarios: string | null = null
   const horariosPorPsicologo = new Map<string, { dia_semana: number; hora_inicio: string; hora_fin: string }[]>()
   if (horarios.error) {
-    avisoHorarios = avisoHorarios ?? 'No se pudieron leer los horarios (¿falta ejecutar la migración 012?): ' + horarios.error.message
+    avisoHorarios = 'No se pudieron leer los horarios: ' + horarios.error.message
   } else {
     for (const h of horarios.data ?? []) {
       const lista = horariosPorPsicologo.get(h.psicologo_id) ?? []
@@ -57,6 +40,15 @@ export async function GET() {
       horariosPorPsicologo.set(h.psicologo_id, lista)
     }
   }
+
+  // Centros de cada psicólogo (migración 014: una ficha, N centros en psicologos_centros).
+  const centrosDe = new Map<string, string[]>()
+  for (const pc of psicologosCentros.data ?? []) {
+    const l = centrosDe.get(pc.psicologo_id) ?? []
+    l.push(pc.centro_id)
+    centrosDe.set(pc.psicologo_id, l)
+  }
+  const centroNombre = new Map((centros.data ?? []).map((c) => [c.id, c.nombre]))
 
   // Agentes y call center comparten la tabla `agentes`; el rol lo da `perfiles`.
   const staff = ags.data ?? []
@@ -71,7 +63,13 @@ export async function GET() {
     !!a.auth_user_id && rolPorAuthId.get(a.auth_user_id) === 'call_center'
 
   return NextResponse.json({
-    psicologos: psies.map((p) => ({ ...p, horarios: horariosPorPsicologo.get(p.id) ?? [] })),
+    psicologos: (psies.data ?? []).map((p) => ({
+      ...p,
+      centro_ids: centrosDe.get(p.id) ?? [],
+      centros_nombres: (centrosDe.get(p.id) ?? []).map((id) => centroNombre.get(id) ?? '—'),
+      tipos_consulta: (p.tipos_consulta ?? []) as TipoCita[],
+      horarios: horariosPorPsicologo.get(p.id) ?? [],
+    })),
     agentes: staff.filter((a) => !esCallCenter(a)),
     call_center: staff.filter(esCallCenter),
     centros: centros.data ?? [],
@@ -85,11 +83,11 @@ type CrearBody = {
   email: string
   telefono?: string | null
   centro_id?: string | null
-  // Un psicólogo puede trabajar en varios centros: se crea una fila en `psicologos`
-  // por centro (mismo nombre, email y calendario). `centro_id` se mantiene por
-  // compatibilidad y para los agentes, que solo tienen un centro.
+  // Un psicólogo es UNA fila en `psicologos` (migración 014); sus centros van a
+  // `psicologos_centros`. `centro_id` lo usan los agentes, que solo tienen un centro.
   centro_ids?: string[] | null
   calendar_id?: string | null
+  tipos_consulta?: TipoCita[] | null
 }
 
 export async function POST(req: NextRequest) {
@@ -115,19 +113,19 @@ export async function POST(req: NextRequest) {
   )
   if (body.tipo === 'psicologo' && centroIds.length === 0)
     return NextResponse.json({ error: 'Selecciona al menos un centro para el psicólogo' }, { status: 400 })
+  const tiposConsulta = Array.from(
+    new Set((body.tipos_consulta ?? []).filter((t): t is TipoCita => TIPOS_CONSULTA.includes(t)))
+  )
+  if (body.tipo === 'psicologo' && tiposConsulta.length === 0)
+    return NextResponse.json({ error: 'Selecciona al menos un tipo de consulta para el psicólogo' }, { status: 400 })
 
   const admin = createSupabaseAdmin()
 
-  // El nombre del centro en texto es obligatorio: las automatizaciones (Make) buscan al
-  // psicólogo en `psicologos` por el campo `centro`, no por centro_id. Se resuelven todos
-  // antes de crear nada para no dejar filas con `centro` a null si un id no existe.
-  const centroNombres = new Map<string, string>()
+  // Los centros deben existir antes de crear nada.
   if (body.tipo === 'psicologo') {
-    const cs = await admin.from('centros').select('id, nombre').in('id', centroIds)
+    const cs = await admin.from('centros').select('id').in('id', centroIds)
     if (cs.error) return NextResponse.json({ error: cs.error.message }, { status: 500 })
-    for (const c of cs.data ?? []) centroNombres.set(c.id, c.nombre)
-    const faltan = centroIds.filter((id) => !centroNombres.has(id))
-    if (faltan.length)
+    if ((cs.data ?? []).length !== centroIds.length)
       return NextResponse.json({ error: 'Alguno de los centros seleccionados no existe' }, { status: 400 })
   }
 
@@ -155,43 +153,46 @@ export async function POST(req: NextRequest) {
   const emailSent = !mailError
 
   if (body.tipo === 'psicologo') {
-    // Paso 3: una fila en `psicologos` por centro, todas con el mismo calendario.
+    // Paso 3: UNA fila en `psicologos`, sus centros en `psicologos_centros` y el perfil.
     const psi = await admin
       .from('psicologos')
-      .insert(
-        centroIds.map((centroId) => ({
-          nombre,
-          email,
-          telefono: body.telefono ?? null,
-          centro_id: centroId,
-          centro: centroNombres.get(centroId) ?? null,
-          calendar_id: body.calendar_id!.trim(),
-          activo: true,
-        }))
-      )
-      .select('id, centro_id')
-    if (psi.error || !psi.data?.length) {
+      .insert({
+        nombre,
+        email,
+        telefono: body.telefono ?? null,
+        calendar_id: body.calendar_id!.trim(),
+        activo: true,
+        tipos_consulta: tiposConsulta,
+      })
+      .select('id')
+      .single()
+    if (psi.error || !psi.data) {
       await admin.auth.admin.deleteUser(userId) // limpieza
       return NextResponse.json({ error: psi.error?.message ?? 'Error creando psicólogo' }, { status: 500 })
     }
-    const creados = psi.data
-    // El perfil apunta a la fila del primer centro marcado. Las demás filas se resuelven
-    // por email (selector "Cambiar de centro" y pantalla de Pacientes).
-    const principal = creados.find((p) => p.centro_id === centroIds[0]) ?? creados[0]
-    // Paso 4: perfil
+    const psicologoId = psi.data.id
+    const pcs = await admin
+      .from('psicologos_centros')
+      .insert(centroIds.map((centroId) => ({ psicologo_id: psicologoId, centro_id: centroId })))
+    if (pcs.error) {
+      await admin.from('psicologos').delete().eq('id', psicologoId)
+      await admin.auth.admin.deleteUser(userId)
+      return NextResponse.json({ error: pcs.error.message }, { status: 500 })
+    }
+    // Paso 4: perfil (centro_id = primer centro marcado, solo informativo)
     const perfil = await admin.from('perfiles').insert({
       id: userId,
       nombre,
       rol: 'psicologo',
-      psicologo_id: principal.id,
-      centro_id: principal.centro_id,
+      psicologo_id: psicologoId,
+      centro_id: centroIds[0],
     })
     if (perfil.error) {
-      await admin.from('psicologos').delete().in('id', creados.map((p) => p.id)) // limpieza
+      await admin.from('psicologos').delete().eq('id', psicologoId) // borra también psicologos_centros (cascade)
       await admin.auth.admin.deleteUser(userId)
       return NextResponse.json({ error: perfil.error.message }, { status: 500 })
     }
-    return NextResponse.json({ ok: true, id: principal.id, email, password, emailSent }, { status: 201 })
+    return NextResponse.json({ ok: true, id: psicologoId, email, password, emailSent }, { status: 201 })
   }
 
   // tipo === 'agente' | 'call_center': ambos son personal interno con ficha en

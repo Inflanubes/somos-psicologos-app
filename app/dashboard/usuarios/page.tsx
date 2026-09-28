@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import HorarioEditor from './HorarioEditor'
 import { resumenHorario, type Tramo } from '@/lib/horarios'
+import { ETIQUETA_TIPO, TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
+import type { TipoCita } from '@/types/database'
 
 // Tabla con scroll horizontal y una segunda barra de scroll ARRIBA sincronizada,
 // para poder desplazarse aunque haya muchas filas (la barra de abajo queda fuera de pantalla).
@@ -49,9 +51,11 @@ function ScrollBox({ children }: { children: React.ReactNode }) {
   )
 }
 
+// Una ficha por psicólogo (migración 014): sus centros y tipos de consulta son listas.
 type Psicologo = {
   id: string; nombre: string; email: string | null; telefono: string | null
-  centro_id: string | null; calendar_id: string | null; activo: boolean
+  centro_ids: string[]; centros_nombres: string[]; tipos_consulta: TipoCita[]
+  calendar_id: string | null; activo: boolean
   puede_bloquear: boolean | null
   citas_media_hora: boolean | null
   horarios: Tramo[]
@@ -145,6 +149,8 @@ export default function UsuariosPage() {
   // falta la migración 012.
   const [editandoHorario, setEditandoHorario] = useState<Psicologo | null>(null)
   const [avisoHorarios, setAvisoHorarios] = useState<string | null>(null)
+  // Panel inline bajo la fila de un psicólogo para cambiar sus centros o sus tipos de consulta.
+  const [panel, setPanel] = useState<{ id: string; que: 'centros' | 'tipos'; seleccion: string[] } | null>(null)
 
   // Formulario de alta
   const [tipo, setTipo] = useState<Tipo>('psicologo')
@@ -153,12 +159,16 @@ export default function UsuariosPage() {
   const [telefono, setTelefono] = useState('')
   const [calendarId, setCalendarId] = useState('')
   const [centroId, setCentroId] = useState('')
-  // Un psicólogo puede trabajar en varios centros (mismo calendario): se crea una fila
-  // en `psicologos` por cada uno. Los agentes siguen teniendo un solo centro.
+  // Un psicólogo es una sola ficha con varios centros y varios tipos de consulta.
+  // Los agentes siguen teniendo un solo centro.
   const [centroIds, setCentroIds] = useState<string[]>([])
+  const [tiposConsulta, setTiposConsulta] = useState<TipoCita[]>(['adulto'])
 
   function toggleCentroAlta(id: string) {
     setCentroIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]))
+  }
+  function toggleTipoAlta(t: TipoCita) {
+    setTiposConsulta((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
   }
 
   async function cargar() {
@@ -185,6 +195,7 @@ export default function UsuariosPage() {
   async function crear(e: React.FormEvent) {
     e.preventDefault()
     if (tipo === 'psicologo' && centroIds.length === 0) { setError('Selecciona al menos un centro para el psicólogo'); return }
+    if (tipo === 'psicologo' && tiposConsulta.length === 0) { setError('Selecciona al menos un tipo de consulta'); return }
     setBusy(true); setError(null)
     try {
       const res = await fetch('/api/usuarios', {
@@ -193,15 +204,16 @@ export default function UsuariosPage() {
         body: JSON.stringify({
           tipo, nombre, email,
           telefono: telefono || null,
-          centro_id: tipo === 'psicologo' ? centroIds[0] ?? null : centroId || null,
+          centro_id: tipo === 'psicologo' ? null : centroId || null,
           centro_ids: tipo === 'psicologo' ? centroIds : null,
+          tipos_consulta: tipo === 'psicologo' ? tiposConsulta : null,
           calendar_id: tipo === 'psicologo' ? calendarId : null,
         }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(data.error ?? 'Error'); return }
       setResultado({ email: data.email ?? email, password: data.password, emailSent: data.emailSent, contexto: 'alta' })
-      setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId(''); setCentroIds([])
+      setNombre(''); setEmail(''); setTelefono(''); setCalendarId(''); setCentroId(''); setCentroIds([]); setTiposConsulta(['adulto'])
       await cargar()
     } catch {
       setError('Error de conexión al crear')
@@ -240,14 +252,36 @@ export default function UsuariosPage() {
   }
 
   // Permite / quita que el psicólogo pueda bloquear y desbloquear su agenda.
-  // Se aplica a todas sus fichas de centro en el servidor.
   async function toggleBloqueo(id: string, actual: boolean) {
     await patchUsuario(id, { tipo: 'psicologo', puede_bloquear: !actual })
   }
 
-  // Permite / quita las citas a y media. Se aplica a todas sus fichas (misma persona).
+  // Permite / quita las citas a y media.
   async function toggleMediaHora(id: string, actual: boolean) {
     await patchUsuario(id, { tipo: 'psicologo', citas_media_hora: !actual })
+  }
+
+  // Abre el panel inline de centros o tipos con la selección actual del psicólogo.
+  function abrirPanel(p: Psicologo, que: 'centros' | 'tipos') {
+    setPanel({ id: p.id, que, seleccion: que === 'centros' ? [...p.centro_ids] : [...p.tipos_consulta] })
+  }
+  function togglePanel(valor: string) {
+    setPanel((prev) => prev && {
+      ...prev,
+      seleccion: prev.seleccion.includes(valor) ? prev.seleccion.filter((v) => v !== valor) : [...prev.seleccion, valor],
+    })
+  }
+  async function guardarPanel() {
+    if (!panel) return
+    if (panel.seleccion.length === 0) {
+      setError(panel.que === 'centros' ? 'Un psicólogo necesita al menos un centro' : 'Un psicólogo necesita al menos un tipo de consulta')
+      return
+    }
+    const body = panel.que === 'centros'
+      ? { tipo: 'psicologo', centro_ids: panel.seleccion }
+      : { tipo: 'psicologo', tipos_consulta: panel.seleccion }
+    const ok = await patchUsuario(panel.id, body)
+    if (ok) setPanel(null)
   }
 
   // Guarda el horario de la ficha abierta en el editor y lo cierra si fue bien.
@@ -286,9 +320,8 @@ export default function UsuariosPage() {
     }
   }
 
-  const centroMap = Object.fromEntries(centros.map((c) => [c.id, c.nombre]))
   const psicologosFiltrados =
-    filtroCentro === 'todos' ? psicologos : psicologos.filter((p) => p.centro_id === filtroCentro)
+    filtroCentro === 'todos' ? psicologos : psicologos.filter((p) => p.centro_ids.includes(filtroCentro))
 
   const pill = (activo: boolean): React.CSSProperties => ({
     padding: '6px 14px', borderRadius: 20, border: '1.5px solid',
@@ -406,8 +439,17 @@ export default function UsuariosPage() {
                 </label>
               ))}
             </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', margin: '12px 0 8px' }}>Tipos de consulta</div>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              {TIPOS_CONSULTA.map((t) => (
+                <label key={t} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={tiposConsulta.includes(t)} onChange={() => toggleTipoAlta(t)} />
+                  {ETIQUETA_TIPO[t]}
+                </label>
+              ))}
+            </div>
             <div style={{ fontSize: 11.5, color: '#8899bb', marginTop: 8 }}>
-              Si trabaja en más de un centro se crea una ficha por centro, todas con el mismo email y el mismo calendario.
+              Una sola ficha; los centros y los tipos se pueden cambiar después.
             </div>
           </div>
         ) : (
@@ -445,7 +487,7 @@ export default function UsuariosPage() {
             <ScrollBox>
             <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
               <thead><tr style={{ borderBottom: '1px solid rgba(47,90,174,0.1)' }}>
-                {['Nombre', 'Centro', 'Horarios', 'Email', 'Calendario', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
+                {['Nombre', 'Centros y tipos', 'Horario', 'Email', 'Calendario', 'Estado'].map((h) => <th key={h} style={th}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {psicologosFiltrados.length === 0 ? (
@@ -454,7 +496,12 @@ export default function UsuariosPage() {
                   <Fragment key={p.id}>
                     <tr style={{ borderTop: '1px solid rgba(47,90,174,0.12)' }}>
                       <td style={{ ...td, paddingBottom: 6, fontWeight: 500, color: '#272626' }}>{p.nombre}</td>
-                      <td style={{ ...td, paddingBottom: 6 }}>{centroMap[p.centro_id ?? ''] ?? '—'}</td>
+                      <td style={{ ...td, paddingBottom: 6 }}>
+                        <div>{p.centros_nombres.length > 0 ? p.centros_nombres.join(' · ') : <span style={{ color: '#b91c1c' }}>Sin centro</span>}</div>
+                        <div style={{ fontSize: 11.5, color: p.tipos_consulta.length > 0 ? '#667799' : '#b91c1c', marginTop: 2 }}>
+                          {p.tipos_consulta.length > 0 ? p.tipos_consulta.map((t) => ETIQUETA_TIPO[t]).join(' · ') : 'Sin tipos de consulta'}
+                        </div>
+                      </td>
                       <td style={{ ...td, paddingBottom: 6, fontSize: 12.5, minWidth: 180 }}>
                         {p.horarios.length > 0
                           ? resumenHorario(p.horarios)
@@ -476,8 +523,10 @@ export default function UsuariosPage() {
                       <td colSpan={6} style={{ padding: '0 20px 16px' }}>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <ActionButton onClick={() => editarCalendario(p.id, p.calendar_id)} disabled={busy} title="Cambiar el calendario de Google del psicólogo">Calendario</ActionButton>
-                          <ActionButton onClick={() => setEditandoHorario(p)} disabled={busy} title="Días y horas en que trabaja en este centro">Horario</ActionButton>
-                          <ActionButton onClick={() => toggleMediaHora(p.id, !!p.citas_media_hora)} disabled={busy} variant={p.citas_media_hora ? 'default' : 'success'} title="Permitir o quitar citas a las medias horas para este psicólogo (todos sus centros)">{p.citas_media_hora ? "Quitar 30'" : "30'"}</ActionButton>
+                          <ActionButton onClick={() => abrirPanel(p, 'centros')} disabled={busy} title="Centros en los que pasa consulta">Centros</ActionButton>
+                          <ActionButton onClick={() => abrirPanel(p, 'tipos')} disabled={busy} title="Tipos de consulta que pasa: adultos, pareja, infantil">Tipos</ActionButton>
+                          <ActionButton onClick={() => setEditandoHorario(p)} disabled={busy} title="Días y horas en que trabaja (vale para todos sus centros)">Horario</ActionButton>
+                          <ActionButton onClick={() => toggleMediaHora(p.id, !!p.citas_media_hora)} disabled={busy} variant={p.citas_media_hora ? 'default' : 'success'} title="Permitir o quitar citas a las medias horas para este psicólogo">{p.citas_media_hora ? "Quitar 30'" : "30'"}</ActionButton>
                           <ActionButton onClick={() => restablecer('psicologo', p.id, 'email')} disabled={busy} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
                           <ActionButton onClick={() => restablecer('psicologo', p.id, 'generar')} disabled={busy} title="Generar una contraseña temporal para entregar tú">Generar</ActionButton>
                           <ActionButton onClick={() => toggleBloqueo(p.id, !!p.puede_bloquear)} disabled={busy} variant={p.puede_bloquear ? 'default' : 'success'} title="Permitir o quitar que este psicólogo pueda bloquear y desbloquear su agenda">{p.puede_bloquear ? 'Quitar bloqueo' : 'Permitir bloqueo'}</ActionButton>
@@ -485,6 +534,32 @@ export default function UsuariosPage() {
                         </div>
                       </td>
                     </tr>
+                    {panel?.id === p.id && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: '0 20px 16px' }}>
+                          <div style={{ border: '1px solid rgba(47,90,174,0.25)', borderRadius: 8, padding: '10px 12px', background: '#f8faff' }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#4a5870', marginBottom: 8 }}>
+                              {panel.que === 'centros' ? `Centros de ${p.nombre}` : `Tipos de consulta de ${p.nombre}`}
+                            </div>
+                            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                              {(panel.que === 'centros'
+                                ? centros.map((c) => ({ valor: c.id, etiqueta: c.nombre }))
+                                : TIPOS_CONSULTA.map((t) => ({ valor: t, etiqueta: ETIQUETA_TIPO[t] }))
+                              ).map((o) => (
+                                <label key={o.valor} style={{ fontSize: 13, color: '#4a5870', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                                  <input type="checkbox" checked={panel.seleccion.includes(o.valor)} onChange={() => togglePanel(o.valor)} />
+                                  {o.etiqueta}
+                                </label>
+                              ))}
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                              <ActionButton onClick={guardarPanel} disabled={busy} variant="success">Guardar</ActionButton>
+                              <ActionButton onClick={() => setPanel(null)} disabled={busy}>Cancelar</ActionButton>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </Fragment>
                 ))}
               </tbody>
@@ -541,7 +616,7 @@ export default function UsuariosPage() {
       {editandoHorario && (
         <HorarioEditor
           titulo={editandoHorario.nombre}
-          subtitulo={`Centro: ${centroMap[editandoHorario.centro_id ?? ''] ?? '—'}. Cada centro tiene su propio horario.`}
+          subtitulo={`Centros: ${editandoHorario.centros_nombres.join(' · ') || '—'}. El horario es del psicólogo y vale para todos sus centros.`}
           tramosIniciales={editandoHorario.horarios}
           busy={busy}
           onGuardar={guardarHorario}

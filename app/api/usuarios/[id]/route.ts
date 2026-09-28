@@ -3,18 +3,22 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAgente } from '@/lib/require-agente'
 import { generateTempPassword } from '@/lib/temp-password'
 import { validarTramos, type Tramo } from '@/lib/horarios'
+import { TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
+import type { TipoCita } from '@/types/database'
 
 type EditarBody = {
   tipo: 'psicologo' | 'agente' | 'call_center'
   nombre?: string
   telefono?: string | null
   email?: string | null     // email de contacto del registro, NO el de login
-  centro_id?: string | null
+  centro_id?: string | null      // agentes y call center (un solo centro)
+  centro_ids?: string[]          // psicólogos: sustituye sus filas de psicologos_centros
+  tipos_consulta?: TipoCita[]    // psicólogos: tipos de consulta que pasa
   calendar_id?: string | null
   activo?: boolean
   puede_bloquear?: boolean   // permiso para bloquear/desbloquear la agenda
-  citas_media_hora?: boolean // permite citas a y media (se aplica a todas las fichas de la persona)
-  horarios?: Tramo[]         // horario semanal de ESTA ficha (centro); sustituye todas sus filas
+  citas_media_hora?: boolean // permite citas a y media
+  horarios?: Tramo[]         // horario semanal del psicólogo (único); sustituye todas sus filas
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -30,48 +34,39 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (body.nombre !== undefined) campos.nombre = body.nombre.trim()
     if (body.telefono !== undefined) campos.telefono = body.telefono
     if (body.email !== undefined) campos.email = body.email
-    if (body.centro_id !== undefined) {
-      campos.centro_id = body.centro_id
-      // Mantener sincronizado el nombre del centro en texto (lo usa Make)
-      let centroNombre: string | null = null
-      if (body.centro_id) {
-        const c = await admin.from('centros').select('nombre').eq('id', body.centro_id).maybeSingle()
-        centroNombre = c.data?.nombre ?? null
-      }
-      campos.centro = centroNombre
-    }
     if (body.calendar_id !== undefined) campos.calendar_id = body.calendar_id
     if (body.activo !== undefined) campos.activo = body.activo
+    if (body.puede_bloquear !== undefined) campos.puede_bloquear = body.puede_bloquear
+    if (body.citas_media_hora !== undefined) campos.citas_media_hora = body.citas_media_hora
+    if (body.tipos_consulta !== undefined) {
+      if (!Array.isArray(body.tipos_consulta)) return NextResponse.json({ error: 'Tipos de consulta no válidos' }, { status: 400 })
+      const tipos = Array.from(new Set(body.tipos_consulta.filter((t) => TIPOS_CONSULTA.includes(t))))
+      if (tipos.length === 0) return NextResponse.json({ error: 'Un psicólogo necesita al menos un tipo de consulta' }, { status: 400 })
+      campos.tipos_consulta = tipos
+    }
 
     if (Object.keys(campos).length > 0) {
       const upd = await admin.from('psicologos').update(campos).eq('id', id)
       if (upd.error) return NextResponse.json({ error: upd.error.message }, { status: 500 })
     }
 
-    // El permiso de bloqueo de agenda pertenece a la persona, no a un centro concreto.
-    // Un psicólogo multi-centro tiene una ficha por centro (mismo email): se aplica a
-    // todas para que el permiso sea coherente entre sus centros.
-    if (body.puede_bloquear !== undefined) {
-      const row = await admin.from('psicologos').select('email').eq('id', id).maybeSingle()
-      const email = row.data?.email ?? null
-      const updBloqueo = email
-        ? await admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('email', email)
-        : await admin.from('psicologos').update({ puede_bloquear: body.puede_bloquear }).eq('id', id)
-      if (updBloqueo.error) return NextResponse.json({ error: updBloqueo.error.message }, { status: 500 })
+    // Centros del psicólogo (migración 014): se sustituyen sus filas de psicologos_centros.
+    if (body.centro_ids !== undefined) {
+      if (!Array.isArray(body.centro_ids)) return NextResponse.json({ error: 'Centros no válidos' }, { status: 400 })
+      const ids = Array.from(new Set(body.centro_ids.filter(Boolean)))
+      if (ids.length === 0) return NextResponse.json({ error: 'Un psicólogo necesita al menos un centro' }, { status: 400 })
+      const cs = await admin.from('centros').select('id').in('id', ids)
+      if (cs.error) return NextResponse.json({ error: cs.error.message }, { status: 500 })
+      if ((cs.data ?? []).length !== ids.length)
+        return NextResponse.json({ error: 'Alguno de los centros seleccionados no existe' }, { status: 400 })
+      const del = await admin.from('psicologos_centros').delete().eq('psicologo_id', id)
+      if (del.error) return NextResponse.json({ error: del.error.message }, { status: 500 })
+      const ins = await admin.from('psicologos_centros').insert(ids.map((centro_id) => ({ psicologo_id: id, centro_id })))
+      if (ins.error) return NextResponse.json({ error: ins.error.message }, { status: 500 })
     }
 
-    // Medias horas: permiso de la persona → todas sus fichas (mismo email), como puede_bloquear.
-    if (body.citas_media_hora !== undefined) {
-      const row = await admin.from('psicologos').select('email').eq('id', id).maybeSingle()
-      const email = row.data?.email ?? null
-      const updMedias = email
-        ? await admin.from('psicologos').update({ citas_media_hora: body.citas_media_hora }).eq('email', email)
-        : await admin.from('psicologos').update({ citas_media_hora: body.citas_media_hora }).eq('id', id)
-      if (updMedias.error) return NextResponse.json({ error: updMedias.error.message }, { status: 500 })
-    }
-
-    // Horario semanal de esta ficha (cada centro tiene el suyo): se sustituyen
-    // todas sus filas. Si el insert falla, se reponen las anteriores.
+    // Horario semanal del psicólogo (único, vale para todos sus centros): se
+    // sustituyen todas sus filas. Si el insert falla, se reponen las anteriores.
     if (body.horarios !== undefined) {
       if (!Array.isArray(body.horarios)) {
         return NextResponse.json({ error: 'Horario no válido' }, { status: 400 })

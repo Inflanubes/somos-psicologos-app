@@ -14,6 +14,10 @@ import { getPerfilActual } from '@/lib/perfil'
 import { getCentroActivo, setCentroActivo, clearCentroActivo, type CentroActivo } from '@/lib/centro-activo'
 import { generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo } from '@/lib/disponibilidad'
 import { useDisponibilidad } from './useDisponibilidad'
+import {
+  fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
+  type FrecuenciaRepeticion,
+} from '@/lib/citas-recurrentes'
 
 type AccionPsicologo =
   | 'Agendar cita'
@@ -203,6 +207,12 @@ export default function PsicologosPage() {
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
   const [tipoCita, setTipoCita] = useState<TipoCita | ''>('')
+  // Agendar cita: repetir cada 15 días o cada 4 semanas durante N meses (máx. 12).
+  const [repetir, setRepetir] = useState<FrecuenciaRepeticion | 'no'>('no')
+  const [repetirMeses, setRepetirMeses] = useState(3)
+  // Resultado de la última serie enviada (para el mensaje de éxito).
+  const [resumenSerie, setResumenSerie] = useState<{ agendadas: number; noDisponibles: string[] } | null>(null)
+  const [progresoSerie, setProgresoSerie] = useState<string | null>(null)
 
   // Bloqueo fields
   const [fechaInicio, setFechaInicio] = useState('')
@@ -391,6 +401,17 @@ export default function PsicologosPage() {
       ? motivoAviso({ ...disp, fecha, hora, incluirMedias: true, excluirAccionId, nombrePsicologo: psicologoDisp.nombre, nombreCentro: nombreCentroDisp })
       : null
 
+  // Serie de citas: la primera es la fecha elegida (validada como siempre); las
+  // repeticiones caen el mismo día de la semana a la misma hora y solo se agendan
+  // las que estén libres. Las demás se avisan para agendarlas por separado.
+  const esSerie = accion === 'Agendar cita' && repetir !== 'no'
+  const serie = useMemo(() => {
+    if (!esSerie || !fecha || !hora || !disp) return null
+    const fechas = fechasSerie(fecha, repetir, repetirMeses)
+    const { libres, noDisponibles } = comprobarSerie(fechas.slice(1), hora, disp, restringido)
+    return { fechas: [fecha, ...libres], noDisponibles, ultima: fechas[fechas.length - 1] }
+  }, [esSerie, repetir, repetirMeses, fecha, hora, disp, restringido])
+
   // Si al cambiar la fecha la hora elegida deja de ser válida, se vacía: en modo
   // restringido solo vale un hueco libre; en modo aviso solo se veta la hora ya
   // ocupada por otra cita (dos pacientes no pueden solaparse, tampoco para el agente).
@@ -528,6 +549,8 @@ export default function PsicologosPage() {
     setFecha('')
     setHora('')
     setTipoCita('')
+    setRepetir('no')
+    setRepetirMeses(3)
     setFechaInicio('')
     setHoraInicio('')
     setPeriodo('Dias')
@@ -823,6 +846,7 @@ export default function PsicologosPage() {
     e.preventDefault()
     setError('')
     setSuccess(false)
+    setResumenSerie(null)
 
     if (!effCentroId || !effPsicologoId || !accion) {
       setError('Por favor, completa los campos obligatorios.')
@@ -878,6 +902,10 @@ export default function PsicologosPage() {
     // agendar sobre una hora que ya tiene cita (el psicólogo no puede atender a dos a la vez).
     if (pideTipoCita && !restringido && (huecos ?? []).some((h) => h.hora === hora && h.estado === 'ocupado')) {
       setError('Esa hora ya tiene una cita: el psicólogo no puede atender a dos pacientes a la vez. Elige otra hora.')
+      return
+    }
+    if (esSerie && !serie) {
+      setError('Espera un momento: se está comprobando la disponibilidad de las fechas que se repiten.')
       return
     }
     if (isNuevoPaciente && !npNombre.trim()) {
@@ -945,80 +973,114 @@ export default function PsicologosPage() {
       const origen = perfil?.rol ?? 'agente'
       const quienNombre = perfil?.nombre ?? psicologoNombre
 
-      const datosProcesados = {
-        psicologo_nombre:     psicologoNombre,
-        // Migración 014: Make busca al psicólogo por id (módulo 3) y guarda el centro de la cita.
-        psicologo_id:         effPsicologoId,
-        centro_id:            effCentroId,
-        accion,
-        paciente_iniciales:   isCitaAction ? pacienteSeleccionado?.iniciales ?? null : null,
-        // Id del paciente: Make busca por él (módulos 10/40/50) en vez de por iniciales.
-        paciente_id:          isCitaAction ? pacienteSeleccionado?.id ?? null : null,
-        fecha_cita:           isCitaAction ? fecha || null : null,
-        hora_cita:            isCitaAction ? formatTime(hora) : null,
-        tipo_cita:            pideTipoCita ? tipoCita || null : null,
-        // Exact event to act on (Cambiar/Cancelar cita, Desbloquear/Modificar bloqueo).
-        // Make uses this gcal_event_id instead of searching by date.
-        gcal_event_id:        (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.gcalEventId ?? null : null,
-        accion_id:            (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.id ?? null : null,
-        // Modificar bloqueo: new start/end dates for the selected block
-        nueva_fecha_inicio:   esModificarBloqueo ? modFechaInicio || null : null,
-        nueva_fecha_fin:      esModificarBloqueo ? modFechaFin || null : null,
-        // Block-creation actions: start + period/duration
-        fecha_inicio_bloqueo: isBloqueoCreacion ? fechaInicio || null : null,
-        hora_inicio_bloqueo:  isBloqueoCreacion ? formatTime(horaInicio) : null,
-        periodo:              isBloqueoCreacion ? periodo : null,
-        duracion:             isBloqueoCreacion && duracion ? parseInt(duracion, 10) : null,
-        // Who performed the action (from login)
-        created_by:           quienNombre,
-        created_by_id:        userId,
-        origen,
+      // Sin repetición se envía una sola cita, como siempre. En una serie, una
+      // cita por cada fecha libre, una detrás de otra.
+      const fechasEnvio = esSerie && serie ? serie.fechas : [fecha]
+      const serieId = esSerie ? crypto.randomUUID() : null
+      const enviadas: string[] = []
+      for (const [i, fechaEnvio] of fechasEnvio.entries()) {
+        if (esSerie) setProgresoSerie(`Agendando ${i + 1} de ${fechasEnvio.length}…`)
+        const datosProcesados = {
+          psicologo_nombre:     psicologoNombre,
+          // Migración 014: Make busca al psicólogo por id (módulo 3) y guarda el centro de la cita.
+          psicologo_id:         effPsicologoId,
+          centro_id:            effCentroId,
+          accion,
+          paciente_iniciales:   isCitaAction ? pacienteSeleccionado?.iniciales ?? null : null,
+          // Id del paciente: Make busca por él (módulos 10/40/50) en vez de por iniciales.
+          paciente_id:          isCitaAction ? pacienteSeleccionado?.id ?? null : null,
+          fecha_cita:           isCitaAction ? fechaEnvio || null : null,
+          hora_cita:            isCitaAction ? formatTime(hora) : null,
+          tipo_cita:            pideTipoCita ? tipoCita || null : null,
+          // Exact event to act on (Cambiar/Cancelar cita, Desbloquear/Modificar bloqueo).
+          // Make uses this gcal_event_id instead of searching by date.
+          gcal_event_id:        (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.gcalEventId ?? null : null,
+          accion_id:            (requiereSelectorCita || requiereSelectorBloqueo) ? eventoActual?.id ?? null : null,
+          // Modificar bloqueo: new start/end dates for the selected block
+          nueva_fecha_inicio:   esModificarBloqueo ? modFechaInicio || null : null,
+          nueva_fecha_fin:      esModificarBloqueo ? modFechaFin || null : null,
+          // Block-creation actions: start + period/duration
+          fecha_inicio_bloqueo: isBloqueoCreacion ? fechaInicio || null : null,
+          hora_inicio_bloqueo:  isBloqueoCreacion ? formatTime(horaInicio) : null,
+          periodo:              isBloqueoCreacion ? periodo : null,
+          duracion:             isBloqueoCreacion && duracion ? parseInt(duracion, 10) : null,
+          // Who performed the action (from login)
+          created_by:           quienNombre,
+          created_by_id:        userId,
+          origen,
+          // Cita que se repite: mismo serie_id en todas, nº de orden y total. Make
+          // avisa al paciente por Telegram una sola vez (serie_numero = 1) con
+          // todas las fechas ya escritas en serie_texto_paciente.
+          serie_id:             serieId,
+          serie_numero:         esSerie ? i + 1 : null,
+          serie_total:          esSerie ? fechasEnvio.length : null,
+          serie_frecuencia:     esSerie ? repetir : null,
+          serie_texto_paciente: esSerie
+            ? `Tus próximas citas (${fechasEnvio.length}), a las ${hora}: ${fechasEnvio.map(formatoFechaCorta).join(', ')}.`
+            : null,
+        }
+
+        const payload = {
+          mensaje:              'Formulario Web Psicólogos',
+          responseId:           'web_' + Date.now() + (esSerie ? `_${i + 1}` : ''),
+          timestampFormulario:  new Date().toISOString(),
+          datosProcesados,
+          respuestasFormulario: {
+            'Selecciona tu centro': centroNombre,
+            '¿Qué necesitas hoy?':  accion,
+          },
+        }
+
+        const webhookRes = await fetch('/api/webhook/psicologos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!webhookRes.ok) {
+          if (!esSerie) throw new Error('Error en webhook: ' + webhookRes.status)
+          // Las ya enviadas quedan agendadas: se ocupan en local y se dice cuáles faltan.
+          enviadas.forEach((f) => añadirCitaLocal({ fecha: f, hora }))
+          const pendientes = fechasEnvio.slice(i)
+          throw new Error(
+            `Se han agendado ${enviadas.length} de ${fechasEnvio.length} citas, pero falló el envío (error ${webhookRes.status}). ` +
+            `Quedan sin agendar: ${pendientes.map(formatoFechaCorta).join(', ')}. Añádelas por separado.`,
+          )
+        }
+        enviadas.push(fechaEnvio)
+
+        // Form-submission log (matches citas-psicologos behavior).
+        // The canonical action record (acciones_psicologos) is written by Make.
+        await supabase.from('formulario_citas_psicologos').insert({
+          centro:          centroNombre,
+          psicologo:       psicologoNombre,
+          accion,
+          fecha_inicio:    datosProcesados.fecha_inicio_bloqueo,
+          hora_inicio:     datosProcesados.hora_inicio_bloqueo,
+          periodo:         datosProcesados.periodo,
+          duracion:        datosProcesados.duracion,
+          fecha_cita:      datosProcesados.fecha_cita,
+          hora_cita:       datosProcesados.hora_cita,
+          tipo_cita:       datosProcesados.tipo_cita,
+          response_id:     payload.responseId,
+          timestamp_envio: payload.timestampFormulario,
+        })
       }
-
-      const payload = {
-        mensaje:              'Formulario Web Psicólogos',
-        responseId:           'web_' + Date.now(),
-        timestampFormulario:  new Date().toISOString(),
-        datosProcesados,
-        respuestasFormulario: {
-          'Selecciona tu centro': centroNombre,
-          '¿Qué necesitas hoy?':  accion,
-        },
-      }
-
-      const webhookRes = await fetch('/api/webhook/psicologos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!webhookRes.ok) throw new Error('Error en webhook: ' + webhookRes.status)
-
-      // Form-submission log (matches citas-psicologos behavior).
-      // The canonical action record (acciones_psicologos) is written by Make.
-      await supabase.from('formulario_citas_psicologos').insert({
-        centro:          centroNombre,
-        psicologo:       psicologoNombre,
-        accion,
-        fecha_inicio:    datosProcesados.fecha_inicio_bloqueo,
-        hora_inicio:     datosProcesados.hora_inicio_bloqueo,
-        periodo:         datosProcesados.periodo,
-        duracion:        datosProcesados.duracion,
-        fecha_cita:      datosProcesados.fecha_cita,
-        hora_cita:       datosProcesados.hora_cita,
-        tipo_cita:       datosProcesados.tipo_cita,
-        response_id:     payload.responseId,
-        timestamp_envio: payload.timestampFormulario,
-      })
 
       setSuccess(true)
       // Ocupar la hora en local ya: Make escribe la fila unos segundos después,
       // así que una recarga inmediata no la vería.
-      if (pideTipoCita && fecha && hora) añadirCitaLocal({ fecha, hora }, excluirAccionId)
+      if (esSerie) {
+        enviadas.forEach((f) => añadirCitaLocal({ fecha: f, hora }))
+        setResumenSerie({ agendadas: enviadas.length, noDisponibles: serie?.noDisponibles ?? [] })
+      } else if (pideTipoCita && fecha && hora) {
+        añadirCitaLocal({ fecha, hora }, excluirAccionId)
+      }
       resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
     } finally {
       setLoading(false)
+      setProgresoSerie(null)
     }
   }
 
@@ -1229,7 +1291,26 @@ export default function PsicologosPage() {
             fontWeight: 600,
           }}
         >
-          ✅ ¡Listo! La acción se ha registrado correctamente.
+          ✅ {resumenSerie
+            ? `¡Listo! Se ${resumenSerie.agendadas === 1 ? 'ha agendado 1 cita' : `han agendado ${resumenSerie.agendadas} citas`}.`
+            : '¡Listo! La acción se ha registrado correctamente.'}
+        </div>
+      )}
+      {success && resumenSerie && resumenSerie.noDisponibles.length > 0 && (
+        <div
+          style={{
+            background: '#fff7e6',
+            border: '1.5px solid #f5d08a',
+            borderRadius: 10,
+            padding: '14px 18px',
+            marginBottom: 24,
+            color: '#8a5a00',
+            fontSize: 14,
+            fontWeight: 600,
+            lineHeight: 1.5,
+          }}
+        >
+          ⚠️ {mensajeNoDisponibles(resumenSerie.noDisponibles)}
         </div>
       )}
 
@@ -1774,6 +1855,51 @@ export default function PsicologosPage() {
                       )}
                     </FormField>
                   </div>
+                  {accion === 'Agendar cita' && (
+                    <>
+                      <div className="r-grid-2" style={{ gap: 16 }}>
+                        <FormField label="Repetir">
+                          <select
+                            value={repetir}
+                            onChange={(e) => setRepetir(e.target.value as FrecuenciaRepeticion | 'no')}
+                            style={{ ...inputStyle, cursor: 'pointer' }}
+                          >
+                            <option value="no">No se repite</option>
+                            <option value="quincenal">{ETIQUETA_FRECUENCIA.quincenal}</option>
+                            <option value="mensual">{ETIQUETA_FRECUENCIA.mensual}</option>
+                          </select>
+                        </FormField>
+                        {repetir !== 'no' && (
+                          <FormField label="Durante">
+                            <select
+                              value={repetirMeses}
+                              onChange={(e) => setRepetirMeses(Number(e.target.value))}
+                              style={{ ...inputStyle, cursor: 'pointer' }}
+                            >
+                              {OPCIONES_MESES.map((m) => (
+                                <option key={m} value={m}>{m === 12 ? '1 año' : m === 1 ? '1 mes' : `${m} meses`}</option>
+                              ))}
+                            </select>
+                          </FormField>
+                        )}
+                      </div>
+                      {repetir !== 'no' && (!fecha || !hora) && (
+                        <InfoBox>Elige la fecha y la hora de la primera cita: las siguientes serán el mismo día de la semana a la misma hora.</InfoBox>
+                      )}
+                      {serie && (
+                        <InfoBox>
+                          Se agendarán <strong>{serie.fechas.length} {serie.fechas.length === 1 ? 'cita' : 'citas'}</strong>, los{' '}
+                          {nombreDia(fecha)} a las {hora}, del {formatoFechaCorta(fecha)} al {formatoFechaCorta(serie.ultima)}.
+                          {serie.noDisponibles.length > 0 && (
+                            <div style={{ color: '#92400e', marginTop: 6 }}>
+                              {serie.noDisponibles.length === 1 ? 'Esta fecha no está libre y no se agendará' : 'Estas fechas no están libres y no se agendarán'}:{' '}
+                              <strong>{serie.noDisponibles.map(formatoFechaCorta).join(', ')}</strong>.
+                            </div>
+                          )}
+                        </InfoBox>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -1966,7 +2092,9 @@ export default function PsicologosPage() {
                     letterSpacing: '0.3px',
                   }}
                 >
-                  {loading ? 'Enviando…' : accion ? LABEL_MAP[accion] : 'Selecciona una acción'}
+                  {loading ? progresoSerie ?? 'Enviando…'
+                    : serie ? `Confirmar ${serie.fechas.length} ${serie.fechas.length === 1 ? 'cita' : 'citas'}`
+                    : accion ? LABEL_MAP[accion] : 'Selecciona una acción'}
                 </button>
               )
             })()}

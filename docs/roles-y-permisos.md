@@ -156,6 +156,13 @@ varios centros elige en Citas en cuál está hoy (se recuerda en el navegador).
     nosotros para agendar esta cita." y no pueden enviar; el agente ve todas las horas sin avisos y puede seguir.
   - El formulario carga el horario y las citas del psicólogo al elegirlo. Si se cambia el horario en Psicólogos con
     Citas ya abierto, hay que recargar Citas para que lo tenga en cuenta.
+  - **Repetir** (solo Agendar cita, todos los roles, desde el 20-10-2026): *Cada 15 días* o *Mensual* (cada
+    4 semanas) durante 1, 2, 3, 6, 9 meses o 1 año. Las citas caen siempre el mismo día de la semana a la misma
+    hora. Antes de enviar, el formulario dice cuántas citas se agendarán y qué fechas no están libres. Las fechas
+    con cita o bloqueo nunca se agendan (para psicólogo y call center, tampoco las que quedan fuera de su horario).
+    Al terminar sale el aviso "Las fechas … no están disponibles. Añádelas por separado teniendo en cuenta la
+    disponibilidad." Cada fecha libre llega a Make como una "Agendar cita" normal, con los campos `serie_*`
+    (`docs/make-cambios-2026-10-20.md` en la carpeta del proyecto). Lógica en `lib/citas-recurrentes.ts`, con tests.
 - Lógica: `lib/horarios.ts` (tramos, validación, resumen), `lib/disponibilidad.ts` (huecos y avisos; con tests
   en `npm test`), `lib/disponibilidad-datos.ts` (carga desde Supabase) y `app/dashboard/psicologos/useDisponibilidad.ts`.
 - Make no interviene: el horario solo lo lee la app.

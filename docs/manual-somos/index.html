@@ -192,7 +192,7 @@ footer img{width:28px; height:28px}
     <h1>Cómo funciona<br><em>vuestra app</em>, pieza a pieza</h1>
     <p class="lead">Qué hace cada pantalla, qué ve cada persona del equipo, qué mensajes aparecen y por qué, y qué pasa por detrás cada vez que alguien agenda una cita. Este documento crece con la app: cuando añadimos algo, lo veréis en Novedades.</p>
     <div class="meta">
-      <span class="pildora">Versión del 28-09-2026</span>
+      <span class="pildora">Versión del 21-10-2026</span>
       <span class="pildora">Preparado por Be Banana</span>
     </div>
     <ol class="indice">
@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-10-21">21-10-2026</time><span>Citas que se repiten: al agendar se puede repetir la cita cada 15 días o cada 4 semanas, durante hasta un año, siempre el mismo día de la semana y a la misma hora. Las fechas que no están libres no se agendan y la app avisa de cuáles son para colocarlas por separado. <a href="#repetir">Ver cómo funciona</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Usuarios y Psicólogos, cada uno con lo suyo: Usuarios queda solo para cuentas (altas, enviar acceso y contraseñas) y todo lo que define cómo trabaja un psicólogo (centros, tipos, horario, 30', bloqueo de agenda, calendario y activo) pasa a su ficha en Psicólogos. Las dos pantallas van más rápidas: cada cambio actualiza solo su fila. <a href="#p-psicologos">Ver Psicólogos</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Psicólogos desactivados: siguen entrando y gestionando su agenda, pero no pueden añadir pacientes nuevos. Los agentes pueden seguir agendándoles y asignándoles pacientes; el call center y Dante, no. <a href="#altas">Ver qué pasa al desactivar</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Modelo nuevo de pacientes y psicólogos: un paciente puede tener psicólogo de adultos, de pareja y de infantil; cada psicólogo es una sola ficha con sus centros y tipos de consulta; su horario vale para todos sus centros; nuevas reglas de repetidos en el alta; los agentes cambian los psicólogos de un paciente desde Pacientes. <a href="#varios-psicologos">Ver el modelo</a>.</span></li>
@@ -390,7 +391,8 @@ footer img{width:28px; height:28px}
           <li><code class="ui">No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.</code></li>
           <li><code class="ui">No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.</code><span class="donde">Psicólogo sin permiso de bloqueo</span></li>
           <li><code class="ui">Lo que dejes vacío se mantiene como está.</code><span class="donde">Al modificar un bloqueo personal</span></li>
-          <li><code class="ui">✅ ¡Listo! La acción se ha registrado correctamente.</code><span class="donde">Tras cualquier acción que sale bien</span></li>
+          <li>✅ <code class="ui">¡Listo! La acción se ha registrado correctamente.</code><span class="donde">Tras cualquier acción que sale bien</span></li>
+          <li>✅ <code class="ui">¡Listo! Se <var>han agendado 27 citas</var>.</code><span class="donde">Tras agendar una <a href="#repetir">cita que se repite</a></span></li>
 
           <li class="grupo">Al añadir un paciente</li>
           <li><code class="ui">El nombre es obligatorio.</code></li>
@@ -710,6 +712,28 @@ footer img{width:28px; height:28px}
     </article>
   </div>
 
+  <p class="subtitulo" id="repetir">Citas que se repiten</p>
+  <div class="dos">
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Cómo se pide</h3><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
+      <p>Al agendar una cita, debajo de la fecha y la hora, el campo <code class="ui">Repetir</code> ofrece <code class="ui">No se repite</code>, <code class="ui">Cada 15 días</code> o <code class="ui">Mensual (cada 4 semanas)</code>. Con repetición, se elige <code class="ui">Durante</code>: 1, 2, 3, 6 o 9 meses, o 1 año como máximo.</p>
+      <ol>
+        <li>La primera cita es la fecha y la hora elegidas. Las siguientes caen <b>siempre el mismo día de la semana y a la misma hora</b>: si empieza en martes, son martes.</li>
+        <li>«Mensual» es <b>cada 4 semanas</b>, no el mismo día del mes, para no cambiar de día de la semana. En un año salen 14 citas mensuales o 27 quincenales.</li>
+        <li>Antes de enviar, el formulario dice cuántas citas se agendarán, entre qué fechas y cuáles no están libres. El botón pasa a <code class="ui">Confirmar <var>27</var> citas</code>.</li>
+        <li>Cada cita queda como una cita normal: se puede cambiar o cancelar por separado.</li>
+      </ol>
+    </article>
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Fechas que no están libres</h3></div>
+      <p>Se comprueban todas las fechas con las mismas reglas de arriba. Las que tienen ya una cita a esa hora o caen en un día bloqueado (vacaciones, por ejemplo) <b>no se agendan</b>, tampoco si agenda un agente. Para psicólogo y call center, tampoco las que quedan fuera de su horario. El resto sí se agenda y, al terminar, quien agenda ve:</p>
+      <ul class="lista-msg">
+        <li>⚠️ <code class="ui">Las fechas <var>17/11/2026 y 01/12/2026</var> no están disponibles. Añádelas por separado teniendo en cuenta la disponibilidad.</code></li>
+      </ul>
+      <p class="nota">Esas fechas se agendan luego una a una, buscando otro hueco libre.</p>
+    </article>
+  </div>
+
   <p class="subtitulo">Límites que conviene conocer</p>
   <article class="ficha">
     <ul class="lista-msg">
@@ -781,6 +805,7 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Por construir o ajustar</h3><span class="badge b-pend">pendiente</span></div>
       <ul class="lista-msg">
         <li id="p-telegram-pacientes"><b>Confirmaciones a pacientes dados de alta en la app.</b> <span class="badge b-pend">a confirmar</span> Las confirmaciones de cita y el enlace del consentimiento salen hoy por Telegram. Telegram solo puede escribir a quien ha hablado antes con el bot, es decir, a los pacientes que entraron por Dante. Los pacientes dados de alta en la app con su número de teléfono probablemente no los reciben. Se resuelve con el paso a WhatsApp.</li>
+        <li><b>Un solo aviso al paciente por cada serie de citas.</b> Hasta que se ajuste la automatización, el paciente recibe una confirmación por cada cita de la serie (hasta 27 en una serie quincenal de un año). El ajuste deja un único mensaje con todas las fechas. Ver <a href="#repetir">Citas que se repiten</a>.</li>
         <li><b>WhatsApp para Dante y recordatorios.</b> Pasar Dante y los recordatorios de consentimiento de Telegram a WhatsApp.</li>
         <li><b>Una sola fuente de huecos.</b> Que Dante use los mismos horarios que la app.</li>
         <li><b>Tipo de cita en el calendario.</b> Que el evento de Google Calendar incluya si es Adulto, Pareja o Menor.</li>
@@ -820,7 +845,7 @@ footer img{width:28px; height:28px}
 <footer class="clara">
   <div class="wrap">
     <img src="bebanana-icon.png" alt="Be Banana" width="28" height="28">
-    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 28-09-2026 · «Where humans use artificial intelligence with real intelligence»</span>
+    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 21-10-2026 · «Where humans use artificial intelligence with real intelligence»</span>
   </div>
 </footer>
 

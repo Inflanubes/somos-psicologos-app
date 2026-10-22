@@ -10,7 +10,7 @@ export type FrecuenciaRepeticion = 'semanal' | 'quincenal' | 'mensual'
 /** Mensual = cada 4 semanas, para que siempre caiga el mismo día de la semana. */
 export const DIAS_ENTRE_CITAS: Record<FrecuenciaRepeticion, number> = { semanal: 7, quincenal: 14, mensual: 28 }
 export const ETIQUETA_FRECUENCIA: Record<FrecuenciaRepeticion, string> = {
-  semanal: 'Cada semana',
+  semanal: 'Semanal',
   quincenal: 'Cada 15 días',
   mensual: 'Mensual (cada 4 semanas)',
 }

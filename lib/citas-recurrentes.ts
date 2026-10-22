@@ -12,7 +12,7 @@ export const DIAS_ENTRE_CITAS: Record<FrecuenciaRepeticion, number> = { semanal:
 export const ETIQUETA_FRECUENCIA: Record<FrecuenciaRepeticion, string> = {
   semanal: 'Semanal',
   quincenal: 'Quincenal',
-  mensual: 'Mensual (cada 4 semanas)',
+  mensual: 'Mensual',
 }
 export const MESES_MAXIMO = 12
 export const OPCIONES_MESES = [1, 2, 3, 6, 9, 12] as const

@@ -13,6 +13,11 @@ const disp: Omit<ParamsHuecos, 'fecha' | 'incluirMedias'> = {
 }
 
 describe('fechasSerie', () => {
+  it('semanal: cada 7 días, siempre el mismo día de la semana', () => {
+    const f = fechasSerie(MARTES, 'semanal', 1)
+    expect(f).toEqual(['2026-11-03', '2026-11-10', '2026-11-17', '2026-11-24', '2026-12-01'])
+    expect(fechasSerie(MARTES, 'semanal', 12).length).toBe(53)
+  })
   it('cada 15 días: misma semana día, cada 14 días, empezando por la fecha elegida', () => {
     const f = fechasSerie(MARTES, 'quincenal', 1)
     expect(f).toEqual(['2026-11-03', '2026-11-17', '2026-12-01'])

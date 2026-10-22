@@ -207,7 +207,7 @@ export default function PsicologosPage() {
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
   const [tipoCita, setTipoCita] = useState<TipoCita | ''>('')
-  // Agendar cita: repetir cada 15 días o cada 4 semanas durante N meses (máx. 12).
+  // Agendar cita: repetir cada semana, cada 15 días o cada 4 semanas durante N meses (máx. 12).
   const [repetir, setRepetir] = useState<FrecuenciaRepeticion | 'no'>('no')
   const [repetirMeses, setRepetirMeses] = useState(3)
   // Resultado de la última serie enviada (para el mensaje de éxito).
@@ -1865,6 +1865,7 @@ export default function PsicologosPage() {
                             style={{ ...inputStyle, cursor: 'pointer' }}
                           >
                             <option value="no">No se repite</option>
+                            <option value="semanal">{ETIQUETA_FRECUENCIA.semanal}</option>
                             <option value="quincenal">{ETIQUETA_FRECUENCIA.quincenal}</option>
                             <option value="mensual">{ETIQUETA_FRECUENCIA.mensual}</option>
                           </select>

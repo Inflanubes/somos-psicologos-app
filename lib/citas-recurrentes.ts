@@ -1,15 +1,16 @@
 /**
- * Citas que se repiten (cada 15 días o mensual) durante un tiempo, máximo un año.
+ * Citas que se repiten (cada semana, cada 15 días o mensual) durante un tiempo, máximo un año.
  * Módulo puro: calcula las fechas de la serie y separa las que están libres de
  * las que no. Cada fecha libre se envía a Make como una cita normal.
  */
 import { generarHuecos, type ParamsHuecos } from './disponibilidad'
 
-export type FrecuenciaRepeticion = 'quincenal' | 'mensual'
+export type FrecuenciaRepeticion = 'semanal' | 'quincenal' | 'mensual'
 
 /** Mensual = cada 4 semanas, para que siempre caiga el mismo día de la semana. */
-export const DIAS_ENTRE_CITAS: Record<FrecuenciaRepeticion, number> = { quincenal: 14, mensual: 28 }
+export const DIAS_ENTRE_CITAS: Record<FrecuenciaRepeticion, number> = { semanal: 7, quincenal: 14, mensual: 28 }
 export const ETIQUETA_FRECUENCIA: Record<FrecuenciaRepeticion, string> = {
+  semanal: 'Cada semana',
   quincenal: 'Cada 15 días',
   mensual: 'Mensual (cada 4 semanas)',
 }

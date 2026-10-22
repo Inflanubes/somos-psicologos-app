@@ -157,7 +157,7 @@ varios centros elige en Citas en cuál está hoy (se recuerda en el navegador).
   - El formulario carga el horario y las citas del psicólogo al elegirlo. Si se cambia el horario en Psicólogos con
     Citas ya abierto, hay que recargar Citas para que lo tenga en cuenta.
   - **Repetir** (solo Agendar cita, todos los roles, desde el 20-10-2026; *Semanal* desde el 22-10-2026):
-    *Semanal*, *Cada 15 días* o *Mensual* (cada 4 semanas) durante 1, 2, 3, 6, 9 meses o 1 año. Las citas caen siempre el mismo día de la semana a la misma
+    *Semanal*, *Quincenal* o *Mensual* (cada 4 semanas) durante 1, 2, 3, 6, 9 meses o 1 año. Las citas caen siempre el mismo día de la semana a la misma
     hora. Antes de enviar, el formulario dice cuántas citas se agendarán y qué fechas no están libres. Las fechas
     con cita o bloqueo nunca se agendan (para psicólogo y call center, tampoco las que quedan fuera de su horario).
     Al terminar sale el aviso "Las fechas … no están disponibles. Añádelas por separado teniendo en cuenta la

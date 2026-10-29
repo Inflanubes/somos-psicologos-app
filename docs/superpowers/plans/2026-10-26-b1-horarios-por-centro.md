@@ -490,7 +490,7 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
 - Modify: `docs/manual-somos/index.html` (ficha Psicólogos: horario por centro, interruptor por centro, "Sin horario"; ficha Citas: casilla, antelación, pasado; Novedades; fecha de versión), `docs/backlog-2026-10-21.md` (B1), este plan (casillas)
 
 - [x] **Step 1: Migración 016** (archivo listo: `Supabase/migrations/016_horarios_por_centro.sql`) — Sonia la aplica en el SQL Editor **de madrugada** o con Dante y Make parados. Anotar aquí la fecha: `Aplicada el: 29-10-2026` (Sonia, de día: la app aún no está en uso por el cliente). Comprobación: horarios con centro asignado automáticamente → BEA y JAIME (revisar en Psicólogos); franjas sin centro → 0. Revisar el `SELECT` final (psicólogos con `revisar = true`) y avisar a un agente para que repase esos horarios en Psicólogos.
-- [ ] **Step 2: Variable `DANTE_API_TOKEN`** en el hosting y en `.env.local` (en `.env.local` ya está desde el 29-10-2026; el JSON de n8n se generó con ese valor: usa el mismo en el hosting). Anotar: `Puesta el: ______`.
+- [x] **Step 2: Variable `DANTE_API_TOKEN`** en el hosting y en `.env.local` (en `.env.local` ya está desde el 29-10-2026; el JSON de n8n se generó con ese valor: usa el mismo en el hosting). Anotar: `Puesta el: 29-10-2026` (Sonia).
 - [ ] **Step 3: Pruebas de aceptación** (las 6 de la especificación, apartado "Comprobación de aceptación") contra la app desplegada desde la rama o en local con la base ya migrada. Marcar cada una:
   - [ ] 1 Jaime L 10–14 Moratalaz / L 16–20 San Blas
   - [ ] 2 Solape presencial rechazado; Online admitido; una sola cita a las 11
@@ -500,8 +500,8 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
   - [ ] 6 Dante: huecos reales y rechazo de hora inventada
 - [x] **Step 4: Manual** — actualizar `index.html` según `docs/manual-somos/README.md`, `node docs/manual-somos/check-manual.mjs` → OK, republicar al artifact `FWj2hP27NkTXLFMUQvBuqi`.
   **Quedó así (29-10-2026):** `index.html` actualizado y `check-manual.mjs` OK (versión 29-10-2026). Artifact republicado el 29-10-2026 a petición de Sonia (versión 14), antes del merge: la app aún no está en uso por el cliente.
-- [ ] **Step 5: Merge** — `git checkout main && git merge b1-horarios-por-centro && git push` solo de madrugada (regla del método). Tablero: tareas 13, 28, 46, 47, 31 → `hecha`; B1 → `hecha` en la tabla de orden; nota en B2 de que `cargarDatosDisponibilidad` ya devuelve franjas por centro.
-- [ ] **Step 6: Commit** — `git commit -am "B1 cerrado: manual, tablero y plan"`
+- [x] **Step 5: Merge** — hecho el 29-10-2026 de día (el cliente aún no usa el sistema): `main` 95231e6 en GitHub, rama borrada. Tablero: tareas 13, 28, 46, 47, 31 → `hecha`; B1 → `hecha` en la tabla de orden; nota en B2 de que `cargarDatosDisponibilidad` ya devuelve franjas por centro.
+- [x] **Step 6: Commit** — `git commit -am "B1 cerrado: manual, tablero y plan"`
 
 ---
 

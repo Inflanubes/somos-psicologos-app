@@ -8,7 +8,9 @@
 
 **Tech Stack:** Next.js (App Router) + TypeScript, Supabase JS v2, Vitest (`npm test`), n8n (tools en `n8n/tools/*.js`, build con `node n8n/tools/build-workflow.mjs`).
 
-**Spec:** `docs/superpowers/specs/2026-10-26-b1-horarios-por-centro-design.md`. Tablero: `docs/backlog-2026-10-21.md` (B1: tareas 13, 28, 46, 47, 31). Método: `docs/metodo-trabajo.md`.
+**Spec:** `docs/superpowers/specs/2026-10-26-b1-horarios-por-centro-design.md`.
+
+> **Estado 29-10-2026:** Tareas 1–11 hechas en la rama `b1-horarios-por-centro` (tsc limpio, 112 tests en verde). Tarea 12 pendiente de Sonia: migración 016 de madrugada, token en el hosting, pruebas de aceptación, republicar el manual y merge. Instrucciones de Dante en `docs/dante-cambios-2026-10-b1.md`. Decisiones tomadas durante la ejecución al final de este archivo. Tablero: `docs/backlog-2026-10-21.md` (B1: tareas 13, 28, 46, 47, 31). Método: `docs/metodo-trabajo.md`.
 
 ## Global Constraints
 
@@ -87,13 +89,13 @@ Las toma el plan porque la especificación las dejaba al builder o porque al baj
 - Produces (SQL): `horarios_psicologos.centro_id uuid NOT NULL REFERENCES centros(id)`, `horarios_psicologos.revisar boolean NOT NULL DEFAULT false`, `psicologos_centros.activo boolean NOT NULL DEFAULT true`, `centros.es_online boolean NOT NULL DEFAULT false`, vista `psicologos_por_centro` con columnas añadidas al final `centro_activo boolean`, `es_online boolean`.
 - Produces (TS): `Centro.es_online: boolean`; `PsicologoCentro = { psicologo_id; centro_id; activo: boolean }` (Insert con `activo?`); `HorarioPsicologo` y `HorarioPsicologoInsert` con `centro_id: string` y `revisar?: boolean`; `PsicologoPorCentro` con `centro_activo: boolean; es_online: boolean`.
 
-- [ ] **Step 1: Crear la rama**
+- [x] **Step 1: Crear la rama**
 
 ```bash
 git checkout main && git pull && git checkout -b b1-horarios-por-centro
 ```
 
-- [ ] **Step 2: Escribir la migración**
+- [x] **Step 2: Escribir la migración**
 
 Cabecera de contexto como en `012_horarios_psicologos.sql` (fecha 26-10-2026, por qué: reunión 21-10, horarios por centro; idempotente; se aplica de madrugada). Dentro de `BEGIN; … COMMIT;`, en este orden:
 
@@ -108,13 +110,13 @@ Cabecera de contexto como en `012_horarios_psicologos.sql` (fecha 26-10-2026, po
 
 Después del `COMMIT`, un `SELECT` de comprobación que liste `psicologo_id, nombre` con `revisar = true` (para que el agente revise esas fichas) y los `SELECT` de comprobación de columnas.
 
-- [ ] **Step 3: Actualizar `types/database.ts`** con los tipos del bloque Interfaces. En `PsicologoPorCentro` añadir los dos campos; en `Database.Tables.psicologos_centros.Insert` usar `Omit<PsicologoCentro,'activo'> & { activo?: boolean }`.
+- [x] **Step 3: Actualizar `types/database.ts`** con los tipos del bloque Interfaces. En `PsicologoPorCentro` añadir los dos campos; en `Database.Tables.psicologos_centros.Insert` usar `Omit<PsicologoCentro,'activo'> & { activo?: boolean }`.
 
-- [ ] **Step 4: Comprobar**
+- [x] **Step 4: Comprobar**
 
 Run: `npx tsc --noEmit -p tsconfig.json` → sin errores. `npm test` → verde (nada cambia aún).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add types/database.ts
@@ -132,7 +134,7 @@ git commit -m "Tipos para la migración 016: horarios por centro, centro activo 
 **Interfaces:**
 - Produces: `export type Instante = { fecha: string; minutos: number }` (fecha `YYYY-MM-DD` en Madrid, minutos desde medianoche en Madrid). `export const ANTELACION_MIN = 120`. `export function ahoraMadrid(d: Date = new Date()): Instante`. `export function sumarMinutos(i: Instante, min: number): Instante` (no pasa de medianoche: si `minutos + min >= 1440`, devuelve `{ fecha: i.fecha, minutos: 1439 }`; basta para "ahora + 2 h" porque los huecos acaban a las 21:30).
 
-- [ ] **Step 1: Test**
+- [x] **Step 1: Test**
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -156,13 +158,13 @@ describe('sumarMinutos', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar y ver fallar** — Run: `npx vitest run lib/fechas.test.ts` → FAIL (módulo no existe).
+- [x] **Step 2: Ejecutar y ver fallar** — Run: `npx vitest run lib/fechas.test.ts` → FAIL (módulo no existe).
 
-- [ ] **Step 3: Implementar** con `Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year, month, day, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })` y `formatToParts`.
+- [x] **Step 3: Implementar** con `Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year, month, day, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })` y `formatToParts`.
 
-- [ ] **Step 4: Ejecutar** — Run: `npx vitest run lib/fechas.test.ts` → PASS.
+- [x] **Step 4: Ejecutar** — Run: `npx vitest run lib/fechas.test.ts` → PASS.
 
-- [ ] **Step 5: Commit** — `git add lib/fechas.ts lib/fechas.test.ts && git commit -m "lib/fechas: ahora en Madrid y antelación mínima"`
+- [x] **Step 5: Commit** — `git add lib/fechas.ts lib/fechas.test.ts && git commit -m "lib/fechas: ahora en Madrid y antelación mínima"`
 
 ---
 
@@ -176,7 +178,7 @@ describe('sumarMinutos', () => {
 - Reglas de solape (mismo día, intervalos que se cruzan; contiguos permitidos): si los dos tramos tienen el mismo `centro_id` (o alguno no tiene) → error. Si son de centros distintos y **alguno** es `es_online` → permitido. Si son de centros distintos y ninguno es online → error. Mensaje con centros: `Los tramos del martes se solapan (San Blas 10:00–14:00 y Moratalaz 13:00–17:00).` (día en minúsculas, centros por nombre). Sin `centros`: el mensaje actual `Los tramos de Martes se solapan.`
 - `resumenHorario` con centros y tramos con `centro_id`: grupos por centro ordenados por nombre, `San Blas: L, X 10:00–14:00 · Online: M 16:00–20:00`; dentro de cada centro, el agrupado actual. Sin centros: comportamiento actual.
 
-- [ ] **Step 1: Tests** (añadir al `describe('validarTramos')` y a `resumenHorario`)
+- [x] **Step 1: Tests** (añadir al `describe('validarTramos')` y a `resumenHorario`)
 
 ```ts
 const C = [
@@ -205,10 +207,10 @@ it('resumen agrupa por centro, centros por nombre', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar y ver fallar** — Run: `npx vitest run lib/horarios.test.ts`.
-- [ ] **Step 3: Implementar** (comparar pares del mismo día ordenados por inicio; la decisión "permitido" se calcula con una función interna `puedenSolaparse(a, b, centros)`).
-- [ ] **Step 4: Ejecutar** — `npx vitest run lib/horarios.test.ts` → PASS; `npx tsc --noEmit -p tsconfig.json` limpio (el campo es opcional, nada más cambia).
-- [ ] **Step 5: Commit** — `git commit -am "Horarios: franjas con centro y excepción Online en los solapes"`
+- [x] **Step 2: Ejecutar y ver fallar** — Run: `npx vitest run lib/horarios.test.ts`.
+- [x] **Step 3: Implementar** (comparar pares del mismo día ordenados por inicio; la decisión "permitido" se calcula con una función interna `puedenSolaparse(a, b, centros)`).
+- [x] **Step 4: Ejecutar** — `npx vitest run lib/horarios.test.ts` → PASS; `npx tsc --noEmit -p tsconfig.json` limpio (el campo es opcional, nada más cambia).
+- [x] **Step 5: Commit** — `git commit -am "Horarios: franjas con centro y excepción Online en los solapes"`
 
 ---
 
@@ -224,7 +226,7 @@ it('resumen agrupa por centro, centros por nombre', () => {
 - `ParamsAviso` añade `tieneAlgunHorario?: boolean` (default `true`). `motivoAviso` devuelve, en este orden: bloqueo del día (como hoy) → `tieneAlgunHorario === false` → `{nombre} no tiene horario definido` → día sin franja → `{nombre} no trabaja los {día} en {centro}` (como hoy) → por estado del hueco: `ocupado` como hoy; `pasado` → `esa hora ya ha pasado`; `antelacion` → `quedan menos de 2 horas para esa cita`; `centro_inactivo` → `{nombre} no recibe citas nuevas en {centro}`; `fuera_horario` y `media_hora` como hoy.
 - `comprobarSerie`: en modo aviso vale si el estado no está en `['ocupado', 'bloqueado', 'pasado']`.
 
-- [ ] **Step 1: Tests** (sustituir el test "sin tramos siempre trabaja" y añadir)
+- [x] **Step 1: Tests** (sustituir el test "sin tramos siempre trabaja" y añadir)
 
 ```ts
 const AHORA = { fecha: LUNES, minutos: 12 * 60 } // lunes 12:00
@@ -270,10 +272,10 @@ describe('motivoAviso nuevos', () => {
 
 En `citas-recurrentes.test.ts`: un test de que `comprobarSerie` en modo aviso descarta una fecha cuyo hueco sea `pasado` (fecha anterior a `ahora.fecha`).
 
-- [ ] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/disponibilidad.test.ts lib/citas-recurrentes.test.ts`.
-- [ ] **Step 3: Implementar** en `disponibilidad.ts` y `citas-recurrentes.ts`. Revisar los tests antiguos que asumían "sin tramos = libre" (`base` tiene `tramos: []`): darles un tramo `t(1,'08:00','22:00')` donde haga falta.
-- [ ] **Step 4: Ejecutar** — `npm test` → PASS; `npx tsc --noEmit -p tsconfig.json` limpio (en `page.tsx` y `TimeSelect` aún compila: los estados nuevos solo amplían la unión; si `SUFIJO: Record<EstadoHueco,string>` falla, añadir las tres claves ya en esta tarea con los textos de la Tarea 8).
-- [ ] **Step 5: Commit** — `git commit -am "Disponibilidad: pasado, antelación, centro inactivo y sin horario = sin citas"`
+- [x] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/disponibilidad.test.ts lib/citas-recurrentes.test.ts`.
+- [x] **Step 3: Implementar** en `disponibilidad.ts` y `citas-recurrentes.ts`. Revisar los tests antiguos que asumían "sin tramos = libre" (`base` tiene `tramos: []`): darles un tramo `t(1,'08:00','22:00')` donde haga falta.
+- [x] **Step 4: Ejecutar** — `npm test` → PASS; `npx tsc --noEmit -p tsconfig.json` limpio (en `page.tsx` y `TimeSelect` aún compila: los estados nuevos solo amplían la unión; si `SUFIJO: Record<EstadoHueco,string>` falla, añadir las tres claves ya en esta tarea con los textos de la Tarea 8).
+- [x] **Step 5: Commit** — `git commit -am "Disponibilidad: pasado, antelación, centro inactivo y sin horario = sin citas"`
 
 ---
 
@@ -287,9 +289,9 @@ En `citas-recurrentes.test.ts`: un test de que `comprobarSerie` en modo aviso de
 - `useDisponibilidad(psicologo: PsicologoDisponibilidad | null, centroId: string | null)`: clave de carga `${id}:${centroId}`; sin `centroId` no carga (`datos = null`). Pasa `supabase` de `@/lib/supabase` como cliente. En error, el fallback es `{ tramos: [], citas: [], bloqueos: [], mediaHora, tieneAlgunHorario: false, centroActivo: true }` (con el nuevo significado de "sin tramos", el fallback ya no deja agendar a cualquier hora: el mensaje de error de carga sigue mostrándose como hoy).
 - Calendario: la consulta de tramos añade `centro_id`; `tramos = filtros.centroId ? todos.filter(t => t.centro_id === filtros.centroId) : todos`.
 
-- [ ] **Step 1: Cambiar firma y tipos** en `disponibilidad-datos.ts`; actualizar el hook; en `page.tsx` cambiar la llamada a `useDisponibilidad(psicologoDisp, effCentroId || null)`; en calendario, el filtro por centro.
-- [ ] **Step 2: Comprobar** — `npx tsc --noEmit -p tsconfig.json` limpio; `npm test` verde. Arrancar `npm run dev`, entrar como agente en Citas, elegir centro y psicólogo: la consola de red muestra la consulta a `horarios_psicologos` con `centro_id` (aún no hay columna si la migración no está aplicada en local: usar un proyecto/rama de Supabase de pruebas o aplicar la 016 en el entorno que Sonia indique; si no hay entorno, dejar la comprobación manual para la Tarea 12).
-- [ ] **Step 3: Commit** — `git commit -am "Disponibilidad: datos por psicólogo y centro, carga reutilizable en servidor"`
+- [x] **Step 1: Cambiar firma y tipos** en `disponibilidad-datos.ts`; actualizar el hook; en `page.tsx` cambiar la llamada a `useDisponibilidad(psicologoDisp, effCentroId || null)`; en calendario, el filtro por centro.
+- [x] **Step 2: Comprobar** — `npx tsc --noEmit -p tsconfig.json` limpio; `npm test` verde. Arrancar `npm run dev`, entrar como agente en Citas, elegir centro y psicólogo: la consola de red muestra la consulta a `horarios_psicologos` con `centro_id` (aún no hay columna si la migración no está aplicada en local: usar un proyecto/rama de Supabase de pruebas o aplicar la 016 en el entorno que Sonia indique; si no hay entorno, dejar la comprobación manual para la Tarea 12).
+- [x] **Step 3: Commit** — `git commit -am "Disponibilidad: datos por psicólogo y centro, carga reutilizable en servidor"`
 
 ---
 
@@ -310,7 +312,7 @@ En `citas-recurrentes.test.ts`: un test de que `comprobarSerie` en modo aviso de
   - `export function elegirMasProximo<T extends { nombre: string; huecos: HuecoFecha[] }>(candidatos: T[]): T | null` — el de primer hueco más temprano (`fecha` y luego `hora`); empate por `nombre` (localeCompare); sin candidatos con huecos → `null`.
   - `export function comprobarHueco(datos: DatosDisponibilidad, ahora: Instante, fecha: string, hora: string, excluirAccionId?: string): { ok: true } | { ok: false; motivo: EstadoHueco | 'hora_no_valida' }` — `centroInactivo: !datos.centroActivo && !excluirAccionId`; hora no presente en la rejilla (`10:15`) → `hora_no_valida`.
 
-- [ ] **Step 1: Tests**
+- [x] **Step 1: Tests**
 
 ```ts
 const AHORA = { fecha: '2026-10-26', minutos: 10 * 60 } // lunes 10:00
@@ -351,10 +353,10 @@ it('comprobarHueco', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/huecos-dante.test.ts`.
-- [ ] **Step 3: Implementar.**
-- [ ] **Step 4: Ejecutar** — PASS; tsc limpio.
-- [ ] **Step 5: Commit** — `git add lib/huecos-dante.ts lib/huecos-dante.test.ts && git commit -m "Huecos para Dante: próximos huecos, motivo y comprobación (módulo puro)"`
+- [x] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/huecos-dante.test.ts`.
+- [x] **Step 3: Implementar.**
+- [x] **Step 4: Ejecutar** — PASS; tsc limpio.
+- [x] **Step 5: Commit** — `git add lib/huecos-dante.ts lib/huecos-dante.test.ts && git commit -m "Huecos para Dante: próximos huecos, motivo y comprobación (módulo puro)"`
 
 ---
 
@@ -371,10 +373,10 @@ it('comprobarHueco', () => {
   - Nuevo `centro_activo?: { centro_id: string; activo: boolean }`: `update psicologos_centros set activo where psicologo_id and centro_id`; 400 si no existe la fila (`El psicólogo no trabaja en ese centro`).
 - `gestion.tsx`: `PsicologoGestion` añade `centros_inactivos: string[]; horario_revisar: boolean`; `CentroGestion = { id; nombre; es_online: boolean }`.
 
-- [ ] **Step 1: Implementar GET y tipos** (`gestion.tsx`).
-- [ ] **Step 2: Implementar PATCH** (los tres puntos).
-- [ ] **Step 3: Comprobar** — tsc limpio; `npm test` verde; con `npm run dev` y sesión de agente: `curl -s http://localhost:3000/api/usuarios` (con cookie) muestra `centros_inactivos` y `horario_revisar`. Si no hay base con la 016, dejarlo para la Tarea 12.
-- [ ] **Step 4: Commit** — `git commit -am "API usuarios: horario por centro, centro activo y centro online"`
+- [x] **Step 1: Implementar GET y tipos** (`gestion.tsx`).
+- [x] **Step 2: Implementar PATCH** (los tres puntos).
+- [x] **Step 3: Comprobar** — tsc limpio; `npm test` verde; con `npm run dev` y sesión de agente: `curl -s http://localhost:3000/api/usuarios` (con cookie) muestra `centros_inactivos` y `horario_revisar`. Si no hay base con la 016, dejarlo para la Tarea 12.
+- [x] **Step 4: Commit** — `git commit -am "API usuarios: horario por centro, centro activo y centro online"`
 
 ---
 
@@ -389,11 +391,11 @@ it('comprobarHueco', () => {
 - `FichaPsicologo`: bajo las chips de Centros, por cada centro de `p.centro_ids` una fila `{nombre del centro}` + `Interruptor` etiqueta `Recibe citas nuevas` (activo = `!p.centros_inactivos.includes(id)`), `onChange` → `guardar({ centro_activo: { centro_id, activo: !activo } })`. Fila Horario: `resumenHorario(p.horarios, centros)`; sin horarios → texto rojo `Sin horario: no se le pueden dar citas`; `p.horario_revisar` → texto ámbar `Horario asignado automáticamente a {centro}: revísalo` (centro = nombre del `centro_id` de la primera franja). `guardarBorrador`: si quita un centro que tiene franjas, `window.confirm('Al quitar {centro} se borrarán sus franjas de horario. ¿Continuar?')`.
 - `equipo/page.tsx`: columna Horario: sin horarios → `Sin horario` en rojo (`#b91c1c`) y, si `p.activo`, un punto rojo delante (`●`); "Centros y tipos": los centros apagados con sufijo ` (no recibe citas nuevas)`. `guardar()` actualiza en local `centros_inactivos` al recibir `centro_activo`, y `horario_revisar = false` al recibir `horarios`. Al abrir el editor pasa `centros={centros.filter(c => abierto.centro_ids.includes(c.id))}` y quita el subtítulo "vale para todos sus centros".
 
-- [ ] **Step 1: HorarioEditor** por centro.
-- [ ] **Step 2: FichaPsicologo** (interruptores, textos, confirm).
-- [ ] **Step 3: equipo/page.tsx** (tabla y actualización local).
-- [ ] **Step 4: Comprobar** — tsc limpio; `npm test`; en `npm run dev` (con base 016): guardar L 10–14 Moratalaz + L 13–17 San Blas → error de solape con los nombres; L 10–14 Moratalaz + L 10–14 Online → guarda; apagar un centro → la fila lo muestra con el sufijo; quitar un centro con franjas → confirm y las franjas desaparecen.
-- [ ] **Step 5: Commit** — `git commit -am "Psicólogos: horario por centro, interruptor por centro y sin horario en rojo"`
+- [x] **Step 1: HorarioEditor** por centro.
+- [x] **Step 2: FichaPsicologo** (interruptores, textos, confirm).
+- [x] **Step 3: equipo/page.tsx** (tabla y actualización local).
+- [x] **Step 4: Comprobar** — tsc limpio; `npm test`; en `npm run dev` (con base 016): guardar L 10–14 Moratalaz + L 13–17 San Blas → error de solape con los nombres; L 10–14 Moratalaz + L 10–14 Online → guarda; apagar un centro → la fila lo muestra con el sufijo; quitar un centro con franjas → confirm y las franjas desaparecen.
+- [x] **Step 5: Commit** — `git commit -am "Psicólogos: horario por centro, interruptor por centro y sin horario en rojo"`
 
 ---
 
@@ -420,10 +422,10 @@ it('comprobarHueco', () => {
   - Series: `comprobarSerie(fechas, hora, { ...disp, ahora, centroInactivo }, restringido)`.
   - `useEffect` que vacía la hora al cambiar la fecha: en modo aviso vacía si el estado está en `ESTADOS_VETO_DURO`.
 
-- [ ] **Step 1: TimeSelect** (sufijos y `ocultar`).
-- [ ] **Step 2: page.tsx** (todos los puntos).
-- [ ] **Step 3: Comprobar** — tsc limpio; `npm test`; en `npm run dev` con base 016 y un psicólogo con franja L 10–14 Moratalaz y L 16–20 San Blas: agente ve solo 10–13 en Moratalaz; marca la casilla y ve el resto con sufijos; elige 15:00 → aviso; hoy a una hora pasada no aparece; call center ve solo 10–13; psicóloga sin horario → mensaje fijo y sin horas (call center), nota + casilla (agente).
-- [ ] **Step 4: Commit** — `git commit -am "Citas: casilla fuera de horario, antelación, pasado y centro sin citas nuevas"`
+- [x] **Step 1: TimeSelect** (sufijos y `ocultar`).
+- [x] **Step 2: page.tsx** (todos los puntos).
+- [x] **Step 3: Comprobar** — tsc limpio; `npm test`; en `npm run dev` con base 016 y un psicólogo con franja L 10–14 Moratalaz y L 16–20 San Blas: agente ve solo 10–13 en Moratalaz; marca la casilla y ve el resto con sufijos; elige 15:00 → aviso; hoy a una hora pasada no aparece; call center ve solo 10–13; psicóloga sin horario → mensaje fijo y sin horas (call center), nota + casilla (agente).
+- [x] **Step 4: Commit** — `git commit -am "Citas: casilla fuera de horario, antelación, pasado y centro sin citas nuevas"`
 
 ---
 
@@ -446,9 +448,9 @@ it('comprobarHueco', () => {
 - `route.ts`: `POST`. Sin `process.env.DANTE_API_TOKEN` → 500 `{ error: 'DANTE_API_TOKEN no configurado' }`. Cabecera `Authorization` ≠ `Bearer <token>` → 401. Cuerpo que no cumpla `tipo` o falten campos → 400 con `{ error }`. Respuesta 200 con el JSON de `resolverDisponibilidad`. `export const dynamic = 'force-dynamic'`.
 - `proxy.ts` (el middleware de sesión): comprobar que `/api/disponibilidad` no exige sesión (si el matcher protege `/api/*`, excluir esta ruta).
 
-- [ ] **Step 1: `lib/disponibilidad-servidor.ts`** (sin tests unitarios: orquesta consultas; la lógica ya está testeada en las Tareas 4 y 6).
-- [ ] **Step 2: `route.ts`** y revisión de `proxy.ts`.
-- [ ] **Step 3: Comprobar** — tsc limpio; con `npm run dev` y `DANTE_API_TOKEN=prueba` en `.env.local`:
+- [x] **Step 1: `lib/disponibilidad-servidor.ts`** (sin tests unitarios: orquesta consultas; la lógica ya está testeada en las Tareas 4 y 6).
+- [x] **Step 2: `route.ts`** y revisión de `proxy.ts`.
+- [x] **Step 3: Comprobar** — tsc limpio; con `npm run dev` y `DANTE_API_TOKEN=prueba` en `.env.local`:
 
 ```bash
 curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bearer prueba" -H "Content-Type: application/json" \
@@ -458,7 +460,7 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
   -d '{"tipo":"comprobar","centro_id":"<uuid>","psicologo_id":"<uuid>","fecha":"2026-10-27","hora":"10:15"}'   # → {"ok":false,"motivo":"hora_no_valida"}
 ```
 
-- [ ] **Step 4: Commit** — `git add app/api/disponibilidad lib/disponibilidad-servidor.ts && git commit -m "API de disponibilidad para Dante: huecos por centro y comprobación"`
+- [x] **Step 4: Commit** — `git add app/api/disponibilidad lib/disponibilidad-servidor.ts && git commit -m "API de disponibilidad para Dante: huecos por centro y comprobación"`
 
 ---
 
@@ -474,11 +476,11 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
 - `ejecutar-accion.js`: tras resolver `psicologoId`, `centroId`, `fecha`, `hora` y solo para `Agendar cita` / `Cambiar cita`: `const chk = await appPost('/api/disponibilidad', { tipo: 'comprobar', psicologo_id, centro_id, fecha, hora, excluir_accion_id: citaSel ? citaSel.id : undefined })`; si `!chk.ok` → `fail(TEXTO[chk.motivo] || 'Esa hora no está disponible. Ofrece otra de BuscarDisponibilidad.', { motivo: chk.motivo })` con `TEXTO = { ocupado: 'Esa hora ya está ocupada.', pasado: 'Esa hora ya ha pasado.', antelacion: 'Las citas necesitan al menos 2 horas de antelación.', bloqueado: 'La agenda del psicólogo está bloqueada ese día.', fuera_horario: 'Esa hora queda fuera del horario del psicólogo en ese centro.', centro_inactivo: 'El psicólogo no recibe citas nuevas en ese centro ahora mismo.', media_hora: 'Ese psicólogo solo tiene citas en punto.', hora_no_valida: 'Las citas empiezan en punto o y media entre 08:00 y 21:30.', psicologo_inactivo: 'El psicólogo no está disponible: deriva al equipo con ContactarAgente.' }` seguido de ` Ofrece al paciente otra hora de BuscarDisponibilidad.`. Si la llamada falla por red → `fail('No se ha podido comprobar la disponibilidad. Inténtalo de nuevo o deriva al equipo.')` (no se manda a Make).
 - Prompt, sección CONSULTAR DISPONIBILIDAD: añadir que si `huecos` está vacío y hay `centros_alternativos`, se ofrecen esos centros ("Jaime no tiene hueco en Moratalaz estas dos semanas, pero en San Blas tiene el martes a las 16:00, ¿te vendría bien?"); solo si no hay alternativas se registra "Sin disponibilidad". Y en GESTIÓN DE CITAS: si [EjecutarAccion] responde con `motivo`, no insistir con la misma hora: explicar el motivo con las palabras que devuelve y ofrecer otro hueco.
 
-- [ ] **Step 1: `_comun.js` y `ejecutar-accion.js`.**
-- [ ] **Step 2: `build-workflow.mjs` y prompt.**
-- [ ] **Step 3: Regenerar** — `DANTE_API_TOKEN=<el mismo de .env.local> node n8n/tools/build-workflow.mjs` (en PowerShell: `$env:DANTE_API_TOKEN='…'; node n8n/tools/build-workflow.mjs`). Comprobar en el JSON que `BuscarDisponibilidad.parameters.url` apunta a la app y que el código de `EjecutarAccion` contiene `appPost`.
-- [ ] **Step 4: Apartado para Sonia** (escribir en `docs/dante-cambios-2026-10-b1.md`): 1) poner `DANTE_API_TOKEN` en el hosting de somos.eltodi.net y desplegar; 2) importar el JSON en un workflow **copia** de n8n, probar con un chat de prueba: pedir huecos (deben caer en franja y con más de 2 h), intentar agendar "a las 10:15" (rechazo), agendar un hueco válido (Make lo procesa como siempre); 3) importar en el workflow de producción; 4) desactivar el escenario de Make de disponibilidad (webhook `dthvwqk…`) cuando lleve una semana sin usarse.
-- [ ] **Step 5: Commit** — `git add docs/dante-cambios-2026-10-b1.md && git commit -m "Dante: huecos desde la app y comprobación antes de agendar (instrucciones)"`. Los archivos de `n8n/` están fuera del repo: copia previa en `n8n/tools/_backups/` y `n8n/workflows/_backups/` con fecha, y nota en el tablero.
+- [x] **Step 1: `_comun.js` y `ejecutar-accion.js`.**
+- [x] **Step 2: `build-workflow.mjs` y prompt.**
+- [x] **Step 3: Regenerar** — `DANTE_API_TOKEN=<el mismo de .env.local> node n8n/tools/build-workflow.mjs` (en PowerShell: `$env:DANTE_API_TOKEN='…'; node n8n/tools/build-workflow.mjs`). Comprobar en el JSON que `BuscarDisponibilidad.parameters.url` apunta a la app y que el código de `EjecutarAccion` contiene `appPost`.
+- [x] **Step 4: Apartado para Sonia** (escribir en `docs/dante-cambios-2026-10-b1.md`): 1) poner `DANTE_API_TOKEN` en el hosting de somos.eltodi.net y desplegar; 2) importar el JSON en un workflow **copia** de n8n, probar con un chat de prueba: pedir huecos (deben caer en franja y con más de 2 h), intentar agendar "a las 10:15" (rechazo), agendar un hueco válido (Make lo procesa como siempre); 3) importar en el workflow de producción; 4) desactivar el escenario de Make de disponibilidad (webhook `dthvwqk…`) cuando lleve una semana sin usarse.
+- [x] **Step 5: Commit** — `git add docs/dante-cambios-2026-10-b1.md && git commit -m "Dante: huecos desde la app y comprobación antes de agendar (instrucciones)"`. Los archivos de `n8n/` están fuera del repo: copia previa en `n8n/tools/_backups/` y `n8n/workflows/_backups/` con fecha, y nota en el tablero.
 
 ---
 
@@ -487,8 +489,8 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
 **Files:**
 - Modify: `docs/manual-somos/index.html` (ficha Psicólogos: horario por centro, interruptor por centro, "Sin horario"; ficha Citas: casilla, antelación, pasado; Novedades; fecha de versión), `docs/backlog-2026-10-21.md` (B1), este plan (casillas)
 
-- [ ] **Step 1: Migración 016** — Sonia la aplica en el SQL Editor **de madrugada** o con Dante y Make parados. Anotar aquí la fecha: `Aplicada el: ______`. Revisar el `SELECT` final (psicólogos con `revisar = true`) y avisar a un agente para que repase esos horarios en Psicólogos.
-- [ ] **Step 2: Variable `DANTE_API_TOKEN`** en el hosting y en `.env.local`. Anotar: `Puesta el: ______`.
+- [ ] **Step 1: Migración 016** (archivo listo: `Supabase/migrations/016_horarios_por_centro.sql`) — Sonia la aplica en el SQL Editor **de madrugada** o con Dante y Make parados. Anotar aquí la fecha: `Aplicada el: ______`. Revisar el `SELECT` final (psicólogos con `revisar = true`) y avisar a un agente para que repase esos horarios en Psicólogos.
+- [ ] **Step 2: Variable `DANTE_API_TOKEN`** en el hosting y en `.env.local` (en `.env.local` ya está desde el 29-10-2026; el JSON de n8n se generó con ese valor: usa el mismo en el hosting). Anotar: `Puesta el: ______`.
 - [ ] **Step 3: Pruebas de aceptación** (las 6 de la especificación, apartado "Comprobación de aceptación") contra la app desplegada desde la rama o en local con la base ya migrada. Marcar cada una:
   - [ ] 1 Jaime L 10–14 Moratalaz / L 16–20 San Blas
   - [ ] 2 Solape presencial rechazado; Online admitido; una sola cita a las 11
@@ -496,6 +498,17 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
   - [ ] 4 Psicóloga sin horario
   - [ ] 5 Hoy a las 12:00: 11:00 nadie, 13:00 solo agente con aviso, 14:30 todos
   - [ ] 6 Dante: huecos reales y rechazo de hora inventada
-- [ ] **Step 4: Manual** — actualizar `index.html` según `docs/manual-somos/README.md`, `node docs/manual-somos/check-manual.mjs` → OK, republicar al artifact `FWj2hP27NkTXLFMUQvBuqi`.
+- [x] **Step 4: Manual** — actualizar `index.html` según `docs/manual-somos/README.md`, `node docs/manual-somos/check-manual.mjs` → OK, republicar al artifact `FWj2hP27NkTXLFMUQvBuqi`.
+  **Quedó así (29-10-2026):** `index.html` actualizado y `check-manual.mjs` OK (versión 29-10-2026). **Falta republicar el artifact**: se hace en el Step 5, con el merge, para que el manual no describa funciones que aún no están en producción.
 - [ ] **Step 5: Merge** — `git checkout main && git merge b1-horarios-por-centro && git push` solo de madrugada (regla del método). Tablero: tareas 13, 28, 46, 47, 31 → `hecha`; B1 → `hecha` en la tabla de orden; nota en B2 de que `cargarDatosDisponibilidad` ya devuelve franjas por centro.
 - [ ] **Step 6: Commit** — `git commit -am "B1 cerrado: manual, tablero y plan"`
+
+---
+
+## Decisiones tomadas al ejecutar (29-10-2026)
+
+1. **Tarea 1:** `HorarioPsicologoInsert.centro_id` obligatorio rompía la compilación de la API de usuarios; se adelantó lo mínimo de la Tarea 7 (cada franja recibida trae `centro_id`) en vez de relajar el tipo.
+2. **Tarea 4:** `centro_inactivo` se evalúa **después** de `fuera_horario` (el plan decía antes, pero su propio test exigía que fuera de franja siguiera siendo `fuera_horario`): solo marca las horas dentro de franja. Los sufijos nuevos de `TimeSelect` se añadieron ya en esta tarea.
+3. **Tarea 11:** no había `DANTE_API_TOKEN`; se generó uno aleatorio y se guardó en `.env.local` para poder regenerar el workflow. Sonia debe poner el mismo valor en el hosting.
+4. **Tarea 12:** el manual se actualiza en la rama pero el artifact no se republica hasta el merge.
+5. **Archivos fuera del repo cambiados:** `Supabase/migrations/016_horarios_por_centro.sql` (nuevo); `n8n/tools/_comun.js`, `n8n/tools/ejecutar-accion.js`, `n8n/tools/build-workflow.mjs`, `n8n/prompts/somos-system-prompt.md`, `n8n/workflows/somos-main-agent.json` (copias `*.2026-10-29.bak` en sus `_backups/`).

@@ -192,7 +192,7 @@ footer img{width:28px; height:28px}
     <h1>Cómo funciona<br><em>vuestra app</em>, pieza a pieza</h1>
     <p class="lead">Qué hace cada pantalla, qué ve cada persona del equipo, qué mensajes aparecen y por qué, y qué pasa por detrás cada vez que alguien agenda una cita. Este documento crece con la app: cuando añadimos algo, lo veréis en Novedades.</p>
     <div class="meta">
-      <span class="pildora">Versión del 22-10-2026</span>
+      <span class="pildora">Versión del 29-10-2026</span>
       <span class="pildora">Preparado por Be Banana</span>
     </div>
     <ol class="indice">
@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-10-29">29-10-2026</time><span>Horarios por centro y reglas de agenda: cada franja del horario pertenece a un centro (así nadie tiene citas a la vez en dos sitios); cada centro de un psicólogo se puede apagar para citas nuevas sin desactivarlo; sin horario no se le pueden dar citas; nadie agenda en el pasado ni con menos de 2 horas (los agentes sí, con aviso y la casilla <code class="ui">Citar fuera de horario</code>); y Dante pide los huecos a la app, con las mismas reglas. <a href="#disponibilidad">Ver las reglas</a> · <a href="#p-psicologos">Ver la ficha de Psicólogos</a>.</span></li>
         <li><time datetime="2026-10-22">22-10-2026</time><span>Las citas también se pueden repetir de forma <b>semanal</b>, igual que cada 15 días o cada 4 semanas: hasta un año, siempre el mismo día de la semana y a la misma hora. <a href="#repetir">Ver cómo funciona</a>.</span></li>
         <li><time datetime="2026-10-21">21-10-2026</time><span>Citas que se repiten: al agendar se puede repetir la cita cada 15 días o cada 4 semanas, durante hasta un año, siempre el mismo día de la semana y a la misma hora. Las fechas que no están libres no se agendan y la app avisa de cuáles son para colocarlas por separado. <a href="#repetir">Ver cómo funciona</a>.</span></li>
         <li><time datetime="2026-09-28">28-09-2026</time><span>Usuarios y Psicólogos, cada uno con lo suyo: Usuarios queda solo para cuentas (altas, enviar acceso y contraseñas) y todo lo que define cómo trabaja un psicólogo (centros, tipos, horario, 30', bloqueo de agenda, calendario y activo) pasa a su ficha en Psicólogos. Las dos pantallas van más rápidas: cada cambio actualiza solo su fila. <a href="#p-psicologos">Ver Psicólogos</a>.</span></li>
@@ -360,21 +361,29 @@ footer img{width:28px; height:28px}
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
           <li class="grupo">Solo agentes: aviso ámbar encima del botón, no impide enviar</li>
-          <li>⚠️ <code class="ui">Aviso: <var>motivo</var>. Puedes agendar igualmente.</code><span class="donde">El motivo es uno de estos cinco:</span></li>
+          <li>⚠️ <code class="ui">Aviso: <var>motivo</var>. Puedes agendar igualmente.</code><span class="donde">El motivo es uno de estos ocho:</span></li>
           <li><code class="ui">la agenda de <var>Marta</var> está bloqueada ese día (<var>Vacaciones</var>)</code></li>
+          <li><code class="ui"><var>Marta</var> no tiene horario definido</code><span class="donde">Sin horario en ningún centro</span></li>
           <li><code class="ui"><var>Marta</var> no trabaja los <var>martes</var> en <var>San Blas</var></code></li>
           <li><code class="ui"><var>Marta</var> ya tiene una cita a las <var>10:00</var></code></li>
+          <li><code class="ui">esa hora ya ha pasado</code></li>
+          <li><code class="ui">quedan menos de 2 horas para esa cita</code></li>
+          <li><code class="ui"><var>Marta</var> no recibe citas nuevas en <var>San Blas</var></code><span class="donde">Centro apagado en su ficha; solo al agendar</span></li>
           <li><code class="ui">las <var>16:00</var> quedan fuera del horario de <var>Marta</var> en <var>San Blas</var></code></li>
           <li><code class="ui"><var>Marta</var> no tiene activadas las citas a y media</code></li>
-          <li>En el desplegable de hora, las horas no libres llevan una etiqueta: <code class="ui"><var>10:00</var> · ocupada</code>, <code class="ui"><var>10:00</var> · agenda bloqueada</code>, <code class="ui"><var>16:00</var> · fuera de horario</code>, <code class="ui"><var>10:30</var> · media hora no activa</code>.<span class="donde">Las horas ocupadas aparecen pero no se pueden elegir: ni un agente puede poner dos pacientes a la misma hora.</span></li>
+          <li>Encima del desplegable de hora está la casilla <code class="ui">Citar fuera de horario</code>. Desmarcada, el agente ve solo las horas libres (y las medias horas). Marcada, ve también las demás con su etiqueta: <code class="ui"><var>10:00</var> · ocupada</code>, <code class="ui"><var>13:00</var> · menos de 2 h</code>, <code class="ui"><var>10:00</var> · agenda bloqueada</code>, <code class="ui"><var>16:00</var> · fuera de horario</code>, <code class="ui"><var>10:00</var> · no recibe citas nuevas</code>, <code class="ui"><var>10:30</var> · media hora no activa</code>.<span class="donde">Las horas ocupadas aparecen pero no se pueden elegir; las que ya han pasado no aparecen nunca.</span></li>
           <li><code class="ui">Esa hora ya tiene una cita: el psicólogo no puede atender a dos pacientes a la vez. Elige otra hora.</code><span class="donde">Agentes · error al enviar si la hora se ha ocupado mientras tanto</span></li>
+          <li><code class="ui">Esa hora ya ha pasado. Elige otra.</code><span class="donde">Agentes · error al enviar</span></li>
           <li><code class="ui">No se pudo cargar la disponibilidad: se muestran todas las horas sin avisos.</code><span class="donde">Agentes · si falla la consulta de horarios</span></li>
+          <li>En el desplegable de psicólogo, los que tienen ese centro apagado salen con el sufijo <code class="ui">(no recibe citas nuevas)</code>; se pueden elegir para cambiar o cancelar citas.</li>
 
           <li class="grupo">Solo psicólogos y call center: debajo del selector de hora</li>
           <li><code class="ui">— Primero elige la fecha —</code><span class="donde">Texto del desplegable de hora mientras no hay fecha</span></li>
+          <li><code class="ui"><var>Marta</var> no tiene horario: pídele a un agente que lo defina en Psicólogos.</code><span class="donde">Sin horario en ningún centro: el selector de hora queda desactivado</span></li>
+          <li><code class="ui"><var>Marta</var> no recibe citas nuevas en <var>San Blas</var></code><span class="donde">Centro apagado en su ficha: solo al agendar; cambiar y cancelar siguen</span></li>
           <li><code class="ui">Agenda bloqueada ese día (<var>Vacaciones</var>).</code><span class="donde">El selector de hora queda desactivado</span></li>
           <li><code class="ui"><var>Marta</var> no trabaja los <var>martes</var> en <var>San Blas</var>.</code><span class="donde">El selector de hora queda desactivado</span></li>
-          <li><code class="ui">No quedan huecos libres ese día.</code></li>
+          <li><code class="ui">No quedan huecos libres ese día.</code><span class="donde">También cuando las horas de hoy ya han pasado o quedan a menos de 2 horas</span></li>
           <li><code class="ui">Ahora mismo no podemos consultar la disponibilidad. Contacta con nosotros para agendar esta cita.</code><span class="donde">Si falla la consulta de horarios: no deja agendar a ciegas</span></li>
           <li><code class="ui">La hora elegida ya no está disponible. Elige otra.</code><span class="donde">Error al enviar</span></li>
           <li><code class="ui">Espera un momento: se está cargando la disponibilidad.</code><span class="donde">Error al enviar</span></li>
@@ -526,10 +535,11 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-psicologos">
       <div class="ficha-cab"><h3>Psicólogos</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>Dónde, cuándo y qué consulta pasa cada psicólogo: centros, tipos de consulta, horario, citas a y media, permiso para bloquear su agenda, su Google Calendar y si está activo.</dd>
-        <dt>Tabla</dt><dd>Se filtra por centro. Cada fila muestra centros y tipos, por ejemplo «San Blas · Online» y «Adulto · Pareja»; si faltan, <code class="ui">Sin centro</code> o <code class="ui">Sin tipos de consulta</code> en rojo. El horario sale resumido, del tipo <code class="ui" data-nocheck>L, X 09:00–14:00 · V 16:00–20:00</code>, o <code class="ui">Sin horario</code>. Junto al nombre, las etiquetas <code class="ui">30'</code> y <code class="ui">Bloquea agenda</code> si tiene esos permisos. El interruptor de la derecha lo activa o desactiva.</dd>
-        <dt>Ficha</dt><dd>Al pulsar una fila se abre su ficha a la derecha, en tres partes. <b>Consulta</b>: centros y tipos, <code class="ui">Editar horario</code> y el interruptor <code class="ui">Citas a las medias horas</code>. <b>Agenda</b>: <code class="ui">Puede bloquear su agenda</code> y su Google Calendar. <b>Estado</b>: <code class="ui">Activo</code>. Los interruptores se guardan al pulsarlos; centros, tipos y calendario, con <code class="ui">Guardar cambios</code>.</dd>
-        <dt>Editor de horario</dt><dd>Título <code class="ui">Horario de <var>Marta</var></code> y debajo <code class="ui">Centros: <var>San Blas · Online</var>. El horario es del psicólogo y vale para todos sus centros.</code> Cada día puede quedar en <code class="ui">No trabaja</code> o tener uno o varios tramos con <code class="ui">+ Añadir tramo</code> y <code class="ui">Quitar</code>. Se cierra con <code class="ui">Cancelar</code> o <code class="ui">Guardar horario</code>.</dd>
+        <dt>Para qué</dt><dd>Dónde, cuándo y qué consulta pasa cada psicólogo: centros (y en cuáles recibe citas nuevas), tipos de consulta, horario por centro, citas a y media, permiso para bloquear su agenda, su Google Calendar y si está activo.</dd>
+        <dt>Tabla</dt><dd>Se filtra por centro. Cada fila muestra centros y tipos, por ejemplo «San Blas · Online» y «Adulto · Pareja»; un centro apagado lleva el sufijo <code class="ui">(no recibe citas nuevas)</code>; si faltan, <code class="ui">Sin centro</code> o <code class="ui">Sin tipos de consulta</code> en rojo. El horario sale resumido por centro, del tipo <code class="ui" data-nocheck>Online: M 16:00–20:00 · San Blas: L, X 10:00–14:00</code>, o <code class="ui">Sin horario</code> en rojo (con un punto rojo delante si el psicólogo está activo: no se le pueden dar citas). Junto al nombre, las etiquetas <code class="ui">30'</code> y <code class="ui">Bloquea agenda</code> si tiene esos permisos. El interruptor de la derecha lo activa o desactiva.</dd>
+        <dt>Ficha</dt><dd>Al pulsar una fila se abre su ficha a la derecha, en tres partes. <b>Consulta</b>: centros y tipos; bajo los centros, uno por centro, el interruptor <code class="ui">Recibe citas nuevas</code> (apagado, el call center y Dante no pueden agendarle allí y el agente ve un aviso; cambiar y cancelar citas siguen funcionando, y el psicólogo sigue viendo ese centro); <code class="ui">Editar horario</code> y el interruptor <code class="ui">Citas a las medias horas</code>. Sin horario, la ficha lo dice en rojo: <code class="ui">Sin horario: no se le pueden dar citas</code>. <b>Agenda</b>: <code class="ui">Puede bloquear su agenda</code> y su Google Calendar. <b>Estado</b>: <code class="ui">Activo</code>. Los interruptores se guardan al pulsarlos; centros, tipos y calendario, con <code class="ui">Guardar cambios</code>.</dd>
+        <dt>Editor de horario</dt><dd>Título <code class="ui">Horario de <var>Marta</var></code> y debajo <code class="ui">Cada franja pertenece a un centro. Una franja de Online puede coincidir con una presencial; dos presenciales no.</code> Arriba se elige el centro; cada día muestra editables las franjas de ese centro y, en gris, las de los demás. Cada día puede quedar en <code class="ui">No trabaja</code> o tener uno o varios tramos con <code class="ui">+ Añadir tramo</code> y <code class="ui">Quitar</code>. Se cierra con <code class="ui">Cancelar</code> o <code class="ui">Guardar horario</code>. Al quitar un centro de la ficha, sus franjas se borran (la app lo avisa antes).</dd>
+        <dt>Tras la migración</dt><dd>A los psicólogos que ya tenían horario y trabajan en varios centros, la app les asignó todas sus franjas al primer centro por nombre. Su ficha lo avisa en ámbar hasta que alguien guarde el horario: <code class="ui">Horario asignado automáticamente a <var>Moratalaz</var>: revísalo</code>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
@@ -539,9 +549,13 @@ footer img{width:28px; height:28px}
           <li><code class="ui">El calendario de Google no puede quedar vacío</code></li>
           <li><code class="ui">Tienes cambios sin guardar</code></li>
           <li><code class="ui">¿Desactivar a <var>Marta</var>? Dejará de aparecer para nuevas citas. Sus citas ya dadas no cambian.</code><span class="donde">Confirmación antes de desactivar</span></li>
+          <li><code class="ui">Al quitar <var>San Blas</var> se borrarán sus franjas de horario. ¿Continuar?</code><span class="donde">Confirmación al quitar un centro que tiene horario</span></li>
+          <li><code class="ui">El psicólogo no trabaja en ese centro</code><span class="donde">Al cambiar «Recibe citas nuevas» de un centro que ya no es suyo</span></li>
           <li class="grupo">Editor de horario</li>
+          <li><code class="ui">Asigna al menos un centro al psicólogo antes de definir su horario.</code></li>
           <li><code class="ui">En <var>Martes</var> la hora de fin debe ser posterior a la de inicio.</code></li>
-          <li><code class="ui">Los tramos de <var>Lunes</var> se solapan.</code></li>
+          <li><code class="ui">Los tramos del <var>martes</var> se solapan (<var>San Blas 10:00–14:00</var> y <var>Moratalaz 13:00–17:00</var>).</code><span class="donde">Dos franjas del mismo día que se cruzan, salvo que una sea de Online</span></li>
+          <li><code class="ui">Cada franja necesita un centro del psicólogo</code></li>
           <li><code class="ui">Hora no válida en <var>Jueves</var>.</code></li>
           <li><code class="ui">Día de la semana no válido.</code></li>
           <li><code class="ui">No se pudo guardar el horario: <var>detalle técnico</var></code></li>
@@ -671,13 +685,17 @@ footer img{width:28px; height:28px}
 <!-- SECCION-DISPONIBILIDAD -->
 <section class="clara seccion" id="disponibilidad"><div class="wrap">
   <span class="num">05</span><h2>Horarios y disponibilidad</h2>
-  <p class="entrada">Cada psicólogo tiene un horario semanal, el mismo para todos sus centros. La app lo usa para ofrecer solo huecos reales al agendar.</p>
+  <p class="entrada">Cada psicólogo tiene un horario semanal en el que cada franja pertenece a un centro. La app y Dante lo usan para ofrecer solo huecos reales al agendar.</p>
   <div class="dos">
     <article class="ficha">
       <h3>Las reglas</h3>
       <ol>
-        <li>El horario es <b>semanal y del psicólogo</b>: días de la semana con uno o varios tramos, válido en todos sus centros. Lo editan los agentes en <a href="#p-psicologos">Psicólogos</a>.</li>
-        <li>Un psicólogo <b>sin horario</b> no tiene restricción: solo se ocultan sus horas ya ocupadas. Así nadie se queda bloqueado mientras se rellenan.</li>
+        <li>El horario es <b>semanal y por centro</b>: días de la semana con uno o varios tramos, cada tramo en un centro. Lo editan los agentes en <a href="#p-psicologos">Psicólogos</a>.</li>
+        <li>Dos tramos del mismo día <b>no pueden cruzarse</b>, ni siquiera de centros distintos: así nadie tiene una cita a las 10 en Moratalaz y otra a las 11 en San Blas. Excepción: un tramo de <b>Online</b> sí puede coincidir con uno presencial (atiende por videollamada desde el despacho). Dos tramos de Online entre sí, no.</li>
+        <li>Un psicólogo <b>sin horario no puede recibir citas</b>: ni desde el call center, ni desde su cuenta, ni desde Dante. Solo un agente, con la casilla <code class="ui">Citar fuera de horario</code> y un aviso. La tabla de Psicólogos lo marca en rojo. También los psicólogos solo online necesitan horario.</li>
+        <li>Cada centro de un psicólogo se puede <b>apagar para citas nuevas</b> (<code class="ui">Recibe citas nuevas</code> en su ficha) sin desactivarlo: sirve para cerrar un centro unas semanas. Cambiar y cancelar citas en ese centro siguen funcionando para todos.</li>
+        <li><b>Nadie agenda en el pasado</b>, tampoco un agente: ni días anteriores ni, hoy, una hora que ya ha pasado.</li>
+        <li><b>2 horas de antelación</b> como mínimo para una cita de hoy. Psicólogo, call center y Dante no pueden saltárselo; el agente sí, con aviso.</li>
         <li>Toda cita dura <b>60 minutos</b>.</li>
         <li>Se ofrecen las horas <b>en punto de 08:00 a 21:00</b>. Si el psicólogo tiene activado <code class="ui">30'</code>, también las <b>y media hasta las 21:30</b>. Por defecto nadie lo tiene.</li>
         <li>Los bloqueos (vacaciones, baja, asuntos propios) cuentan como <b>días completos</b>.</li>
@@ -686,9 +704,11 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <h3>Qué se comprueba al elegir hora</h3>
       <ol>
+        <li>Que no choque con otra cita suya, <b>en cualquiera de sus centros</b> (una cita Online y una presencial a la misma hora también chocan). Al cambiar una cita, su hora actual cuenta como libre.</li>
+        <li>Que la hora no haya pasado y queden al menos 2 horas.</li>
         <li>Que ese día no esté bloqueado.</li>
-        <li>Que la hora caiga dentro de un tramo de su horario y que la cita quepa entera.</li>
-        <li>Que no choque con otra cita suya, <b>en cualquiera de sus centros</b>. Al cambiar una cita, su hora actual cuenta como libre.</li>
+        <li>Que la hora caiga dentro de un tramo de su horario <b>en el centro de la cita</b> y que la cita quepa entera. Si a esa hora tiene franja en Moratalaz y en Online, se le puede citar en cualquiera de los dos, pero no en ambos.</li>
+        <li>Que el psicólogo reciba citas nuevas en ese centro (solo al agendar).</li>
         <li>Si es una media hora, que tenga activado <code class="ui">30'</code>.</li>
       </ol>
     </article>
@@ -696,8 +716,10 @@ footer img{width:28px; height:28px}
   <div class="dos" style="margin-top:16px">
     <article class="ficha">
       <div class="ficha-cab"><h3>La app no deja</h3><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
-      <p>Solo ven los huecos libres y no pueden elegir días pasados. Las horas de hoy que ya han pasado todavía se ofrecen (está en <a href="#pendientes">Pendientes</a>). Si el día está bloqueado o no trabaja, el selector de hora se desactiva y dice por qué:</p>
+      <p>Solo ven los huecos libres y no pueden elegir días pasados ni horas de hoy que ya han pasado o quedan a menos de 2 horas. Si el psicólogo no tiene horario, no recibe citas nuevas en ese centro, el día está bloqueado o no trabaja, el selector de hora se desactiva y dice por qué:</p>
       <ul class="lista-msg">
+        <li><code class="ui"><var>Marta</var> no tiene horario: pídele a un agente que lo defina en Psicólogos.</code></li>
+        <li><code class="ui"><var>Marta</var> no recibe citas nuevas en <var>San Blas</var></code></li>
         <li><code class="ui">Agenda bloqueada ese día (<var>Vacaciones</var>).</code></li>
         <li><code class="ui"><var>Marta</var> no trabaja los <var>martes</var> en <var>San Blas</var>.</code></li>
         <li><code class="ui">No quedan huecos libres ese día.</code></li>
@@ -705,11 +727,11 @@ footer img{width:28px; height:28px}
     </article>
     <article class="ficha">
       <div class="ficha-cab"><h3>La app avisa</h3><span class="chip r-agente">Agente</span></div>
-      <p>Ve todas las horas, con una etiqueta en las que no son libres. Puede agendar fuera de horario, en un día bloqueado o en una media hora no activa, pero antes de enviar ve un aviso ámbar:</p>
+      <p>Por defecto ve solo las horas libres. Con la casilla <code class="ui">Citar fuera de horario</code> ve también las demás, con una etiqueta, y puede agendar fuera de horario, en un día bloqueado, con menos de 2 horas, en un centro apagado o en una media hora no activa; antes de enviar ve un aviso ámbar:</p>
       <ul class="lista-msg">
-        <li>⚠️ <code class="ui">Aviso: <var>Marta no trabaja los martes en San Blas</var>. Puedes agendar igualmente.</code></li>
+        <li>⚠️ <code class="ui">Aviso: <var>quedan menos de 2 horas para esa cita</var>. Puedes agendar igualmente.</code></li>
       </ul>
-      <p class="nota">Lo que ni el agente puede hacer es poner dos pacientes a la misma hora con el mismo psicólogo.</p>
+      <p class="nota">Lo que ni el agente puede hacer es poner dos pacientes a la misma hora con el mismo psicólogo, ni agendar en una hora que ya ha pasado.</p>
     </article>
   </div>
 
@@ -741,7 +763,7 @@ footer img{width:28px; height:28px}
     <ul class="lista-msg">
       <li><b>Dos personas, el mismo hueco, a la vez.</b> Si dos personas agendan exactamente el mismo hueco en el mismo momento, la app no lo impide. Es poco probable, pero posible.</li>
       <li><b>Lo apuntado a mano en Google Calendar no cuenta.</b> Si un psicólogo apunta algo directamente en su calendario, la app no lo ve y puede ofrecer esa hora.</li>
-      <li><b>Dante mira otra fuente.</b> <span class="badge b-pend">pendiente</span> Hoy Dante busca huecos con su propio sistema, que no usa estos horarios, así que puede ofrecer horas distintas a las de la app. Está en <a href="#pendientes">Pendientes</a>.</li>
+      <li><b>Dante y la app miran la misma fuente.</b> Desde el 29-10-2026 Dante pide los huecos a la app, con estas mismas reglas, y antes de agendar o cambiar una cita la app comprueba la hora: si no pasa, Dante ofrece otra en vez de enviarla.</li>
     </ul>
   </article>
 </div></section>
@@ -755,7 +777,8 @@ footer img{width:28px; height:28px}
       <ul>
         <li>Reconoce al paciente por su chat de Telegram. Si es nuevo, lo da de alta.</li>
         <li>Al dar de alta a un adulto, pregunta si la consulta es individual o de pareja, y aplica las mismas reglas de repetidos que la app.</li>
-        <li>Busca huecos y ofrece tres opciones, solo con psicólogos que pasan ese tipo de consulta. Cada cita va con el psicólogo del paciente para ese tipo.</li>
+        <li>Busca huecos en la app (los próximos diez en dos semanas, con las mismas reglas de <a href="#disponibilidad">Horarios y disponibilidad</a>) y ofrece tres opciones, solo con psicólogos que pasan ese tipo de consulta. Cada cita va con el psicólogo del paciente para ese tipo. Si no hay hueco en su centro pero sí en otro del mismo psicólogo, lo ofrece antes de dejarlo en «Sin disponibilidad».</li>
+        <li>Antes de agendar o cambiar una cita, la app comprueba la hora (horario del centro, libre, no pasada, 2 horas, centro que recibe citas). Si no pasa, Dante no la envía y ofrece otra.</li>
         <li>Agenda, cambia y anula citas, siempre con una confirmación del paciente antes.</li>
         <li>Si no hay hueco, deja al paciente como «Sin disponibilidad». Si pide otro psicólogo, como «Cambio solicitado». En ambos casos avisa al equipo.</li>
         <li>Entiende texto y mensajes de voz.</li>
@@ -808,9 +831,8 @@ footer img{width:28px; height:28px}
       <ul class="lista-msg">
         <li id="p-telegram-pacientes"><b>Confirmaciones a pacientes dados de alta en la app.</b> <span class="badge b-pend">a confirmar</span> Las confirmaciones de cita y el enlace del consentimiento salen hoy por Telegram. Telegram solo puede escribir a quien ha hablado antes con el bot, es decir, a los pacientes que entraron por Dante. Los pacientes dados de alta en la app con su número de teléfono probablemente no los reciben. Se resuelve con el paso a WhatsApp.</li>
         <li><b>WhatsApp para Dante y recordatorios.</b> Pasar Dante y los recordatorios de consentimiento de Telegram a WhatsApp.</li>
-        <li><b>Una sola fuente de huecos.</b> Que Dante use los mismos horarios que la app.</li>
         <li><b>Tipo de cita en el calendario.</b> Que el evento de Google Calendar incluya si es Adulto, Pareja o Menor.</li>
-        <li><b>Horas pasadas de hoy.</b> Al agendar para hoy, la app todavía ofrece horas que ya han pasado. Hay que ocultarlas.</li>
+        <li><b>Revisar los horarios migrados.</b> Los psicólogos con varios centros tienen todas sus franjas en el primer centro por nombre; un agente debe repartirlas desde su ficha (la ficha lo avisa en ámbar).</li>
         <li><b>Citas a y media.</b> Activar <code class="ui">30'</code> a los psicólogos que las necesiten.</li>
         <li><b>Protección de datos en la base de datos.</b> Hoy los permisos se controlan en la app; falta cerrarlos también en la base de datos.</li>
         <li><b>Guía de pruebas antigua.</b> Actualizarla: menciona la app retirada y campos que ya no existen.</li>
@@ -846,7 +868,7 @@ footer img{width:28px; height:28px}
 <footer class="clara">
   <div class="wrap">
     <img src="bebanana-icon.png" alt="Be Banana" width="28" height="28">
-    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 22-10-2026 · «Where humans use artificial intelligence with real intelligence»</span>
+    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 29-10-2026 · «Where humans use artificial intelligence with real intelligence»</span>
   </div>
 </footer>
 

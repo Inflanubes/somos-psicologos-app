@@ -10,9 +10,11 @@ Archivos tocados (fuera del repo git, copias en `n8n/tools/_backups/` y `n8n/wor
 - `n8n/prompts/somos-system-prompt.md`: centros alternativos cuando no hay huecos y qué hacer si `EjecutarAccion` responde con `motivo`.
 - `n8n/workflows/somos-main-agent.json`: regenerado (revisión 2026-10-29). Lleva el token en claro, como el del bot.
 
+**Corrección 29-10-2026 (tarde):** la primera versión del JSON apuntaba por error a `somos.eltodi.net` (que es el proveedor externo de calendario, no la app). El JSON regenerado apunta a `app.somospsicologos.es`. Si importaste el JSON antes de esta corrección, vuelve a importarlo.
+
 ## Pasos para Sonia (en este orden)
 
-1. **Token.** En `somos-app/.env.local` ya hay una línea `DANTE_API_TOKEN=…` (generada el 29-10-2026). Pon **el mismo valor** como variable de entorno en el hosting de somos.eltodi.net y despliega la rama `b1-horarios-por-centro` (o `main` una vez fusionada). Sin la variable el endpoint responde 500 `DANTE_API_TOKEN no configurado`; con un token distinto, 401.
+1. **Token.** En `somos-app/.env.local` ya hay una línea `DANTE_API_TOKEN=…` (generada el 29-10-2026). Pon **el mismo valor** como variable de entorno en el hosting de app.somospsicologos.es y despliega la rama `b1-horarios-por-centro` (o `main` una vez fusionada). Sin la variable el endpoint responde 500 `DANTE_API_TOKEN no configurado`; con un token distinto, 401.
    - Si cambias el token, regenera el workflow: en PowerShell, `$env:DANTE_API_TOKEN='…'; node n8n/tools/build-workflow.mjs`, y vuelve a importar el JSON.
 2. **Migración 016** aplicada (Tarea 12 del plan B1): el endpoint lee `horarios_psicologos.centro_id`, `psicologos_centros.activo` y `centros.es_online`. Sin ella devuelve 500.
 3. **Prueba en un workflow copia** de n8n: importa `n8n/workflows/somos-main-agent.json` en una copia (no en producción), con un chat de prueba:

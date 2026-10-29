@@ -513,6 +513,10 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
 4. **Tarea 12:** el manual se actualiza en la rama pero el artifact no se republica hasta el merge.
 5. **Archivos fuera del repo cambiados:** `Supabase/migrations/016_horarios_por_centro.sql` (nuevo); `n8n/tools/_comun.js`, `n8n/tools/ejecutar-accion.js`, `n8n/tools/build-workflow.mjs`, `n8n/prompts/somos-system-prompt.md`, `n8n/workflows/somos-main-agent.json` (copias `*.2026-10-29.bak` en sus `_backups/`).
 
+## Corrección tras el merge (29-10-2026, tarde)
+
+`APP_URL` de Dante apuntaba a `somos.eltodi.net` (proveedor externo de calendario, 404) en vez de a la app, `app.somospsicologos.es`. Corregido en `n8n/tools/_comun.js` y `n8n/tools/build-workflow.mjs` (copias `*.2026-10-29b.bak`), JSON regenerado. Comprobado contra producción: sin token 401; con el token del hosting, 200.
+
 ## Revisión final (29-10-2026)
 
 Revisor independiente sobre `9187792..83959ca`: **sin críticos**. Tres importantes, arreglados en el commit "Revisión B1": fechas con formato válido pero inexistentes devolvían 500 (ahora 400, `validarPeticion` en `lib/disponibilidad-servidor.ts` con test); `tipos_consulta` vacío excluía al psicólogo en `tipo=centro` (ahora vale para todo, como en el formulario); en modo aviso se podía enviar mientras cargaba la disponibilidad saltándose los vetos duros (guarda para ambos modos).

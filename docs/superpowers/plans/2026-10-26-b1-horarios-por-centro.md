@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-26-b1-horarios-por-centro-design.md`.
 
-> **Estado 29-10-2026:** Tareas 1–11 hechas en la rama `b1-horarios-por-centro` (tsc limpio, 112 tests en verde). Tarea 12 pendiente de Sonia: migración 016 de madrugada, token en el hosting, pruebas de aceptación, republicar el manual y merge. Instrucciones de Dante en `docs/dante-cambios-2026-10-b1.md`. Decisiones tomadas durante la ejecución al final de este archivo. Tablero: `docs/backlog-2026-10-21.md` (B1: tareas 13, 28, 46, 47, 31). Método: `docs/metodo-trabajo.md`.
+> **Estado 29-10-2026:** Tareas 1–11 hechas en la rama `b1-horarios-por-centro` (tsc limpio, 133 tests en verde; revisión final hecha el 29-10-2026, ver al final). Tarea 12 pendiente de Sonia: migración 016 de madrugada, token en el hosting, pruebas de aceptación, republicar el manual y merge. Instrucciones de Dante en `docs/dante-cambios-2026-10-b1.md`. Decisiones tomadas durante la ejecución al final de este archivo. Tablero: `docs/backlog-2026-10-21.md` (B1: tareas 13, 28, 46, 47, 31). Método: `docs/metodo-trabajo.md`.
 
 ## Global Constraints
 
@@ -512,3 +512,20 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
 3. **Tarea 11:** no había `DANTE_API_TOKEN`; se generó uno aleatorio y se guardó en `.env.local` para poder regenerar el workflow. Sonia debe poner el mismo valor en el hosting.
 4. **Tarea 12:** el manual se actualiza en la rama pero el artifact no se republica hasta el merge.
 5. **Archivos fuera del repo cambiados:** `Supabase/migrations/016_horarios_por_centro.sql` (nuevo); `n8n/tools/_comun.js`, `n8n/tools/ejecutar-accion.js`, `n8n/tools/build-workflow.mjs`, `n8n/prompts/somos-system-prompt.md`, `n8n/workflows/somos-main-agent.json` (copias `*.2026-10-29.bak` en sus `_backups/`).
+
+## Revisión final (29-10-2026)
+
+Revisor independiente sobre `9187792..83959ca`: **sin críticos**. Tres importantes, arreglados en el commit "Revisión B1": fechas con formato válido pero inexistentes devolvían 500 (ahora 400, `validarPeticion` en `lib/disponibilidad-servidor.ts` con test); `tipos_consulta` vacío excluía al psicólogo en `tipo=centro` (ahora vale para todo, como en el formulario); en modo aviso se podía enviar mientras cargaba la disponibilidad saltándose los vetos duros (guarda para ambos modos).
+
+Menores diferidos (no bloquean el merge; para una tanda pequeña después de B1):
+
+1. TimeSelect relista como libre una hora fuera de horario si se desmarca la casilla con ella elegida: vaciar `hora` al desmarcar.
+2. Token comparado sin tiempo constante (`crypto.timingSafeEqual`).
+3. `centro_id` inexistente responde `motivo: centro_inactivo` en vez de 400.
+4. `tipo=centro` y `centros_alternativos` cargan psicólogos en serie: `Promise.all`.
+5. `build-workflow.mjs`: `.replace(re, () => token)` para blindar `$&`.
+6. `ejecutar-accion.js`: en `necesita_centro` ofrece también centros apagados (leer `activo`); quitar la frase interna de `TEXTO_MOTIVO.psicologo_inactivo`.
+7. Migración 016: dejar vivo (sin `--`) el `SELECT` de `revisar` como última sentencia para que el SQL Editor muestre la lista de fichas a revisar.
+8. Tests baratos: `validarTramos` con centros y horas con segundos; estado 13:30 con `incluirMedias`.
+9. Documentar la ventana inversa (si la 016 se aplica antes del deploy, guardar horario desde Psicólogos falla hasta el deploy) y que en la prueba de aceptación 3 el call center **sí ve** al psicólogo con sufijo pero no puede agendar (Decisión 1).
+10. eslint del proyecto: 5 avisos preexistentes en archivos que B1 no toca.

@@ -162,14 +162,16 @@ export default function CalendarioPage() {
     let cancelado = false
     supabase
       .from('horarios_psicologos')
-      .select('dia_semana, hora_inicio, hora_fin')
+      .select('dia_semana, hora_inicio, hora_fin, centro_id')
       .eq('psicologo_id', id)
       .then(({ data }) => { if (!cancelado) setTramosDe({ id, tramos: (data ?? []) as Tramo[] }) })
     return () => { cancelado = true }
   }, [filtros.psicologoId])
 
   const cargando = cargandoBase || semanaCargada !== lunes
-  const tramos = filtros.psicologoId && tramosDe?.id === filtros.psicologoId ? tramosDe.tramos : []
+  // Con centro filtrado, solo las franjas de ese centro; sin centro, todas (B2 pintará más).
+  const todosTramos = filtros.psicologoId && tramosDe?.id === filtros.psicologoId ? tramosDe.tramos : []
+  const tramos = filtros.centroId ? todosTramos.filter((t) => t.centro_id === filtros.centroId) : todosTramos
   const dias = useMemo(() => diasDeSemana(lunes), [lunes])
   const indiceCentro = useMemo(() => new Map(centros.map((c, i) => [c.id, i])), [centros])
   const nombreCentro = useMemo(() => new Map(centros.map((c) => [c.id, c.nombre])), [centros])

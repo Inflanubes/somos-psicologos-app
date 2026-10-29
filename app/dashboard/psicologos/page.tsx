@@ -384,7 +384,7 @@ export default function PsicologosPage() {
   // Psicólogo y call center: modo restringido, solo huecos libres.
   const modoDisponibilidad: 'aviso' | 'restringido' = !perfil || perfil.rol === 'agente' ? 'aviso' : 'restringido'
   const psicologoDisp = pideTipoCita ? (psicologos.find((p) => p.id === effPsicologoId) ?? null) : null
-  const { datos: disp, cargando: cargandoDisp, error: errorDisp, añadirCitaLocal } = useDisponibilidad(psicologoDisp)
+  const { datos: disp, cargando: cargandoDisp, error: errorDisp, añadirCitaLocal } = useDisponibilidad(psicologoDisp, effCentroId || null)
   const excluirAccionId = isCambiarCita ? eventoActual?.id : undefined
   const huecos = useMemo(() => {
     if (!disp || !fecha) return null

@@ -82,6 +82,12 @@ export default function FichaPsicologo({ psicologo: p, centros, guardando, onGua
     if (centroIds.length === 0) { setError('Un psicólogo necesita al menos un centro'); return }
     if (tipos.length === 0) { setError('Un psicólogo necesita al menos un tipo de consulta'); return }
     if (!calendar.trim()) { setError('El calendario de Google no puede quedar vacío'); return }
+    // Quitar un centro borra sus franjas de horario: avisar antes.
+    const quitadosConFranjas = p.centro_ids
+      .filter((id) => !centroIds.includes(id) && p.horarios.some((h) => h.centro_id === id))
+      .map((id) => nombreCentro(id))
+    if (quitadosConFranjas.length > 0 &&
+        !window.confirm(`Al quitar ${quitadosConFranjas.join(' y ')} se borrarán sus franjas de horario. ¿Continuar?`)) return
     const body: Record<string, unknown> = {}
     if (cambiaCentros) body.centro_ids = centroIds
     if (cambiaTipos) body.tipos_consulta = tipos
@@ -95,6 +101,10 @@ export default function FichaPsicologo({ psicologo: p, centros, guardando, onGua
   }
 
   const alternar = <T extends string>(lista: T[], v: T) => (lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v])
+  const nombreCentro = (id: string) => centros.find((c) => c.id === id)?.nombre ?? '—'
+  // Centros guardados del psicólogo (no el borrador), con su interruptor "recibe citas nuevas".
+  const centrosGuardados = centros.filter((c) => p.centro_ids.includes(c.id))
+  const centroRevisar = p.horario_revisar ? nombreCentro(p.horarios[0]?.centro_id ?? '') : null
 
   return (
     <aside className="ficha-lateral" aria-label={`Ficha de ${p.nombre}`}>
@@ -116,6 +126,23 @@ export default function FichaPsicologo({ psicologo: p, centros, guardando, onGua
                 <Chip key={c.id} activo={centroIds.includes(c.id)} onClick={() => setCentroIds((l) => alternar(l, c.id))}>{c.nombre}</Chip>
               ))}
             </div>
+            {centrosGuardados.length > 0 && (
+              <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+                {centrosGuardados.map((c) => {
+                  const activo = !p.centros_inactivos.includes(c.id)
+                  return (
+                    <div key={c.id} style={fila}>
+                      <div>
+                        <div style={{ ...etiqueta, fontSize: 12.5 }}>{c.nombre}</div>
+                        <div style={pista}>{activo ? 'Recibe citas nuevas' : 'No recibe citas nuevas; cambiar y cancelar siguen permitidos'}</div>
+                      </div>
+                      <Interruptor activo={activo} disabled={guardando} etiqueta={`Recibe citas nuevas en ${c.nombre}`}
+                        onChange={() => guardar({ centro_activo: { centro_id: c.id, activo: !activo } })} />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
           <div>
             <div style={{ ...etiqueta, marginBottom: 8 }}>Tipos de consulta</div>
@@ -128,9 +155,12 @@ export default function FichaPsicologo({ psicologo: p, centros, guardando, onGua
           <div style={{ ...fila, alignItems: 'flex-start' }}>
             <div>
               <div style={etiqueta}>Horario</div>
-              <div style={{ ...pista, fontSize: 12.5, color: p.horarios.length ? '#4a5870' : '#8899bb' }}>
-                {p.horarios.length ? resumenHorario(p.horarios) : 'Sin horario'}
+              <div style={{ ...pista, fontSize: 12.5, color: p.horarios.length ? '#4a5870' : '#b91c1c' }}>
+                {p.horarios.length ? resumenHorario(p.horarios, centros) : 'Sin horario: no se le pueden dar citas'}
               </div>
+              {centroRevisar && (
+                <div style={{ ...pista, color: '#b45309' }}>Horario asignado automáticamente a {centroRevisar}: revísalo</div>
+              )}
             </div>
             <ActionButton onClick={onEditarHorario} disabled={guardando}>Editar horario</ActionButton>
           </div>

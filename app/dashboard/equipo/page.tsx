@@ -45,12 +45,27 @@ export default function EquipoPage() {
     const nombreCentro = new Map(centros.map((c) => [c.id, c.nombre]))
     setPsicologos((lista) => lista.map((p) => {
       if (p.id !== id) return p
-      const nuevo = { ...p, ...body } as PsicologoGestion
-      if (body.centro_ids) nuevo.centros_nombres = nuevo.centro_ids.map((c) => nombreCentro.get(c) ?? '—')
+      const { centro_activo, ...resto } = body
+      const nuevo = { ...p, ...resto } as PsicologoGestion
+      if (body.centro_ids) {
+        // Como en la API: se conservan los apagados que siguen y se van las franjas de los centros quitados.
+        nuevo.centros_nombres = nuevo.centro_ids.map((c) => nombreCentro.get(c) ?? '—')
+        nuevo.centros_inactivos = p.centros_inactivos.filter((c) => nuevo.centro_ids.includes(c))
+        nuevo.horarios = p.horarios.filter((h) => !!h.centro_id && nuevo.centro_ids.includes(h.centro_id))
+      }
+      if (centro_activo) {
+        const { centro_id, activo } = centro_activo as { centro_id: string; activo: boolean }
+        nuevo.centros_inactivos = activo
+          ? p.centros_inactivos.filter((c) => c !== centro_id)
+          : Array.from(new Set([...p.centros_inactivos, centro_id]))
+      }
+      if (body.horarios) nuevo.horario_revisar = false
       return nuevo
     }))
     return null
   }
+  const centrosApagados = (p: PsicologoGestion) =>
+    p.centro_ids.map((id, i) => `${p.centros_nombres[i] ?? '—'}${p.centros_inactivos.includes(id) ? ' (no recibe citas nuevas)' : ''}`)
 
   async function toggleActivoFila(p: PsicologoGestion) {
     if (p.activo && !window.confirm(`¿Desactivar a ${p.nombre}? Dejará de aparecer para nuevas citas. Sus citas ya dadas no cambian.`)) return
@@ -121,13 +136,15 @@ export default function EquipoPage() {
                     )}
                   </td>
                   <td data-label="Centros y tipos" style={td}>
-                    <div>{p.centros_nombres.length ? p.centros_nombres.join(' · ') : <span style={{ color: '#b91c1c' }}>Sin centro</span>}</div>
+                    <div>{p.centros_nombres.length ? centrosApagados(p).join(' · ') : <span style={{ color: '#b91c1c' }}>Sin centro</span>}</div>
                     <div style={{ fontSize: 11.5, marginTop: 2, color: p.tipos_consulta.length ? '#667799' : '#b91c1c' }}>
                       {p.tipos_consulta.length ? p.tipos_consulta.map((t) => ETIQUETA_TIPO[t]).join(' · ') : 'Sin tipos de consulta'}
                     </div>
                   </td>
                   <td data-label="Horario" style={{ ...td, fontSize: 12.5 }}>
-                    {p.horarios.length ? resumenHorario(p.horarios) : <span style={{ color: '#8899bb' }}>Sin horario</span>}
+                    {p.horarios.length
+                      ? resumenHorario(p.horarios, centros)
+                      : <span style={{ color: '#b91c1c' }} title="No se le pueden dar citas hasta que tenga horario">{p.activo ? '● ' : ''}Sin horario</span>}
                   </td>
                   <td data-label="Activo" style={td}>
                     <Interruptor activo={p.activo} disabled={ocupado} etiqueta={`${p.activo ? 'Desactivar' : 'Activar'} a ${p.nombre}`} onChange={() => toggleActivoFila(p)} />
@@ -155,7 +172,7 @@ export default function EquipoPage() {
       {abierto && editandoHorario && (
         <HorarioEditor
           titulo={abierto.nombre}
-          subtitulo={`Centros: ${abierto.centros_nombres.join(' · ') || '—'}. El horario es del psicólogo y vale para todos sus centros.`}
+          centros={centros.filter((c) => abierto.centro_ids.includes(c.id))}
           tramosIniciales={abierto.horarios}
           busy={guardando.has(abierto.id)}
           onGuardar={async (tramos: Tramo[]) => {

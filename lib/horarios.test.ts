@@ -61,3 +61,30 @@ describe('resumenHorario', () => {
     expect(resumenHorario([])).toBe('')
   })
 })
+
+describe('validarTramos y resumenHorario con centros', () => {
+  const C = [
+    { id: 'mor', nombre: 'Moratalaz', es_online: false },
+    { id: 'sb', nombre: 'San Blas', es_online: false },
+    { id: 'on', nombre: 'Online', es_online: true },
+  ]
+  const tc = (dia: number, ini: string, fin: string, centro_id: string): Tramo => ({ dia_semana: dia, hora_inicio: ini, hora_fin: fin, centro_id })
+
+  it('dos centros presenciales no pueden solaparse', () => {
+    expect(validarTramos([tc(2, '10:00', '14:00', 'sb'), tc(2, '13:00', '17:00', 'mor')], C))
+      .toBe('Los tramos del martes se solapan (San Blas 10:00–14:00 y Moratalaz 13:00–17:00).')
+  })
+  it('Online puede solaparse con un presencial', () => {
+    expect(validarTramos([tc(1, '10:00', '14:00', 'mor'), tc(1, '10:00', '14:00', 'on')], C)).toBeNull()
+  })
+  it('dos franjas Online no pueden solaparse', () => {
+    expect(validarTramos([tc(1, '10:00', '14:00', 'on'), tc(1, '12:00', '15:00', 'on')], C)).not.toBeNull()
+  })
+  it('contiguos de centros distintos se permiten', () => {
+    expect(validarTramos([tc(1, '10:00', '14:00', 'mor'), tc(1, '14:00', '18:00', 'sb')], C)).toBeNull()
+  })
+  it('resumen agrupa por centro, centros por nombre', () => {
+    expect(resumenHorario([tc(1, '10:00', '14:00', 'sb'), tc(3, '10:00', '14:00', 'sb'), tc(2, '16:00', '20:00', 'on')], C))
+      .toBe('Online: M 16:00–20:00 · San Blas: L, X 10:00–14:00')
+  })
+})

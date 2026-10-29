@@ -31,6 +31,8 @@ export type Centro = {
   nombre: string
   creado_en: string
   google_review_url: string | null
+  /** true = centro de videollamada; su franja de horario puede coincidir con una presencial (migración 016). */
+  es_online: boolean
 }
 
 export type Psicologo = {
@@ -47,11 +49,21 @@ export type Psicologo = {
   tipos_consulta: TipoCita[]
 }
 
-/** Fila de psicologos_centros (migración 014): un psicólogo trabaja en N centros. */
-export type PsicologoCentro = { psicologo_id: string; centro_id: string }
+/**
+ * Fila de psicologos_centros (migración 014): un psicólogo trabaja en N centros.
+ * activo (migración 016): false = no recibe citas nuevas en ese centro; cambiar y cancelar siguen permitidos.
+ */
+export type PsicologoCentro = { psicologo_id: string; centro_id: string; activo: boolean }
 
 /** Fila de la vista psicologos_por_centro: una por psicólogo × centro. */
-export type PsicologoPorCentro = Psicologo & { centro_id: string; centro: string }
+export type PsicologoPorCentro = Psicologo & {
+  centro_id: string
+  centro: string
+  /** psicologos_centros.activo (migración 016). */
+  centro_activo: boolean
+  /** centros.es_online (migración 016). */
+  es_online: boolean
+}
 
 export type PsicologoInsert = {
   nombre: string
@@ -311,8 +323,9 @@ export type AsociadoMenorInsert = {
 }
 
 /**
- * Tramo semanal de trabajo de una ficha de psicólogo (migración 012).
+ * Tramo semanal de trabajo de un psicólogo en un centro (migraciones 012 y 016).
  * dia_semana: 1 = lunes … 7 = domingo. Horas 'HH:MM:SS' tal como las devuelve Postgres.
+ * revisar: true si la migración 016 asignó el centro automáticamente; el guardado desde Psicólogos lo pone a false.
  */
 export type HorarioPsicologo = {
   id: string
@@ -320,6 +333,8 @@ export type HorarioPsicologo = {
   dia_semana: number
   hora_inicio: string
   hora_fin: string
+  centro_id: string
+  revisar: boolean
   creado_en: string
 }
 
@@ -328,6 +343,8 @@ export type HorarioPsicologoInsert = {
   dia_semana: number
   hora_inicio: string
   hora_fin: string
+  centro_id: string
+  revisar?: boolean
 }
 
 export type Database = {
@@ -347,7 +364,7 @@ export type Database = {
       }
       psicologos_centros: {
         Row: PsicologoCentro
-        Insert: PsicologoCentro
+        Insert: Omit<PsicologoCentro, 'activo'> & { activo?: boolean }
         Update: Partial<PsicologoCentro>
         Relationships: []
       }

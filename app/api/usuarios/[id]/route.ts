@@ -18,7 +18,7 @@ type EditarBody = {
   activo?: boolean
   puede_bloquear?: boolean   // permiso para bloquear/desbloquear la agenda
   citas_media_hora?: boolean // permite citas a y media
-  horarios?: Tramo[]         // horario semanal del psicólogo (único); sustituye todas sus filas
+  horarios?: (Tramo & { centro_id?: string })[]  // horario semanal del psicólogo, cada franja con su centro; sustituye todas sus filas
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -71,17 +71,18 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (!Array.isArray(body.horarios)) {
         return NextResponse.json({ error: 'Horario no válido' }, { status: 400 })
       }
-      const nuevos: Tramo[] = body.horarios.map((h) => ({
+      const nuevos: (Tramo & { centro_id: string })[] = body.horarios.map((h) => ({
         dia_semana: Number(h.dia_semana),
         hora_inicio: String(h.hora_inicio),
         hora_fin: String(h.hora_fin),
+        centro_id: String(h.centro_id ?? ''),
       }))
       const errorValidacion = validarTramos(nuevos)
       if (errorValidacion) return NextResponse.json({ error: errorValidacion }, { status: 400 })
 
       const previos = await admin
         .from('horarios_psicologos')
-        .select('dia_semana, hora_inicio, hora_fin')
+        .select('dia_semana, hora_inicio, hora_fin, centro_id')
         .eq('psicologo_id', id)
       if (previos.error) return NextResponse.json({ error: previos.error.message }, { status: 500 })
 

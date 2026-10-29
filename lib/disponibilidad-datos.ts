@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database'
-import { ahoraMadrid } from '@/lib/fechas'
-import type { Tramo } from '@/lib/horarios'
-import type { Bloqueo, CitaOcupada } from '@/lib/disponibilidad'
+import type { Database } from '../types/database'
+import { ahoraMadrid } from './fechas'
+import type { Tramo } from './horarios'
+import type { Bloqueo, CitaOcupada } from './disponibilidad'
 
 export type PsicologoDisponibilidad = {
   id: string

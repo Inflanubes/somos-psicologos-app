@@ -5,8 +5,9 @@
  * la lógica está testeada en lib/disponibilidad y lib/huecos-dante.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, TipoCita } from '@/types/database'
+import type { Database, TipoCita } from '../types/database'
 import { cargarDatosDisponibilidad, type PsicologoDisponibilidad } from './disponibilidad-datos'
+import { TIPOS_CONSULTA } from './pacientes-tipos'
 import { proximosHuecos, motivoSinHuecos, elegirMasProximo, comprobarHueco, type HuecoFecha, type MotivoSinHuecos } from './huecos-dante'
 import type { Instante } from './fechas'
 
@@ -24,6 +25,61 @@ export type RespuestaHuecos = {
 }
 
 export type RespuestaComprobar = { ok: true } | { ok: false; motivo: string }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const FECHA = /^\d{4}-\d{2}-\d{2}$/
+const HORA = /^\d{1,2}:\d{2}(:\d{2})?$/
+
+function texto(v: unknown): string | undefined {
+  return typeof v === 'string' && v.trim() ? v.trim() : undefined
+}
+
+/** 'YYYY-MM-DD' que además existe en el calendario (2026-02-30 no). */
+function fechaReal(f: string): boolean {
+  if (!FECHA.test(f)) return false
+  const [y, m, d] = f.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d
+}
+
+/**
+ * Valida el cuerpo que manda Dante y lo convierte en una petición tipada.
+ * Devuelve `{ error }` (→ 400) con un mensaje claro en vez de dejar que una
+ * fecha inexistente reviente más adentro (→ 500).
+ */
+export function validarPeticion(body: Record<string, unknown>): { req: PeticionDisponibilidad } | { error: string } {
+  const tipo = body.tipo
+  if (tipo !== 'centro' && tipo !== 'psicologo' && tipo !== 'comprobar') return { error: 'tipo debe ser psicologo, centro o comprobar' }
+  const centro_id = texto(body.centro_id)
+  if (!centro_id || !UUID.test(centro_id)) return { error: 'centro_id obligatorio' }
+  const tipoConsultaTxt = texto(body.tipo_consulta)
+  if (tipoConsultaTxt && !TIPOS_CONSULTA.includes(tipoConsultaTxt as TipoCita)) return { error: 'tipo_consulta no válido' }
+  const tipo_consulta = tipoConsultaTxt as TipoCita | undefined
+  const fecha_deseada = texto(body.fecha_deseada)
+  if (fecha_deseada && !fechaReal(fecha_deseada)) return { error: 'fecha_deseada no es una fecha real (YYYY-MM-DD)' }
+
+  if (tipo === 'centro') return { req: { tipo, centro_id, fecha_deseada, tipo_consulta } }
+
+  const psicologo_id = texto(body.psicologo_id)
+  if (!psicologo_id || !UUID.test(psicologo_id)) return { error: 'psicologo_id obligatorio' }
+  if (tipo === 'psicologo') return { req: { tipo, centro_id, psicologo_id, fecha_deseada, tipo_consulta } }
+
+  const fecha = texto(body.fecha)
+  const hora = texto(body.hora)
+  if (!fecha || !fechaReal(fecha)) return { error: 'fecha no es una fecha real (YYYY-MM-DD)' }
+  if (!hora || !HORA.test(hora)) return { error: 'hora obligatoria (HH:MM)' }
+  const excluir_accion_id = texto(body.excluir_accion_id)
+  return { req: { tipo, centro_id, psicologo_id, fecha, hora, excluir_accion_id } }
+}
+
+/**
+ * ¿El psicólogo pasa ese tipo de consulta? Sin filtro, sí. Lista vacía = sin
+ * configurar = vale para todo (mismo criterio que el formulario de Citas y
+ * que ListarPsicologos en Dante).
+ */
+export function admiteTipo(tipos: TipoCita[], tipo?: TipoCita): boolean {
+  return !tipo || tipos.length === 0 || tipos.includes(tipo)
+}
 
 type Admin = SupabaseClient<Database>
 type PsicologoFila = PsicologoDisponibilidad & { activo: boolean; tipos_consulta: TipoCita[] }
@@ -94,8 +150,7 @@ export async function resolverDisponibilidad(
   if (filas.error) throw filas.error
   const candidatos: { id: string; nombre: string; huecos: HuecoFecha[] }[] = []
   for (const f of filas.data ?? []) {
-    const tipos = (f.tipos_consulta ?? []) as TipoCita[]
-    if (req.tipo_consulta && !tipos.includes(req.tipo_consulta)) continue
+    if (!admiteTipo((f.tipos_consulta ?? []) as TipoCita[], req.tipo_consulta)) continue
     const datos = await cargarDatosDisponibilidad(admin, f, req.centro_id)
     candidatos.push({ id: f.id, nombre: f.nombre, huecos: proximosHuecos(datos, ahora, req.fecha_deseada) })
   }

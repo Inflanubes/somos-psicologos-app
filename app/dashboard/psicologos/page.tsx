@@ -911,7 +911,9 @@ export default function PsicologosPage() {
       setError('Indica la fecha y la hora de la cita.')
       return
     }
-    if (pideTipoCita && restringido && cargandoDisp) {
+    // También en modo aviso: sin disponibilidad cargada no se pueden aplicar los
+    // vetos duros (hora ocupada o ya pasada), que valen para todos los roles.
+    if (pideTipoCita && cargandoDisp) {
       setError('Espera un momento: se está cargando la disponibilidad.')
       return
     }

@@ -12,7 +12,10 @@ import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
 import { getCentroActivo, setCentroActivo, clearCentroActivo, type CentroActivo } from '@/lib/centro-activo'
-import { generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo } from '@/lib/disponibilidad'
+import {
+  generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
+} from '@/lib/disponibilidad'
+import { ahoraMadrid } from '@/lib/fechas'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
@@ -207,6 +210,14 @@ export default function PsicologosPage() {
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
   const [tipoCita, setTipoCita] = useState<TipoCita | ''>('')
+  // Agente: casilla "Citar fuera de horario" (muestra las horas fuera de franja, bloqueadas o de centro apagado).
+  const [citarFueraHorario, setCitarFueraHorario] = useState(false)
+  // "Ahora" en Madrid, refrescado cada minuto: nadie agenda en el pasado ni con menos de 2 h (salvo agente con aviso).
+  const [ahora, setAhora] = useState(() => ahoraMadrid())
+  useEffect(() => {
+    const t = setInterval(() => setAhora(ahoraMadrid()), 60_000)
+    return () => clearInterval(t)
+  }, [])
   // Agendar cita: repetir cada semana, cada 15 días o cada 4 semanas durante N meses (máx. 12).
   const [repetir, setRepetir] = useState<FrecuenciaRepeticion | 'no'>('no')
   const [repetirMeses, setRepetirMeses] = useState(3)
@@ -300,7 +311,7 @@ export default function PsicologosPage() {
         // Todos, también los desactivados: el agente puede seguir gestionándolos
         // (el call center solo ve activos, se filtra abajo).
         supabase.from('psicologos').select('*').order('nombre'),
-        supabase.from('psicologos_centros').select('psicologo_id, centro_id'),
+        supabase.from('psicologos_centros').select('psicologo_id, centro_id, activo'),
       ])
       setCentros((c ?? []) as Centro[])
       setPsicologos((p ?? []) as Psicologo[])
@@ -386,20 +397,34 @@ export default function PsicologosPage() {
   const psicologoDisp = pideTipoCita ? (psicologos.find((p) => p.id === effPsicologoId) ?? null) : null
   const { datos: disp, cargando: cargandoDisp, error: errorDisp, añadirCitaLocal } = useDisponibilidad(psicologoDisp, effCentroId || null)
   const excluirAccionId = isCambiarCita ? eventoActual?.id : undefined
+  // "Recibe citas nuevas" apagado en ese centro: solo bloquea Agendar cita (cambiar y cancelar siguen).
+  const esAgendar = accion === 'Agendar cita'
+  const centroInactivo = esAgendar && !!disp && !disp.centroActivo
+  const sinHorario = !!disp && !disp.tieneAlgunHorario
   const huecos = useMemo(() => {
     if (!disp || !fecha) return null
-    return generarHuecos({ ...disp, fecha, incluirMedias: modoDisponibilidad === 'aviso', excluirAccionId })
-  }, [disp, fecha, modoDisponibilidad, excluirAccionId])
+    return generarHuecos({ ...disp, fecha, incluirMedias: modoDisponibilidad === 'aviso', excluirAccionId, ahora, centroInactivo })
+  }, [disp, fecha, modoDisponibilidad, excluirAccionId, ahora, centroInactivo])
   const bloqueoDia = disp && fecha ? diaBloqueado(disp.bloqueos, fecha) : null
   const diaNoLaborable = !!(disp && fecha && !trabajaEseDia(disp.tramos, fecha))
   const nombreCentroDisp = centros.find((c) => c.id === effCentroId)?.nombre ?? ''
   const restringido = modoDisponibilidad === 'restringido'
-  const sinHorasHoy = restringido && (!!bloqueoDia || diaNoLaborable)
+  const sinHorasHoy = restringido && (!!bloqueoDia || diaNoLaborable || sinHorario || centroInactivo)
   const hayHuecoLibre = (huecos ?? []).some((h) => h.estado === 'libre')
   const avisoDisp =
     !restringido && disp && fecha && psicologoDisp
-      ? motivoAviso({ ...disp, fecha, hora, incluirMedias: true, excluirAccionId, nombrePsicologo: psicologoDisp.nombre, nombreCentro: nombreCentroDisp })
+      ? motivoAviso({
+          ...disp, fecha, hora, incluirMedias: true, excluirAccionId, ahora, centroInactivo,
+          tieneAlgunHorario: disp.tieneAlgunHorario, nombrePsicologo: psicologoDisp.nombre, nombreCentro: nombreCentroDisp,
+        })
       : null
+  // Modo aviso: nunca se lista el pasado; lo demás fuera de horario solo con la casilla.
+  const ocultarHuecos = restringido ? [] : citarFueraHorario ? ['pasado' as const] : ['pasado' as const, ...ESTADOS_FUERA_HORARIO]
+  // La casilla se desmarca al cambiar de psicólogo.
+  useEffect(() => { setCitarFueraHorario(false) }, [effPsicologoId])
+  // Centros en los que un psicólogo no recibe citas nuevas (psicologos_centros.activo = false).
+  const centroApagado = (psicologoIdCentro: string, centroIdCentro: string) =>
+    psicologosCentros.some((pc) => pc.psicologo_id === psicologoIdCentro && pc.centro_id === centroIdCentro && pc.activo === false)
 
   // Serie de citas: la primera es la fecha elegida (validada como siempre); las
   // repeticiones caen el mismo día de la semana a la misma hora y solo se agendan
@@ -408,17 +433,17 @@ export default function PsicologosPage() {
   const serie = useMemo(() => {
     if (!esSerie || !fecha || !hora || !disp) return null
     const fechas = fechasSerie(fecha, repetir, repetirMeses)
-    const { libres, noDisponibles } = comprobarSerie(fechas.slice(1), hora, disp, restringido)
+    const { libres, noDisponibles } = comprobarSerie(fechas.slice(1), hora, { ...disp, ahora, centroInactivo }, restringido)
     return { fechas: [fecha, ...libres], noDisponibles, ultima: fechas[fechas.length - 1] }
-  }, [esSerie, repetir, repetirMeses, fecha, hora, disp, restringido])
+  }, [esSerie, repetir, repetirMeses, fecha, hora, disp, restringido, ahora, centroInactivo])
 
   // Si al cambiar la fecha la hora elegida deja de ser válida, se vacía: en modo
-  // restringido solo vale un hueco libre; en modo aviso solo se veta la hora ya
-  // ocupada por otra cita (dos pacientes no pueden solaparse, tampoco para el agente).
+  // restringido solo vale un hueco libre; en modo aviso solo se vetan la hora ya
+  // ocupada por otra cita y la que ya ha pasado (tampoco para el agente).
   useEffect(() => {
     if (!huecos || !hora) return
     const hueco = huecos.find((h) => h.hora === hora)
-    if (restringido ? hueco?.estado !== 'libre' : hueco?.estado === 'ocupado') setHora('')
+    if (restringido ? hueco?.estado !== 'libre' : !!hueco && ESTADOS_VETO_DURO.includes(hueco.estado)) setHora('')
   }, [restringido, huecos, hora])
 
   // Load logged-in identity
@@ -904,6 +929,10 @@ export default function PsicologosPage() {
       setError('Esa hora ya tiene una cita: el psicólogo no puede atender a dos pacientes a la vez. Elige otra hora.')
       return
     }
+    if (pideTipoCita && !restringido && (huecos ?? []).some((h) => h.hora === hora && h.estado === 'pasado')) {
+      setError('Esa hora ya ha pasado. Elige otra.')
+      return
+    }
     if (esSerie && !serie) {
       setError('Espera un momento: se está comprobando la disponibilidad de las fechas que se repiten.')
       return
@@ -1159,7 +1188,7 @@ export default function PsicologosPage() {
                   e.currentTarget.style.borderColor = '#dde1ea'
                 }}
               >
-                {nombreCentro(id)}
+                {nombreCentro(id)}{psiPsicologoId && centroApagado(psiPsicologoId, id) ? ' (no recibe citas nuevas)' : ''}
               </button>
             ))}
           </div>
@@ -1417,7 +1446,7 @@ export default function PsicologosPage() {
                 </option>
                 {filteredPsicologos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.nombre}{p.activo ? '' : ' (inactivo)'}
+                    {p.nombre}{p.activo ? '' : ' (inactivo)'}{centroApagado(p.id, centroId) ? ' (no recibe citas nuevas)' : ''}
                   </option>
                 ))}
               </select>
@@ -1808,12 +1837,18 @@ export default function PsicologosPage() {
                         type="date"
                         value={fecha}
                         onChange={(e) => setFecha(e.target.value)}
-                        min={restringido ? todayISODate() : undefined}
+                        min={todayISODate()}
                         style={inputStyle}
                         required
                       />
                     </FormField>
                     <FormField label={isCambiarCita ? 'Nueva hora' : 'Hora de cita'} required>
+                      {!restringido && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#4a5870', marginBottom: 6, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={citarFueraHorario} onChange={(e) => setCitarFueraHorario(e.target.checked)} />
+                          Citar fuera de horario
+                        </label>
+                      )}
                       <TimeSelect
                         value={hora}
                         onChange={setHora}
@@ -1822,18 +1857,34 @@ export default function PsicologosPage() {
                         disabled={cargandoDisp || sinHorasHoy || (restringido && (!fecha || !!errorDisp))}
                         opciones={huecos ?? undefined}
                         soloLibres={restringido}
+                        ocultar={ocultarHuecos}
                         placeholder={
                           cargandoDisp ? 'Cargando disponibilidad…'
                           : restringido && !fecha ? '— Primero elige la fecha —'
                           : undefined
                         }
                       />
-                      {restringido && bloqueoDia && (
+                      {!restringido && sinHorario && psicologoDisp && (
+                        <div style={{ fontSize: 12.5, color: '#667799', marginTop: 6 }}>
+                          {psicologoDisp.nombre} no tiene horario definido
+                        </div>
+                      )}
+                      {restringido && sinHorario && psicologoDisp && (
+                        <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                          {psicologoDisp.nombre} no tiene horario: pídele a un agente que lo defina en Psicólogos.
+                        </div>
+                      )}
+                      {restringido && !sinHorario && centroInactivo && psicologoDisp && (
+                        <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
+                          {psicologoDisp.nombre} no recibe citas nuevas en {nombreCentroDisp}
+                        </div>
+                      )}
+                      {restringido && !sinHorario && !centroInactivo && bloqueoDia && (
                         <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
                           Agenda bloqueada ese día ({etiquetaMotivo(bloqueoDia.motivo)}).
                         </div>
                       )}
-                      {restringido && !bloqueoDia && diaNoLaborable && psicologoDisp && (
+                      {restringido && !sinHorario && !centroInactivo && !bloqueoDia && diaNoLaborable && psicologoDisp && (
                         <div style={{ fontSize: 12.5, color: '#92400e', marginTop: 6 }}>
                           {psicologoDisp.nombre} no trabaja los {nombreDia(fecha)} en {nombreCentroDisp}.
                         </div>

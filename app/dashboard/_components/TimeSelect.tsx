@@ -30,6 +30,7 @@ export default function TimeSelect({
   style,
   opciones,
   soloLibres,
+  ocultar,
   placeholder,
 }: {
   value: string
@@ -41,12 +42,14 @@ export default function TimeSelect({
   opciones?: Hueco[]
   /** true (psicólogo / call center): solo se listan los huecos libres. */
   soloLibres?: boolean
+  /** Estados que no se listan (modo aviso: 'pasado' siempre; fuera de horario sin la casilla). */
+  ocultar?: EstadoHueco[]
   placeholder?: string
 }) {
   let lista: Hueco[] = opciones
     ? soloLibres
       ? opciones.filter((h) => h.estado === 'libre')
-      : opciones
+      : opciones.filter((h) => !ocultar?.includes(h.estado))
     : OPCIONES_HORA.map((hora) => ({ hora, estado: 'libre' as const }))
 
   // A legacy value outside the grid (e.g. an old 17:15 appointment) must still

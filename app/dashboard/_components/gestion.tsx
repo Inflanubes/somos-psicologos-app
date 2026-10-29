@@ -15,13 +15,18 @@ export type PsicologoGestion = {
   calendar_id: string | null; activo: boolean
   puede_bloquear: boolean | null
   citas_media_hora: boolean | null
+  /** Franjas con su centro_id (migración 016). */
   horarios: Tramo[]
+  /** Centros en los que no recibe citas nuevas (psicologos_centros.activo = false). */
+  centros_inactivos: string[]
+  /** true = la migración 016 asignó el centro de alguna franja: revisar el horario. */
+  horario_revisar: boolean
 }
 export type AgenteGestion = {
   id: string; nombre: string; email: string | null; telefono: string | null
   centro_id: string | null; activo: boolean; auth_user_id: string | null
 }
-export type CentroGestion = { id: string; nombre: string }
+export type CentroGestion = { id: string; nombre: string; es_online: boolean }
 export type TipoUsuario = 'psicologo' | 'agente' | 'call_center'
 
 export type DatosGestion = {

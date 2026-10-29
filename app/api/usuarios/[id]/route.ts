@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAgente } from '@/lib/require-agente'
 import { generateTempPassword } from '@/lib/temp-password'
-import { validarTramos, type Tramo } from '@/lib/horarios'
+import { validarTramos, type Tramo, type CentroHorario } from '@/lib/horarios'
 import { TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
 import type { TipoCita } from '@/types/database'
 
@@ -19,6 +19,7 @@ type EditarBody = {
   puede_bloquear?: boolean   // permiso para bloquear/desbloquear la agenda
   citas_media_hora?: boolean // permite citas a y media
   horarios?: (Tramo & { centro_id?: string })[]  // horario semanal del psicólogo, cada franja con su centro; sustituye todas sus filas
+  centro_activo?: { centro_id: string; activo: boolean } // interruptor "recibe citas nuevas" de un centro (migración 016)
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -59,14 +60,45 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (cs.error) return NextResponse.json({ error: cs.error.message }, { status: 500 })
       if ((cs.data ?? []).length !== ids.length)
         return NextResponse.json({ error: 'Alguno de los centros seleccionados no existe' }, { status: 400 })
+      // Se conserva el interruptor "recibe citas nuevas" de los centros que ya estaban.
+      const actuales = await admin.from('psicologos_centros').select('centro_id, activo').eq('psicologo_id', id)
+      if (actuales.error) return NextResponse.json({ error: actuales.error.message }, { status: 500 })
+      const activoDe = new Map((actuales.data ?? []).map((pc) => [pc.centro_id, pc.activo]))
       const del = await admin.from('psicologos_centros').delete().eq('psicologo_id', id)
       if (del.error) return NextResponse.json({ error: del.error.message }, { status: 500 })
-      const ins = await admin.from('psicologos_centros').insert(ids.map((centro_id) => ({ psicologo_id: id, centro_id })))
+      const ins = await admin
+        .from('psicologos_centros')
+        .insert(ids.map((centro_id) => ({ psicologo_id: id, centro_id, activo: activoDe.get(centro_id) ?? true })))
       if (ins.error) return NextResponse.json({ error: ins.error.message }, { status: 500 })
+      // Las franjas de horario de un centro que se quita se van con él.
+      const delHorarios = await admin
+        .from('horarios_psicologos')
+        .delete()
+        .eq('psicologo_id', id)
+        .not('centro_id', 'in', `(${ids.join(',')})`)
+      if (delHorarios.error) return NextResponse.json({ error: delHorarios.error.message }, { status: 500 })
     }
 
-    // Horario semanal del psicólogo (único, vale para todos sus centros): se
-    // sustituyen todas sus filas. Si el insert falla, se reponen las anteriores.
+    // Interruptor "recibe citas nuevas" de un centro (psicologos_centros.activo).
+    if (body.centro_activo !== undefined) {
+      const { centro_id, activo } = body.centro_activo ?? {}
+      if (typeof centro_id !== 'string' || typeof activo !== 'boolean') {
+        return NextResponse.json({ error: 'Centro no válido' }, { status: 400 })
+      }
+      const upd = await admin
+        .from('psicologos_centros')
+        .update({ activo })
+        .eq('psicologo_id', id)
+        .eq('centro_id', centro_id)
+        .select('centro_id')
+      if (upd.error) return NextResponse.json({ error: upd.error.message }, { status: 500 })
+      if ((upd.data ?? []).length === 0) {
+        return NextResponse.json({ error: 'El psicólogo no trabaja en ese centro' }, { status: 400 })
+      }
+    }
+
+    // Horario semanal del psicólogo, cada franja en un centro: se sustituyen
+    // todas sus filas. Si el insert falla, se reponen las anteriores.
     if (body.horarios !== undefined) {
       if (!Array.isArray(body.horarios)) {
         return NextResponse.json({ error: 'Horario no válido' }, { status: 400 })
@@ -77,12 +109,23 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         hora_fin: String(h.hora_fin),
         centro_id: String(h.centro_id ?? ''),
       }))
-      const errorValidacion = validarTramos(nuevos)
+      // Cada franja tiene que ser de un centro del psicólogo.
+      const pcs = await admin.from('psicologos_centros').select('centro_id').eq('psicologo_id', id)
+      if (pcs.error) return NextResponse.json({ error: pcs.error.message }, { status: 500 })
+      const idsCentros = (pcs.data ?? []).map((pc) => pc.centro_id)
+      if (nuevos.some((h) => !idsCentros.includes(h.centro_id))) {
+        return NextResponse.json({ error: 'Cada franja necesita un centro del psicólogo' }, { status: 400 })
+      }
+      const centrosRes = idsCentros.length
+        ? await admin.from('centros').select('id, nombre, es_online').in('id', idsCentros)
+        : { data: [], error: null }
+      if (centrosRes.error) return NextResponse.json({ error: centrosRes.error.message }, { status: 500 })
+      const errorValidacion = validarTramos(nuevos, (centrosRes.data ?? []) as CentroHorario[])
       if (errorValidacion) return NextResponse.json({ error: errorValidacion }, { status: 400 })
 
       const previos = await admin
         .from('horarios_psicologos')
-        .select('dia_semana, hora_inicio, hora_fin, centro_id')
+        .select('dia_semana, hora_inicio, hora_fin, centro_id, revisar')
         .eq('psicologo_id', id)
       if (previos.error) return NextResponse.json({ error: previos.error.message }, { status: 500 })
 
@@ -92,7 +135,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (nuevos.length > 0) {
         const ins = await admin
           .from('horarios_psicologos')
-          .insert(nuevos.map((h) => ({ ...h, psicologo_id: id })))
+          .insert(nuevos.map((h) => ({ ...h, psicologo_id: id, revisar: false })))
         if (ins.error) {
           const anteriores = previos.data ?? []
           if (anteriores.length > 0) {

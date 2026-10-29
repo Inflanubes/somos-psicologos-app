@@ -15,12 +15,12 @@ export async function GET() {
       .from('psicologos')
       .select('id, nombre, email, telefono, calendar_id, activo, puede_bloquear, citas_media_hora, tipos_consulta')
       .order('nombre'),
-    admin.from('psicologos_centros').select('psicologo_id, centro_id'),
+    admin.from('psicologos_centros').select('psicologo_id, centro_id, activo'),
     admin.from('agentes').select('id, nombre, email, telefono, centro_id, activo, auth_user_id').order('nombre'),
-    admin.from('centros').select('id, nombre').order('nombre'),
+    admin.from('centros').select('id, nombre, es_online').order('nombre'),
     admin
       .from('horarios_psicologos')
-      .select('psicologo_id, dia_semana, hora_inicio, hora_fin')
+      .select('psicologo_id, dia_semana, hora_inicio, hora_fin, centro_id, revisar')
       .order('dia_semana')
       .order('hora_inicio'),
   ])
@@ -30,23 +30,33 @@ export async function GET() {
   if (centros.error) return NextResponse.json({ error: centros.error.message }, { status: 500 })
 
   let avisoHorarios: string | null = null
-  const horariosPorPsicologo = new Map<string, { dia_semana: number; hora_inicio: string; hora_fin: string }[]>()
+  const horariosPorPsicologo = new Map<string, { dia_semana: number; hora_inicio: string; hora_fin: string; centro_id: string }[]>()
+  // Psicólogos con alguna franja cuyo centro asignó la migración 016 (hay que revisarla en la ficha).
+  const horarioRevisar = new Set<string>()
   if (horarios.error) {
     avisoHorarios = 'No se pudieron leer los horarios: ' + horarios.error.message
   } else {
     for (const h of horarios.data ?? []) {
       const lista = horariosPorPsicologo.get(h.psicologo_id) ?? []
-      lista.push({ dia_semana: h.dia_semana, hora_inicio: h.hora_inicio, hora_fin: h.hora_fin })
+      lista.push({ dia_semana: h.dia_semana, hora_inicio: h.hora_inicio, hora_fin: h.hora_fin, centro_id: h.centro_id })
       horariosPorPsicologo.set(h.psicologo_id, lista)
+      if (h.revisar) horarioRevisar.add(h.psicologo_id)
     }
   }
 
-  // Centros de cada psicólogo (migración 014: una ficha, N centros en psicologos_centros).
+  // Centros de cada psicólogo (migración 014: una ficha, N centros en psicologos_centros)
+  // y centros en los que no recibe citas nuevas (migración 016).
   const centrosDe = new Map<string, string[]>()
+  const centrosInactivosDe = new Map<string, string[]>()
   for (const pc of psicologosCentros.data ?? []) {
     const l = centrosDe.get(pc.psicologo_id) ?? []
     l.push(pc.centro_id)
     centrosDe.set(pc.psicologo_id, l)
+    if (pc.activo === false) {
+      const li = centrosInactivosDe.get(pc.psicologo_id) ?? []
+      li.push(pc.centro_id)
+      centrosInactivosDe.set(pc.psicologo_id, li)
+    }
   }
   const centroNombre = new Map((centros.data ?? []).map((c) => [c.id, c.nombre]))
 
@@ -69,6 +79,8 @@ export async function GET() {
       centros_nombres: (centrosDe.get(p.id) ?? []).map((id) => centroNombre.get(id) ?? '—'),
       tipos_consulta: (p.tipos_consulta ?? []) as TipoCita[],
       horarios: horariosPorPsicologo.get(p.id) ?? [],
+      centros_inactivos: centrosInactivosDe.get(p.id) ?? [],
+      horario_revisar: horarioRevisar.has(p.id),
     })),
     agentes: staff.filter((a) => !esCallCenter(a)),
     call_center: staff.filter(esCallCenter),

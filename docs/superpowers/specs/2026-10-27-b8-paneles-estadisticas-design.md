@@ -1,6 +1,6 @@
 # B8 — Paneles y estadísticas (diseño)
 
-Fecha: 27-10-2026. Bloque B8 del tablero (tareas 21, 22, 23, 24, 25, 56). Tarea 23 resuelta: Jaime mandó la lista de indicadores el 27-10 (copiada al final de este documento). Depende de **B1** (horarios por centro: sin ellos no hay ocupación ni horas bloqueadas) y de **B4** (`pareja_de` para contar parejas). **[mi decisión]** = lo decidió Claude; **[pendiente de Sonia]** = propuesta no confirmada todavía, se puede cambiar al empezar el bloque.
+Fecha: 27-10-2026. Bloque B8 del tablero (tareas 21, 22, 23, 24, 25, 56). Tarea 23 resuelta: Jaime mandó la lista de indicadores el 27-10 (copiada al final de este documento). Depende de **B1** (horarios por centro: sin ellos no hay ocupación ni horas bloqueadas) y de **B4** (`pareja_de` para contar parejas). **[mi decisión]** = lo decidió Claude. Las cuatro propuestas marcadas **[confirmado 29-10]** las aprobó Sonia el 29-10-2026: no hay decisiones abiertas.
 
 ## Cómo funciona hoy (verificado el 27-10)
 
@@ -12,7 +12,7 @@ Fecha: 27-10-2026. Bloque B8 del tablero (tareas 21, 22, 23, 24, 25, 56). Tarea 
 ## Objetivos
 
 1. **Un solo selector de periodo (22, 24)** para Resumen, Estadísticas y el panel del call center: fecha inicio y fecha fin libres, con atajos *Hoy · Esta semana · Este mes · Mes pasado · Últimos 90 días · Desde siempre*. Al lado, pastillas de centro (*Todos* + un botón por centro) que filtran de verdad **(21)**. En Estadísticas se mantiene además el desplegable de psicólogo. El periodo y el centro viajan en la URL (`?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&centro=`), así un enlace se puede compartir y el atajo elegido se reconstruye al cargar.
-2. **Títulos (24):** `/dashboard` pasa a llamarse **Resumen de pacientes** y `/dashboard/psicologos/stats` **Actividad de citas** (menú lateral, título de página y manual). **[mi decisión, pendiente de Sonia]** Jaime no propuso nombres; con estos se entiende cuál es cuál.
+2. **Títulos (24):** `/dashboard` pasa a llamarse **Resumen de pacientes** y `/dashboard/psicologos/stats` **Actividad de citas** (menú lateral, título de página y manual). **[mi decisión, confirmado 29-10]** Jaime no propuso nombres; con estos se entiende cuál es cuál.
 3. **Resumen de pacientes: indicadores de Jaime (23).** Todos sobre el periodo y el centro elegidos. Las citas se cuentan por la **fecha de la sesión** (`fecha_cita`), no por cuándo se agendaron; los pacientes por `fecha_incorporacion`.
 
    | Cuadro | Qué cuenta |
@@ -28,11 +28,11 @@ Fecha: 27-10-2026. Bloque B8 del tablero (tareas 21, 22, 23, 24, 25, 56). Tarea 
 
    Orden de los cuadros: el de la tabla **[mi decisión]** (el del documento de Jaime; la línea "Lo distribuiría así" llegó cortada).
 
-   **Gráfica 1 (quesito, con selector):** *Citas por tipo de terapia* (adultos / pareja / infantil; las citas sin tipo salen como "Sin tipo"), *Nuevos pacientes por centro*, *Nuevos pacientes por canal de entrada* (Dante / Agentes / Call center / Psicólogos / Sin dato), y **Distribución por estado** (la actual) como cuarta opción **[mi decisión, pendiente de Sonia]**.
+   **Gráfica 1 (quesito, con selector):** *Citas por tipo de terapia* (adultos / pareja / infantil; las citas sin tipo salen como "Sin tipo"), *Nuevos pacientes por centro*, *Nuevos pacientes por canal de entrada* (Dante / Agentes / Call center / Psicólogos / Sin dato), y **Distribución por estado** (la actual) como cuarta opción **[mi decisión, confirmado 29-10]**.
 
    **Gráfica 2 (barras horizontales, con selector):** *Nuevos pacientes por psicólogo*, *Nuevos pacientes por centro*, *Citas por psicólogo*, *Citas por centro*, *Ocupación por psicólogo (%)*, *Ocupación por centro (%)*, *Anulación por psicólogo (%)*, *Anulación por centro (%)*. Todos los psicólogos activos (no top 8/10), ordenados de mayor a menor, con scroll dentro de la tarjeta. Un psicólogo activo sin datos aparece con 0.
 
-   **Anulación por psicólogo / centro [mi decisión, pendiente de Sonia]:** se calcula sobre **citas** (anuladas / total de citas de ese psicólogo o centro), igual que el cuadro general, y no sobre huecos como escribió Jaime: así compara psicólogos aunque no tengan horario cargado y coincide con la tasa de arriba.
+   **Anulación por psicólogo / centro [mi decisión, confirmado 29-10]:** se calcula sobre **citas** (anuladas / total de citas de ese psicólogo o centro), igual que el cuadro general, y no sobre huecos como escribió Jaime: así compara psicólogos aunque no tengan horario cargado y coincide con la tasa de arriba.
 
    La tabla "Pacientes recientes" se queda igual debajo (filtrada por centro, no por periodo).
 
@@ -46,7 +46,7 @@ Fecha: 27-10-2026. Bloque B8 del tablero (tareas 21, 22, 23, 24, 25, 56). Tarea 
 
 5. **Huecos y horas bloqueadas (ocupación).** Un hueco = una hora de horario. Huecos abiertos de un psicólogo en el periodo = suma, para cada día del periodo, de las horas de sus tramos de ese día de la semana (todos sus centros, o solo el centro filtrado), **menos** las horas de esos tramos que caen en un día bloqueado. Horas bloqueadas de un bloqueo = horas de los tramos del psicólogo en los días de `fecha_bloqueo_inicio..fecha_bloqueo_fin` que caen dentro del periodo. Las citas a y media no cambian el cómputo (una cita ocupa una hora). Ocupación por centro = citas del centro / huecos de los tramos de ese centro. Si los huecos son 0, la ocupación se muestra como "—". Puede superar el 100 % cuando hay citas fuera de horario (Dante y Make no miran el horario): se muestra tal cual con la nota `Las citas fuera de horario cuentan; por eso puede pasar del 100 %.`
    **Aviso para Jaime (va en el manual y en la estimación de plazos):** ocupación y horas bloqueadas solo son fiables desde que cada psicólogo tiene su horario cargado (B1). Para periodos anteriores saldrán 0 h / "—".
-6. **Perfil inspección (56).** Nuevo rol `inspeccion` en `perfiles`: ve y hace lo mismo que un agente **salvo** Resumen de pacientes y Actividad de citas (ni en el menú ni por URL; su página de inicio es Calendario). Se da de alta desde Usuarios (pestaña "Inspección", misma ficha en `agentes` que agentes y call center). **[mi decisión, pendiente de Sonia]:** no es solo lectura; el tablero lo describe como "copia del rol agente sin los dos paneles" y hacerlo de solo lectura tocaría todas las pantallas. Si el cliente quiere solo lectura, es una tarea aparte.
+6. **Perfil inspección (56).** Nuevo rol `inspeccion` en `perfiles`: ve y hace lo mismo que un agente **salvo** Resumen de pacientes y Actividad de citas (ni en el menú ni por URL; su página de inicio es Calendario). Se da de alta desde Usuarios (pestaña "Inspección", misma ficha en `agentes` que agentes y call center). **[mi decisión, confirmado 29-10]:** no es solo lectura; el tablero lo describe como "copia del rol agente sin los dos paneles" y hacerlo de solo lectura tocaría todas las pantallas. Si el cliente quiere solo lectura, es una tarea aparte.
 
 ## No objetivos
 

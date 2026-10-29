@@ -14,8 +14,11 @@ for (let h = 8; h <= 21; h++) {
 const SUFIJO: Record<EstadoHueco, string> = {
   libre: '',
   ocupado: ' · ocupada',
+  pasado: ' · ya ha pasado',
+  antelacion: ' · menos de 2 h',
   bloqueado: ' · agenda bloqueada',
   fuera_horario: ' · fuera de horario',
+  centro_inactivo: ' · no recibe citas nuevas',
   media_hora: ' · media hora no activa',
 }
 

@@ -60,7 +60,7 @@ export function comprobarSerie(
     const hueco = generarHuecos({ ...disp, fecha, incluirMedias: !restringido }).find((h) => h.hora === hora)
     const vale = restringido
       ? hueco?.estado === 'libre'
-      : !!hueco && hueco.estado !== 'ocupado' && hueco.estado !== 'bloqueado'
+      : !!hueco && hueco.estado !== 'ocupado' && hueco.estado !== 'bloqueado' && hueco.estado !== 'pasado'
     ;(vale ? libres : noDisponibles).push(fecha)
   }
   return { libres, noDisponibles }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   diaSemanaISO, nombreDia, diaBloqueado, trabajaEseDia, generarHuecos, motivoAviso, etiquetaMotivo, aplicarCitaLocal,
+  ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
   type ParamsHuecos, type Hueco,
 } from './disponibilidad'
 import type { Tramo } from './horarios'
@@ -10,8 +11,11 @@ const MARTES = '2026-09-29'
 const DOMINGO = '2026-09-27'
 
 const t = (dia_semana: number, hora_inicio: string, hora_fin: string): Tramo => ({ dia_semana, hora_inicio, hora_fin })
-const base: ParamsHuecos = { tramos: [], citas: [], bloqueos: [], fecha: LUNES, mediaHora: false, incluirMedias: false }
+// Horario completo (08:00–23:00) para que los tests que no van de horario tengan todo libre.
+const base: ParamsHuecos = { tramos: [t(1, '08:00', '23:00')], citas: [], bloqueos: [], fecha: LUNES, mediaHora: false, incluirMedias: false }
 const estado = (huecos: Hueco[], hora: string) => huecos.find((h) => h.hora === hora)?.estado
+const AHORA = { fecha: LUNES, minutos: 12 * 60 } // lunes 12:00
+const conHorario = { ...base, tramos: [t(1, '09:00', '21:00')] }
 
 describe('diaSemanaISO / nombreDia', () => {
   it('lunes = 1 y domingo = 7 (no 0)', () => {
@@ -25,8 +29,9 @@ describe('diaSemanaISO / nombreDia', () => {
 })
 
 describe('trabajaEseDia', () => {
-  it('sin tramos siempre trabaja (sin restricción)', () => {
-    expect(trabajaEseDia([], MARTES)).toBe(true)
+  it('sin tramos = fuera de horario en todos los huecos y no trabaja ese día', () => {
+    expect(trabajaEseDia([], LUNES)).toBe(false)
+    expect(generarHuecos({ ...base, tramos: [] }).every((h) => h.estado === 'fuera_horario')).toBe(true)
   })
   it('con tramos solo los días que los tienen', () => {
     const tramos = [t(1, '09:00', '14:00'), t(3, '09:00', '14:00')]
@@ -51,7 +56,7 @@ describe('diaBloqueado', () => {
 })
 
 describe('generarHuecos: franja y medias horas', () => {
-  it('solo en punto: 14 huecos de 08:00 a 21:00, todos libres sin tramos ni citas', () => {
+  it('solo en punto: 14 huecos de 08:00 a 21:00, todos libres con horario completo y sin citas', () => {
     const h = generarHuecos(base)
     expect(h).toHaveLength(14)
     expect(h[0]).toEqual({ hora: '08:00', estado: 'libre' })
@@ -149,6 +154,41 @@ describe('generarHuecos: ocupación', () => {
   })
 })
 
+describe('generarHuecos: pasado, antelación y centro inactivo', () => {
+  it('hoy: hora ≤ ahora es pasado, menos de 2 h es antelacion, 2 h o más es libre', () => {
+    const h = generarHuecos({ ...conHorario, ahora: AHORA })
+    expect(estado(h, '11:00')).toBe('pasado')
+    expect(estado(h, '12:00')).toBe('pasado')
+    expect(estado(h, '13:00')).toBe('antelacion')
+    expect(estado(h, '14:00')).toBe('libre')
+  })
+  it('fecha anterior a hoy: todo pasado; fecha futura: no aplica', () => {
+    expect(generarHuecos({ ...conHorario, fecha: DOMINGO, tramos: [t(7, '09:00', '21:00')], ahora: AHORA }).every((h) => h.estado === 'pasado')).toBe(true)
+    expect(estado(generarHuecos({ ...conHorario, fecha: MARTES, tramos: [t(2, '09:00', '21:00')], ahora: AHORA }), '09:00')).toBe('libre')
+  })
+  it('sin ahora no se evalúan pasado ni antelacion', () => {
+    expect(estado(generarHuecos(conHorario), '09:00')).toBe('libre')
+  })
+  it('ocupado gana a pasado; pasado gana a bloqueado', () => {
+    const h = generarHuecos({ ...conHorario, ahora: AHORA, citas: [{ fecha: LUNES, hora: '11:00:00' }], bloqueos: [{ inicio: LUNES, fin: LUNES }] })
+    expect(estado(h, '11:00')).toBe('ocupado')
+    expect(estado(h, '10:00')).toBe('pasado')
+  })
+  it('centro inactivo marca las horas dentro de franja; fuera de franja sigue fuera_horario', () => {
+    const h = generarHuecos({ ...base, tramos: [t(1, '10:00', '14:00')], centroInactivo: true })
+    expect(estado(h, '10:00')).toBe('centro_inactivo')
+    expect(estado(h, '16:00')).toBe('fuera_horario')
+  })
+  it('una cita en otro centro (Online) ocupa la hora: las citas vienen de todos los centros', () => {
+    const h = generarHuecos({ ...conHorario, citas: [{ fecha: LUNES, hora: '11:00' }] })
+    expect(estado(h, '11:00')).toBe('ocupado')
+  })
+  it('listas de veto duro y de fuera de horario', () => {
+    expect(ESTADOS_VETO_DURO).toEqual(['ocupado', 'pasado'])
+    expect(ESTADOS_FUERA_HORARIO).toEqual(['bloqueado', 'fuera_horario', 'centro_inactivo'])
+  })
+})
+
 describe('generarHuecos: límite superior de la franja', () => {
   it('una cita a las 21:00 con medias ocupa 20:30, 21:00 y 21:30 (dura hasta las 22:00) y deja libre 20:00', () => {
     const h = generarHuecos({ ...base, mediaHora: true, citas: [{ fecha: LUNES, hora: '21:00' }] })
@@ -212,4 +252,12 @@ describe('motivoAviso', () => {
     expect(motivoAviso({ ...ctx, hora: '10:00' })).toBeNull()
     expect(motivoAviso({ ...ctx, hora: '17:15' })).toBeNull()
   })
+})
+
+describe('motivoAviso nuevos', () => {
+  const p = { ...conHorario, ahora: AHORA, incluirMedias: true, nombrePsicologo: 'Jaime', nombreCentro: 'Moratalaz' }
+  it('antelacion', () => expect(motivoAviso({ ...p, hora: '13:00' })).toBe('quedan menos de 2 horas para esa cita'))
+  it('pasado', () => expect(motivoAviso({ ...p, hora: '11:00' })).toBe('esa hora ya ha pasado'))
+  it('centro inactivo', () => expect(motivoAviso({ ...p, hora: '15:00', centroInactivo: true })).toBe('Jaime no recibe citas nuevas en Moratalaz'))
+  it('sin horario en ningún centro', () => expect(motivoAviso({ ...p, tramos: [], tieneAlgunHorario: false, hora: '15:00' })).toBe('Jaime no tiene horario definido'))
 })

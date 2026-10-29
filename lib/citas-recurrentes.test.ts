@@ -67,6 +67,11 @@ describe('comprobarSerie', () => {
     expect(r.libres).toEqual(['2026-11-03'])
     expect(r.noDisponibles).toEqual(['2026-11-17', '2026-12-01'])
   })
+  it('agente: una fecha ya pasada se descarta aunque la hora esté dentro del horario', () => {
+    const r = comprobarSerie(['2026-11-03', '2026-11-17'], '10:00', { ...disp, ahora: { fecha: '2026-11-10', minutos: 9 * 60 } }, false)
+    expect(r.libres).toEqual(['2026-11-17'])
+    expect(r.noDisponibles).toEqual(['2026-11-03'])
+  })
 })
 
 describe('mensajes', () => {

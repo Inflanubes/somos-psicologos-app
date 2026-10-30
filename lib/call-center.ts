@@ -37,6 +37,27 @@ export function esAccionSolicitud(a: string): a is AccionSolicitud {
   return (ACCIONES_SOLICITUD as readonly string[]).includes(a)
 }
 
+// ── Operador recordado en el navegador ──────────────────────────────────────
+const CLAVE_OPERADOR = 'operador:'
+
+/** Nombre de operador guardado para este usuario (vacío si no hay o localStorage falla). */
+export function leerOperador(userId: string): string {
+  try {
+    return window.localStorage.getItem(CLAVE_OPERADOR + userId) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function guardarOperador(userId: string, valor: string): void {
+  try {
+    if (valor.trim()) window.localStorage.setItem(CLAVE_OPERADOR + userId, valor)
+    else window.localStorage.removeItem(CLAVE_OPERADOR + userId)
+  } catch {
+    // localStorage lleno o bloqueado: el operador vive solo en memoria.
+  }
+}
+
 // ── Teléfono ────────────────────────────────────────────────────────────────
 /** Solo dígitos. */
 export function normalizarTelefono(s: string): string {

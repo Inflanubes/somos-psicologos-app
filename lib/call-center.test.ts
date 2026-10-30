@@ -6,6 +6,8 @@ import {
   citasMismoDia,
   comentarioAvisoCita,
   comentarioCambioPsicologo,
+  guardarOperador,
+  leerOperador,
   esAccionSolicitud,
   estadoCitaHistorico,
   etiquetaOrigen,
@@ -122,5 +124,33 @@ describe('comentarios y textos', () => {
     ).toBe(
       'Este paciente ya tiene cita el martes 27/10 a las 10:00 con Jaime. ¿Quieres modificarla o es otra cita (por ejemplo, de pareja)?',
     )
+  })
+})
+
+describe('operador recordado en el navegador', () => {
+  function conLocalStorage(store: Record<string, string> | null) {
+    const ls = store && {
+      getItem: (k: string) => (k in store ? store[k] : null),
+      setItem: (k: string, v: string) => { store[k] = v },
+      removeItem: (k: string) => { delete store[k] },
+    }
+    ;(globalThis as { window?: unknown }).window = store
+      ? { localStorage: ls }
+      : { get localStorage(): Storage { throw new Error('bloqueado') } }
+  }
+  it('guarda por usuario, borra al vaciar y recuerda', () => {
+    const store: Record<string, string> = {}
+    conLocalStorage(store)
+    guardarOperador('u1', 'Ana')
+    expect(leerOperador('u1')).toBe('Ana')
+    expect(leerOperador('u2')).toBe('')
+    guardarOperador('u1', '   ')
+    expect(leerOperador('u1')).toBe('')
+    expect(Object.keys(store)).toEqual([])
+  })
+  it('sin localStorage no rompe', () => {
+    conLocalStorage(null)
+    expect(() => guardarOperador('u1', 'Ana')).not.toThrow()
+    expect(leerOperador('u1')).toBe('')
   })
 })

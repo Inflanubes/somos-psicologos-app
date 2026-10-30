@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import type { Paciente, Psicologo, Centro } from '@/types/database'
+import type { Paciente, Psicologo, Centro, Rol } from '@/types/database'
 import PacientesClient from './PacientesClient'
 import type { PacienteTableRow } from './PacientesClient'
 import { filtroPacientesDePsicologo, ETIQUETA_TIPO, TIPOS_CONSULTA, COLUMNA_PSICOLOGO } from '@/lib/pacientes-tipos'
@@ -15,6 +15,8 @@ export default async function PacientesPage() {
     ? await supabase.from('perfiles').select('rol, psicologo_id').eq('id', user.id).maybeSingle()
     : { data: null }
   const esPsicologo = perfil?.rol === 'psicologo'
+  // Sin fila en perfiles = agente.
+  const rol: Rol = (perfil?.rol as Rol | undefined) ?? 'agente'
 
   const [{ data: psicologos }, { data: centros }] = await Promise.all([
     supabase.from('psicologos').select('*').order('nombre'),
@@ -62,6 +64,7 @@ export default async function PacientesPage() {
       .join(' · ') || 'Sin asignar',
     anadido_por: p.created_by ?? null,
     origen: p.origen ?? null,
+    operador: p.operador ?? null,
     estado: p.estado,
     fecha_cita: p.fecha_cita,
     hora_cita: p.hora_cita,
@@ -109,6 +112,7 @@ export default async function PacientesPage() {
           pacientes={rows}
           psicologos={psi.map((p) => ({ id: p.id, nombre: p.nombre, activo: p.activo, tipos_consulta: p.tipos_consulta ?? [] }))}
           puedeEditarPsicologos={!esPsicologo}
+          rol={rol}
         />
       </div>
     </div>

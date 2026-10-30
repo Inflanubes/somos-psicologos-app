@@ -22,6 +22,7 @@ import {
   generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
 } from '@/lib/disponibilidad'
 import { ahoraMadrid } from '@/lib/fechas'
+import { leerOperador, guardarOperador } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
@@ -294,6 +295,16 @@ export default function PsicologosPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const esPsicologo = perfil?.rol === 'psicologo'
   const esCallCenter = perfil?.rol === 'call_center'
+
+  // Operador del call center (B3): nombre libre que viaja con cada acción y se
+  // recuerda en el navegador por usuario. Vacío = se envía null y nada se bloquea.
+  const [operador, setOperador] = useState('')
+  useEffect(() => { if (userId && esCallCenter) setOperador(leerOperador(userId)) }, [userId, esCallCenter])
+  function cambiarOperador(valor: string) {
+    setOperador(valor)
+    if (userId) guardarOperador(userId, valor)
+  }
+  const operadorEnvio = esCallCenter ? operador.trim() || null : null
 
   // Psicólogo logueado: su ficha única y la lista de centros donde trabaja
   // (migración 014). Si tiene más de un centro, debe elegir en cuál está hoy.
@@ -817,6 +828,7 @@ export default function PsicologosPage() {
           telefono: npEsMenor ? null : npTelefono.trim() || null,
           nombre_intentado: npNombre.trim(),
           es_paciente_recomendado: npEsRecomendado,
+          operador:         operadorEnvio,
         },
         respuestasFormulario: {
           'Selecciona tu centro': centroNombreEff,
@@ -912,6 +924,8 @@ export default function PsicologosPage() {
         created_by:    perfil?.nombre ?? psicologoNombreEff ?? null,
         created_by_id: userId,
         origen:        perfil?.rol ?? 'agente',
+        // Operador del call center (migración 017); null para los demás roles.
+        operador:      operadorEnvio,
       })
       .select('id')
       .single()
@@ -971,6 +985,7 @@ export default function PsicologosPage() {
           tutor2_mail:      npEsMenor && !npSoloUnTutor ? (npT2Mail.trim() || null) : null,
           solo_un_tutor:    npEsMenor ? npSoloUnTutor : null,
           otros:            npEsMenor && npSoloUnTutor ? npOtros.trim() : null,
+          operador:         operadorEnvio,
         },
         respuestasFormulario: {
           'Selecciona tu centro': centroNombreEff,
@@ -1193,6 +1208,8 @@ export default function PsicologosPage() {
           created_by:           quienNombre,
           created_by_id:        userId,
           origen,
+          // Operador del call center (B3): Make lo guarda en acciones_psicologos.operador.
+          operador:             operadorEnvio,
           // Cita que se repite: mismo serie_id en todas, nº de orden y total. Make
           // avisa al paciente por Telegram una sola vez (serie_numero = 1) con
           // todas las fechas ya escritas en serie_texto_paciente.
@@ -1481,6 +1498,33 @@ export default function PsicologosPage() {
         }}
       >
         <form onSubmit={handleSubmit}>
+          {/* Operador del call center: se recuerda en este navegador y viaja con cada acción */}
+          {esCallCenter && (
+            <div
+              style={{
+                background: '#eef2fb',
+                borderLeft: `4px solid ${BRAND_BLUE}`,
+                borderRadius: '0 8px 8px 0',
+                padding: '12px 16px',
+                marginBottom: 20,
+              }}
+            >
+              <label htmlFor="operador" style={{ ...labelStyle, marginBottom: 6 }}>Operador</label>
+              <input
+                id="operador"
+                type="text"
+                value={operador}
+                onChange={(e) => cambiarOperador(e.target.value)}
+                placeholder="Tu nombre"
+                maxLength={60}
+                autoComplete="off"
+                style={inputStyle}
+              />
+              <div style={{ fontSize: 12, color: '#3a4a6b', marginTop: 6 }}>
+                Opcional. Se guarda con cada alta y cita para que el equipo sepa quién la gestionó.
+              </div>
+            </div>
+          )}
           {/* Centro + Psicólogo — hidden for a psychologist (form fixed to them) */}
           {esPsicologo ? (
             <>

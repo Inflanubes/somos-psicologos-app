@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ESTADOS_PACIENTE, type EstadoPaciente, type TipoCita } from '@/types/database'
+import { ESTADOS_PACIENTE, type EstadoPaciente, type TipoCita, type Rol } from '@/types/database'
 import { supabase } from '@/lib/supabase'
+import { etiquetaOrigen } from '@/lib/call-center'
 import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, type ColumnaPsicologo } from '@/lib/pacientes-tipos'
 
 export interface PacienteTableRow {
@@ -18,6 +19,8 @@ export interface PacienteTableRow {
   psicologo_infantil_id: string | null
   anadido_por: string | null
   origen: string | null
+  /** Operador del call center que dio el alta (migración 017); solo lo ve el agente. */
+  operador: string | null
   estado: EstadoPaciente
   fecha_cita: string | null
   hora_cita: string | null
@@ -59,10 +62,13 @@ export default function PacientesClient({
   pacientes: pacientesIniciales,
   psicologos = [],
   puedeEditarPsicologos = false,
+  rol = 'agente',
 }: {
   pacientes: PacienteTableRow[]
   psicologos?: PsicologoOpcion[]
   puedeEditarPsicologos?: boolean
+  /** Rol de quien mira: el agente ve el operador del call center, los demás no. */
+  rol?: Rol
 }) {
   const [pacientes, setPacientes] = useState(pacientesIniciales)
   const [search, setSearch] = useState('')
@@ -337,9 +343,9 @@ export default function PacientesClient({
                   </td>
                   <td data-label="Añadido por" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
                     {p.anadido_por ?? '—'}
-                    {p.origen && (
+                    {etiquetaOrigen(p.origen, p.operador, rol) && (
                       <span style={{ marginLeft: 6, color: '#8899bb', fontSize: 11.5 }}>
-                        {p.origen === 'call_center' ? 'call center' : p.origen}
+                        {etiquetaOrigen(p.origen, p.operador, rol)}
                       </span>
                     )}
                   </td>

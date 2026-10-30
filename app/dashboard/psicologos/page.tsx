@@ -17,6 +17,7 @@ import BuscadorTelefono from './BuscadorTelefono'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
+import { validarSegundaPersona, buscarSegundaPersona } from '@/lib/pareja'
 import { getCentroActivo, setCentroActivo, centroIdEfectivo, restaurarCentroActivo, TODOS_LOS_CENTROS, type CentroActivo } from '@/lib/centro-activo'
 import { faseTrasFijarAccion } from '@/lib/prefill-citas'
 import {
@@ -284,6 +285,9 @@ export default function PsicologosPage() {
   const [npOtros, setNpOtros] = useState('')
   // Tipo de consulta del alta (migración 014): adulto | pareja; menor se deduce de la edad.
   const [npTipoConsulta, setNpTipoConsulta] = useState<TipoConsulta>('adulto')
+  // Segunda persona de la pareja (B4, tarea 40): opcional; si viene una, la otra es obligatoria.
+  const [npParejaNombre, setNpParejaNombre] = useState('')
+  const [npParejaTelefono, setNpParejaTelefono] = useState('')
   // Duplicado pendiente de confirmación (aviso suave/fuerte). null = no hay.
   const [npConfirmacion, setNpConfirmacion] = useState<{
     decision: Extract<DecisionDuplicado, { tipo: 'confirmar' }>
@@ -852,6 +856,8 @@ export default function PsicologosPage() {
     setNpSoloUnTutor(false)
     setNpOtros('')
     setNpTipoConsulta('adulto')
+    setNpParejaNombre('')
+    setNpParejaTelefono('')
     setNpConfirmacion(null)
     setNpT1PacienteId(null)
     setNpT2PacienteId(null)
@@ -940,9 +946,12 @@ export default function PsicologosPage() {
         .update({ [columna]: effPsicologoId })
         .eq('id', conf.decision.paciente.id)
       if (errVinc) { setError('No se pudo vincular al paciente: ' + errVinc.message); return }
+      if (await registrarSegundaPersona(conf.decision.paciente.id)) setExitoTexto('Pareja registrada.')
       setNpConfirmacion(null)
       setSuccess(true)
       resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -1144,6 +1153,103 @@ export default function PsicologosPage() {
     await crearPaciente()
   }
 
+  // Segunda persona de la pareja (B4, tarea 40). Si ya existe un adulto con ese
+  // teléfono y ese nombre se le vincula como paciente de pareja del mismo psicólogo;
+  // si no, se crea una ficha mínima y Make le pide el consentimiento ("Añadir nuevo
+  // paciente"). Las dos fichas quedan enlazadas con pareja_de. La pantalla nunca
+  // dice si la segunda persona ya era paciente. Devuelve true si se registró.
+  async function registrarSegundaPersona(primeraId: string): Promise<boolean> {
+    if (npEsMenor || npTipoConsulta !== 'pareja' || !effPsicologoId || !effCentroId) return false
+    const segunda = validarSegundaPersona({ nombre: npNombre, telefono: npTelefono }, { nombre: npParejaNombre, telefono: npParejaTelefono })
+    if (segunda.tipo !== 'ok') return false
+
+    const { data: candidatos, error: errBusq } = await supabase
+      .from('pacientes')
+      .select('id, nombre')
+      .eq('telefono', segunda.telefono)
+      .eq('es_menor', false)
+      .neq('id', primeraId)
+    if (errBusq) throw new Error('La pareja no se pudo registrar: ' + errBusq.message)
+    const existente = buscarSegundaPersona(segunda.nombre, (candidatos ?? []) as { id: string; nombre: string }[])
+
+    let segundaId: string
+    if (existente) {
+      const { error } = await supabase
+        .from('pacientes')
+        .update({ psicologo_pareja_id: effPsicologoId, pareja_de: primeraId })
+        .eq('id', existente.id)
+      if (error) throw new Error('La pareja no se pudo registrar: ' + error.message)
+      segundaId = existente.id
+    } else {
+      const iniciales = generarIniciales(segunda.nombre)
+      const { data: nueva, error } = await supabase
+        .from('pacientes')
+        .insert({
+          nombre:              segunda.nombre,
+          iniciales,
+          telefono:            segunda.telefono,
+          es_menor:            false,
+          centro_id:           effCentroId,
+          psicologo_pareja_id: effPsicologoId,
+          estado:              'Nuevo paciente' as const,
+          fecha_incorporacion: new Date().toISOString().split('T')[0],
+          created_by:    perfil?.nombre ?? psicologoNombreEff ?? null,
+          created_by_id: userId,
+          origen:        perfil?.rol ?? 'agente',
+          ...(operadorEnvio ? { operador: operadorEnvio } : {}),
+          pareja_de:     primeraId,
+        })
+        .select('id')
+        .single()
+      if (error || !nueva) throw new Error('La pareja no se pudo registrar: ' + (error?.message ?? 'sin identificador'))
+      segundaId = nueva.id
+      // Alta en Make: manda el consentimiento de adulto a su teléfono.
+      await fetch('/api/webhook/psicologos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mensaje:             'Formulario Web Psicólogos',
+          responseId:          'web_' + Date.now(),
+          timestampFormulario: new Date().toISOString(),
+          datosProcesados: {
+            psicologo_nombre: psicologoNombreEff,
+            psicologo_id:     effPsicologoId,
+            centro_id:        effCentroId,
+            accion:           'Añadir nuevo paciente',
+            tipo_consulta:    'pareja',
+            paciente_nombre:  segunda.nombre,
+            paciente_iniciales: iniciales,
+            paciente_id:      segundaId,
+            telefono:         segunda.telefono,
+            email:            null,
+            fecha_nacimiento: null,
+            edad:             null,
+            es_paciente_recomendado: false,
+            recomendado_por:  null,
+            es_menor:         false,
+            tutor1_nombre:    null,
+            tutor1_telefono:  null,
+            tutor1_mail:      null,
+            tutor2_nombre:    null,
+            tutor2_telefono:  null,
+            tutor2_mail:      null,
+            solo_un_tutor:    null,
+            otros:            null,
+            operador:         operadorEnvio,
+            pareja_de:        primeraId,
+          },
+          respuestasFormulario: {
+            'Selecciona tu centro': centroNombreEff,
+            '¿Qué necesitas hoy?':  'Añadir nuevo paciente',
+          },
+        }),
+      })
+    }
+    const { error: errPrimera } = await supabase.from('pacientes').update({ pareja_de: segundaId }).eq('id', primeraId)
+    if (errPrimera) throw new Error('La pareja no se pudo enlazar: ' + errPrimera.message)
+    return true
+  }
+
   async function crearPaciente() {
     if (!effPsicologoId || !effCentroId) return
     const iniciales = generarIniciales(npNombre)
@@ -1242,6 +1348,7 @@ export default function PsicologosPage() {
       }),
     })
 
+    if (await registrarSegundaPersona(nuevoPaciente.id)) setExitoTexto('Pareja registrada.')
     setSuccess(true)
     resetForm()
   }
@@ -1403,6 +1510,13 @@ export default function PsicologosPage() {
     if (isNuevoPaciente && !npEsMenor && !npTelefono.trim()) {
       setError('El teléfono es obligatorio.')
       return
+    }
+    if (isNuevoPaciente && !npEsMenor && npTipoConsulta === 'pareja') {
+      const segunda = validarSegundaPersona({ nombre: npNombre, telefono: npTelefono }, { nombre: npParejaNombre, telefono: npParejaTelefono })
+      if (segunda.tipo === 'error') {
+        setError(segunda.mensaje)
+        return
+      }
     }
     if (isNuevoPaciente && !npFechaNacimiento) {
       setError('La fecha de nacimiento es obligatoria.')
@@ -2091,6 +2205,36 @@ export default function PsicologosPage() {
                   </span>
                 </span>
               </label>
+
+              {!npEsMenor && npTipoConsulta === 'pareja' && (
+                <div>
+                  <SectionTitle>Segunda persona (opcional)</SectionTitle>
+                  <InfoBox>
+                    Si conoces a la otra persona de la pareja, indícala aquí: quedará con el mismo psicólogo
+                    y recibirá su consentimiento. Si no, déjalo en blanco.
+                  </InfoBox>
+                  <div className="r-grid-2" style={{ gap: 16 }}>
+                    <FormField label="Segunda persona · Nombre completo">
+                      <input
+                        type="text"
+                        value={npParejaNombre}
+                        onChange={(e) => setNpParejaNombre(e.target.value)}
+                        placeholder="Ej. Luis Gómez Ruiz"
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Segunda persona · Teléfono">
+                      <input
+                        type="tel"
+                        value={npParejaTelefono}
+                        onChange={(e) => setNpParejaTelefono(e.target.value)}
+                        placeholder="Ej. 612 345 678"
+                        style={inputStyle}
+                      />
+                    </FormField>
+                  </div>
+                </div>
+              )}
 
               {npEsMenor && (
                 <div>

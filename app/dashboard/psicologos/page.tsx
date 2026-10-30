@@ -23,7 +23,10 @@ import {
   generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
 } from '@/lib/disponibilidad'
 import { ahoraMadrid } from '@/lib/fechas'
-import { leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo, type Rol } from '@/lib/call-center'
+import {
+  leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
+  citasMismoDia, textoAvisoMismoDia, type Rol, type CitaDia,
+} from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
@@ -445,6 +448,10 @@ export default function PsicologosPage() {
   const TEXTO_CITA_PROTEGIDA = 'Esta cita la creó el psicólogo: solo él o un agente pueden cambiarla o anularla.'
   const [avisoAgentes, setAvisoAgentes] = useState<{ citaId: string; comentario: string } | null>(null)
   useEffect(() => { setAvisoAgentes(null) }, [pacienteId, accion])
+  // Dos citas el mismo día (B3, tarea 49): al agendar o cambiar, si el paciente ya
+  // tiene otra cita activa esa fecha se pide confirmar ("¿es otra cita?") o ir a cambiarla.
+  const [avisoMismoDia, setAvisoMismoDia] = useState<ReturnType<typeof citasMismoDia> | null>(null)
+  useEffect(() => { setAvisoMismoDia(null) }, [fecha, hora, pacienteId, accion])
 
   // ── Disponibilidad (horario + huecos ocupados) ─────────────────────────────
   // Agente (o sin perfil): modo aviso, todo seleccionable con aviso antes de enviar.
@@ -1215,6 +1222,41 @@ export default function PsicologosPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    await enviar(false)
+  }
+
+  // Otras citas activas del paciente en esa fecha (con cualquier psicólogo), sin la que se está cambiando.
+  async function buscarCitasMismoDia(): Promise<ReturnType<typeof citasMismoDia>> {
+    const { data, error: err } = await supabase
+      .from('acciones_psicologos')
+      .select('id, fecha_cita, hora_cita, psicologo_id, centro_id')
+      .eq('paciente_id', pacienteId)
+      .eq('accion', 'Agendar cita')
+      .eq('activo', true)
+      .eq('fecha_cita', fecha)
+    if (err) throw new Error('No se pudo comprobar si el paciente ya tiene cita ese día: ' + err.message)
+    type Fila = { id: string; fecha_cita: string | null; hora_cita: string | null; psicologo_id: string | null; centro_id: string | null }
+    const filas: CitaDia[] = ((data ?? []) as Fila[])
+      .filter((r) => r.fecha_cita && r.hora_cita)
+      .map((r) => ({
+        id: r.id,
+        fecha: r.fecha_cita as string,
+        hora: r.hora_cita as string,
+        psicologoNombre: psicologos.find((p) => p.id === r.psicologo_id)?.nombre ?? 'otro psicólogo',
+        psicologoId: r.psicologo_id ?? '',
+        centroId: r.centro_id,
+      }))
+    return citasMismoDia(filas, fecha, hora, excluirAccionId)
+  }
+
+  // "Ir a cambiarla": abre Cambiar cita con esa cita (y su psicólogo y centro) ya elegidos.
+  function irACambiarCita(c: CitaDia) {
+    setAvisoMismoDia(null)
+    setPrefill({ accion: 'Cambiar cita', centroId: c.centroId ?? '', psicologoId: c.psicologoId, pacienteId, citaId: c.id })
+    setPrefillFase(0)
+  }
+
+  async function enviar(omitirAvisoMismoDia: boolean) {
     setError('')
     setSuccess(false)
     setExitoTexto(null)
@@ -1337,6 +1379,15 @@ export default function PsicologosPage() {
 
     setLoading(true)
     try {
+      // Aviso de dos citas el mismo día (todos los roles), salvo que ya se haya confirmado "es otra cita".
+      if (pideTipoCita && !omitirAvisoMismoDia) {
+        const coincidencias = await buscarCitasMismoDia()
+        if (coincidencias.length > 0) {
+          setAvisoMismoDia(coincidencias)
+          return
+        }
+      }
+
       const centroNombre    = centros.find((c) => c.id === effCentroId)?.nombre ?? ''
       const psicologoNombre =
         (filteredPsicologos.find((p) => p.id === effPsicologoId) ??
@@ -2487,6 +2538,40 @@ export default function PsicologosPage() {
                 ⚠️ <strong>Aviso:</strong> {avisoDisp}. Puedes agendar igualmente.
               </div>
             )}
+            {avisoMismoDia && avisoMismoDia.length > 0 && (
+              <div
+                style={{
+                  background: '#fff7e6',
+                  border: '1.5px solid #f5d08a',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                  marginBottom: 14,
+                  color: '#8a5a00',
+                  fontSize: 13.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                {avisoMismoDia.map(({ cita, seguida }) => (
+                  <div key={cita.id} style={{ marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>
+                      {textoAvisoMismoDia(cita)}
+                      {seguida && <span style={{ color: '#92400e' }}> Es la hora justo anterior o posterior.</span>}
+                    </span>
+                    <button type="button" onClick={() => irACambiarCita(cita)} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: `1.5px solid ${BRAND_BLUE}`, background: '#fff', color: BRAND_BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Ir a cambiarla
+                    </button>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => { setAvisoMismoDia(null); void enviar(true) }} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Sí, es otra cita
+                  </button>
+                  <button type="button" onClick={() => setAvisoMismoDia(null)} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: '1.5px solid #dde1ea', background: '#fff', color: '#666', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
             {npConfirmacion && (
               <div
                 style={{
@@ -2535,7 +2620,7 @@ export default function PsicologosPage() {
             )}
             {(() => {
               const submitDisabled =
-                loading || !accion || !!npConfirmacion ||
+                loading || !accion || !!npConfirmacion || !!avisoMismoDia ||
                 ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId)
               return (
                 <button

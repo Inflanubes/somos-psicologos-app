@@ -21,6 +21,8 @@ export type PsicologoAgenda = {
   /** Citas activas (todos sus centros). */
   citas: CitaOcupada[]
   bloqueos: Bloqueo[]
+  /** Centros donde no recibe citas nuevas (psicologos_centros.activo = false): sin huecos libres allí. */
+  centrosApagados?: string[]
 }
 
 /**
@@ -47,6 +49,7 @@ export function calcularLibres(
         if (tramos.length === 0) continue
         const huecos = generarHuecos({
           tramos, citas: p.citas, bloqueos: p.bloqueos, fecha, mediaHora: p.mediaHora, incluirMedias: false, ahora,
+          centroInactivo: p.centrosApagados?.includes(c) ?? false,
         })
         for (const h of huecos) {
           if (h.estado !== 'libre') continue

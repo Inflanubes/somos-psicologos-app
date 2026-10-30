@@ -28,6 +28,8 @@ export type SemanaCalendario = {
   historial: HistorialAgendar[]
   tramosDe: Map<string, Tramo[]>
   bloqueosDe: Map<string, Bloqueo[]>
+  /** Centros donde cada psicólogo no recibe citas nuevas (psicologos_centros.activo = false). */
+  apagadosDe: Map<string, string[]>
 }
 
 const VACIO = (): EventoCalendario => ({
@@ -41,7 +43,7 @@ export async function cargarSemanaCalendario(
 ): Promise<SemanaCalendario> {
   const ids = p.psicologos.map((x) => x.id)
   const vacio: SemanaCalendario = {
-    citas: [], bloqueos: [], anuladas: [], historial: [], tramosDe: new Map(), bloqueosDe: new Map(),
+    citas: [], bloqueos: [], anuladas: [], historial: [], tramosDe: new Map(), bloqueosDe: new Map(), apagadosDe: new Map(),
   }
   if (ids.length === 0) return vacio
 
@@ -49,7 +51,7 @@ export async function cargarSemanaCalendario(
   const nombreDe = new Map(p.psicologos.map((x) => [x.id, x.nombre]))
   const nombre = (id: string | null) => (id ? (nombreDe.get(id) ?? 'Psicólogo') : 'Psicólogo')
 
-  const [citasRes, bloqueosRes, anuladasRes, tramosRes] = await Promise.all([
+  const [citasRes, bloqueosRes, anuladasRes, tramosRes, apagadosRes] = await Promise.all([
     cliente
       .from('acciones_psicologos')
       .select('id, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id')
@@ -79,11 +81,17 @@ export async function cargarSemanaCalendario(
       .from('horarios_psicologos')
       .select('psicologo_id, dia_semana, hora_inicio, hora_fin, centro_id')
       .in('psicologo_id', ids),
+    cliente
+      .from('psicologos_centros')
+      .select('psicologo_id, centro_id')
+      .in('psicologo_id', ids)
+      .eq('activo', false),
   ])
   if (citasRes.error) throw citasRes.error
   if (bloqueosRes.error) throw bloqueosRes.error
   if (anuladasRes.error) throw anuladasRes.error
   if (tramosRes.error) throw tramosRes.error
+  if (apagadosRes.error) throw apagadosRes.error
 
   const filasCitas = citasRes.data ?? []
   const filasAnuladas = anuladasRes.data ?? []
@@ -153,5 +161,10 @@ export async function cargarSemanaCalendario(
     ])
   }
 
-  return { citas, bloqueos, anuladas, historial, tramosDe, bloqueosDe }
+  const apagadosDe = new Map<string, string[]>()
+  for (const pc of apagadosRes.data ?? []) {
+    apagadosDe.set(pc.psicologo_id, [...(apagadosDe.get(pc.psicologo_id) ?? []), pc.centro_id])
+  }
+
+  return { citas, bloqueos, anuladas, historial, tramosDe, bloqueosDe, apagadosDe }
 }

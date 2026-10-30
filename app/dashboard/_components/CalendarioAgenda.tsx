@@ -44,6 +44,8 @@ export type Props = {
   recargaKey?: number
   /** Último cambio hecho desde el formulario (varios en una serie); se aplica en local sin esperar a Make. */
   cambioLocal?: AccionLocal | AccionLocal[] | null
+  /** Ancho mínimo de cada columna de día en escritorio (px). Más estrecho junto al formulario de Citas. */
+  anchoColumnaMin?: number
 }
 
 function aplicarCambios(citas: EventoCalendario[], cambio: AccionLocal | AccionLocal[] | null): EventoCalendario[] {
@@ -52,7 +54,7 @@ function aplicarCambios(citas: EventoCalendario[], cambio: AccionLocal | AccionL
 }
 
 export default function CalendarioAgenda({
-  rol, filtros, psicologosVisibles, centros, onClickLibre, onClickCita, recargaKey = 0, cambioLocal = null,
+  rol, filtros, psicologosVisibles, centros, onClickLibre, onClickCita, recargaKey = 0, cambioLocal = null, anchoColumnaMin,
 }: Props) {
   const [lunes, setLunes] = useState(() => lunesDeSemana(todayISODate()))
   const [verAnuladas, setVerAnuladas] = useState(false)
@@ -146,6 +148,7 @@ export default function CalendarioAgenda({
       .map((p) => ({
         id: p.id, nombre: p.nombre, activo: p.activo, mediaHora: !!p.citas_media_hora,
         tramos: datos.tramosDe.get(p.id) ?? [], citas: citasDe.get(p.id) ?? [], bloqueos: datos.bloqueosDe.get(p.id) ?? [],
+        centrosApagados: datos.apagadosDe.get(p.id) ?? [],
       }))
     const libres = calcularLibres(paraLibres, dias, ahoraMadrid(), filtros.centroId || null)
     const bloqueosHora = bloqueosPorHora(datos.bloqueos, datos.tramosDe, dias)
@@ -232,6 +235,7 @@ export default function CalendarioAgenda({
               nombreCentro={nombreCentro}
               onClickLibre={onClickLibre}
               onClickCita={onClickCita}
+              anchoColumnaMin={anchoColumnaMin}
             />
           </div>
         )}

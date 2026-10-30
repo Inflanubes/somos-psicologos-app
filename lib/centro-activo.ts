@@ -22,6 +22,18 @@ export function centroIdEfectivo(sel: CentroActivo | null): string | null | unde
   return sel.centroId === TODOS_LOS_CENTROS ? null : sel.centroId
 }
 
+/**
+ * Selección a restaurar al entrar: lo guardado vale si es de esta ficha y el
+ * centro sigue siendo suyo ("Todos" solo si sigue teniendo varios). Con un
+ * solo centro se fija ese; si no, nada (el psicólogo elige).
+ */
+export function restaurarCentroActivo(guardada: CentroActivo | null, fichaId: string, centros: string[]): CentroActivo | null {
+  if (centros.length === 1) return { psicologoId: fichaId, centroId: centros[0] }
+  if (!guardada || guardada.psicologoId !== fichaId) return null
+  const valido = centros.includes(guardada.centroId) || (guardada.centroId === TODOS_LOS_CENTROS && centros.length > 1)
+  return valido ? guardada : null
+}
+
 const storageKey = (userId: string) => `centro-activo:${userId}`
 
 export function getCentroActivo(userId: string): CentroActivo | null {

@@ -16,7 +16,8 @@ import EventoSelect from '@/components/EventoSelect'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
-import { getCentroActivo, setCentroActivo, centroIdEfectivo, TODOS_LOS_CENTROS, type CentroActivo } from '@/lib/centro-activo'
+import { getCentroActivo, setCentroActivo, centroIdEfectivo, restaurarCentroActivo, TODOS_LOS_CENTROS, type CentroActivo } from '@/lib/centro-activo'
+import { faseTrasFijarAccion } from '@/lib/prefill-citas'
 import {
   generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
 } from '@/lib/disponibilidad'
@@ -512,12 +513,7 @@ export default function PsicologosPage() {
       if (cancelled) return
       const ids = (pcs ?? []).map((r) => r.centro_id)
       setMisCentros(ids)
-      const guardada = getCentroActivo(uid)
-      if (guardada && guardada.psicologoId === ficha.id && (ids.includes(guardada.centroId) || guardada.centroId === TODOS_LOS_CENTROS)) {
-        setCentroActivoState(guardada)
-      } else if (ids.length === 1) {
-        setCentroActivoState({ psicologoId: ficha.id, centroId: ids[0] })
-      }
+      setCentroActivoState(restaurarCentroActivo(getCentroActivo(uid), ficha.id, ids))
       setVariantesCargadas(true)
     }
     cargar()
@@ -626,8 +622,10 @@ export default function PsicologosPage() {
       setPrefillFase(0)
       return
     }
+    // Si acción y paciente ya estaban elegidos, no habrá carga nueva de citas: se comprueba directamente.
+    setPrefillFase(faseTrasFijarAccion({ accionActual: accion, pacienteActual: pacienteId, pacientePrefill: prefill.pacienteId }))
     setPacienteId(prefill.pacienteId)
-    setPrefillFase(3)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefill, prefillFase])
 
   // Fases 3 y 4 (cambiar): esperar a que se carguen las citas activas del paciente y elegir la cita.
@@ -2294,6 +2292,7 @@ export default function PsicologosPage() {
             onClickCita={rellenarDesdeCita}
             recargaKey={recargaKey}
             cambioLocal={cambioLocal}
+            anchoColumnaMin={96}
           />
         )}
       </div>

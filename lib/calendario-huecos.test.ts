@@ -129,3 +129,14 @@ describe('aplicarAccionLocal es idempotente (se vuelve a aplicar tras cada recar
     expect(r).toEqual([cita])
   })
 })
+
+describe('calcularLibres y centros apagados (psicologos_centros.activo = false)', () => {
+  it('un centro apagado no da huecos libres aunque tenga franjas; el otro centro sí', () => {
+    const p = jaime({ centrosApagados: ['on'] })
+    const l = calcularLibres([p], DIAS, AHORA, null)
+    expect(l.map((e) => `${e.fecha} ${e.hora} ${e.centroId ?? e.centros?.join('+')}`)).toEqual([
+      '2026-10-26 11:00 mor', '2026-10-27 16:00 mor', '2026-10-27 17:00 mor',
+    ])
+    expect(calcularLibres([p], DIAS, AHORA, 'on')).toEqual([])
+  })
+})

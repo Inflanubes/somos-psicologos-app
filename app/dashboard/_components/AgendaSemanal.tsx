@@ -42,7 +42,11 @@ type Props = {
   nombreCentro: Map<string, string>
   onClickLibre?: (h: ClickLibre) => void
   onClickCita?: (e: EventoCalendario) => void
+  /** Ancho mínimo de cada columna de día en escritorio (px). */
+  anchoColumnaMin?: number
 }
+
+const ANCHO_COLUMNA_MIN = 150
 
 function nombreCentros(e: EventoCalendario, nombreCentro: Map<string, string>): string {
   const ids = e.centros ?? (e.centroId ? [e.centroId] : [])
@@ -156,7 +160,9 @@ function ChipLibres({
   )
 }
 
-export default function AgendaSemanal({ dias, eventos, contador, hoy, nombreCentro, onClickLibre, onClickCita }: Props) {
+export default function AgendaSemanal({
+  dias, eventos, contador, hoy, nombreCentro, onClickLibre, onClickCita, anchoColumnaMin = ANCHO_COLUMNA_MIN,
+}: Props) {
   const unDia = dias.length === 1
   const [abierto, setAbierto] = useState<{ fecha: string; hora: string } | null>(null)
   // Líneas de fondo: una tenue cada media hora y una más marcada cada hora.
@@ -169,8 +175,8 @@ export default function AgendaSemanal({ dias, eventos, contador, hoy, nombreCent
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `56px repeat(${dias.length}, minmax(${unDia ? '0' : '150px'}, 1fr))`,
-          minWidth: unDia ? 0 : 56 + 150 * 7,
+          gridTemplateColumns: `56px repeat(${dias.length}, minmax(${unDia ? '0' : `${anchoColumnaMin}px`}, 1fr))`,
+          minWidth: unDia ? 0 : 56 + anchoColumnaMin * 7,
         }}
       >
         {/* Cabecera de días */}

@@ -67,7 +67,7 @@
   - `textoEstadoConsentimiento(p: Pick<Paciente, 'consentimiento' | 'consentimiento_origen' | 'consentimiento_marcado_por' | 'consentimiento_marcado_en'>): string`.
   - `puedeDesmarcar(rol: string): boolean` → `rol === 'agente'`.
 
-- [ ] **Step 1: Tests**
+- [x] **Step 1: Tests**
 
 ```ts
 it('destinatarios: adulto él mismo; menor sus tutores con teléfono; sin teléfono → []', () => {
@@ -111,8 +111,8 @@ it('un menor con el teléfono de un adulto existente (su padre) no es duplicado'
 
 (Ajustar la forma de `PacienteExistente` a la real del módulo.)
 
-- [ ] **Step 2: Ejecutar y ver fallar.** — [ ] **Step 3: Implementar.** — [ ] **Step 4: PASS + tsc.**
-- [ ] **Step 5: Commit** — `git add lib types && git commit -m "Consentimiento: módulo puro, trazabilidad en tipos y tests menor/tutor"`
+- [x] **Step 2: Ejecutar y ver fallar.** — [x] **Step 3: Implementar.** — [x] **Step 4: PASS + tsc.**
+- [x] **Step 5: Commit** — `git add lib types && git commit -m "Consentimiento: módulo puro, trazabilidad en tipos y tests menor/tutor"` (b2a75bd, 30-10-2026)
 
 ---
 
@@ -125,7 +125,7 @@ it('un menor con el teléfono de un adulto existente (su padre) no es duplicado'
 - Props: `{ paciente: { id; nombre; telefono; es_menor; consentimiento; consentimiento_origen; consentimiento_marcado_por; consentimiento_marcado_en }; rol: 'agente' | 'psicologo'; actor: Actor; onCambio: (p: Partial<Paciente>) => void; compacto?: boolean }`.
 - Comportamiento: muestra `textoEstadoConsentimiento`; botón `Reenviar` → `confirm('¿Enviar de nuevo el consentimiento a {nombre}?')` → si `es_menor`, carga `asociados_menores` por `id_menor` → `destinatariosReenvio` vacío → mensaje "Este paciente no tiene teléfono al que enviar el consentimiento."; si no, `fetch('/api/webhook/psicologos', { method: 'POST', body: { mensaje: 'Formulario Web Psicólogos', responseId, timestampFormulario, datosProcesados: payloadReenvio(...), respuestasFormulario: { '¿Qué necesitas hoy?': 'Reenviar consentimiento' } } })` y "Consentimiento reenviado."; botón `Marcar firmado` → confirm → `supabase.from('pacientes').update(marcarFirmado(actor, new Date()))` y, si menor, `asociados_menores.update(camposTutoresFirmados(soloUnTutor))` (soloUnTutor = `T2_nombre_completo` vacío) → `onCambio`; botón `Desmarcar` solo si `puedeDesmarcar(rol)` y está firmado → confirm → `desmarcarFirmado()` (en menores también `T1/T2_consentimiento = false`).
 
-- [ ] **Step 1: Implementar.** — [ ] **Step 2: tsc.** — [ ] **Step 3: Commit** — `git add app/dashboard/_components/ConsentimientoAcciones.tsx && git commit -m "Consentimiento: botones de reenviar y marcar firmado"`
+- [x] **Step 1: Implementar.** — [x] **Step 2: tsc.** — [x] **Step 3: Commit** — `git add app/dashboard/_components/ConsentimientoAcciones.tsx && git commit -m "Consentimiento: botones de reenviar y marcar firmado"` (a5417f6)
 
 ---
 
@@ -138,9 +138,9 @@ it('un menor con el teléfono de un adulto existente (su padre) no es duplicado'
 - `PacienteTableRow` añade `es_menor`, `consentimiento_origen`, `consentimiento_marcado_por`, `consentimiento_marcado_en`; `PacientesClient` recibe `rol` y `actor`.
 - `onCambio` actualiza la fila en local.
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; dev: psicólogo ve Reenviar y Marcar firmado, no Desmarcar; agente ve los tres; Comunicaciones reenvía; call center no entra en estas pantallas.
-- [ ] **Step 3: Commit** — `git commit -am "Pacientes y Comunicaciones: reenviar y marcar consentimiento"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; dev: psicólogo ve Reenviar y Marcar firmado, no Desmarcar; agente ve los tres; Comunicaciones reenvía; call center no entra en estas pantallas. *(tsc OK; la comprobación en pantalla queda para las pruebas de aceptación, que Sonia difirió al final de todos los bloques; además Comunicaciones necesita la migración 018 para cargar.)*
+- [x] **Step 3: Commit** — `git commit -am "Pacientes y Comunicaciones: reenviar y marcar consentimiento"` (50226b1)
 
 ---
 
@@ -153,9 +153,9 @@ it('un menor con el teléfono de un adulto existente (su padre) no es duplicado'
 - Estado `npParejaNombre`, `npParejaTelefono` (ambos opcionales; si uno viene, el otro es obligatorio: "Indica nombre y teléfono de la segunda persona.").
 - Tras crear la primera ficha (`nuevoPaciente.id`): si hay segunda persona → `supabase.from('pacientes').select(...).eq('telefono', tel).eq('es_menor', false)`; `existente = find(normalizarNombre(nombre) === normalizarNombre(npParejaNombre))`; si `normalizarNombre(npParejaNombre) === normalizarNombre(npNombre)` y mismo teléfono → error "La segunda persona no puede ser la misma que la primera." (antes de crear nada). Existe → `update({ psicologo_pareja_id: effPsicologoId, pareja_de: nuevoPaciente.id })`; no existe → `insert({ nombre, iniciales: generarIniciales(nombre), telefono, es_menor: false, centro_id: effCentroId, psicologo_pareja_id: effPsicologoId, estado: 'Nuevo paciente', fecha_incorporacion, created_by…, origen, pareja_de: nuevoPaciente.id })` y envío a Make de `Añadir nuevo paciente` para la segunda persona (mismo payload que la primera, con sus datos). Después `update` de la primera con `pareja_de = idSegunda`. Mensaje final: "Pareja registrada." en ambos casos.
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; `npm test`; dev: los tres casos de la especificación (existente, nueva, sin segunda persona).
-- [ ] **Step 3: Commit** — `git commit -am "Alta de pareja: segunda persona opcional vinculada sin revelar si ya era paciente"`
+- [x] **Step 1: Implementar.** *(Lógica pura en `lib/pareja.ts` + tests; `registrarSegundaPersona` se llama desde `crearPaciente` y también desde `vincularExistente`, para no perder lo escrito cuando la primera persona ya existía.)*
+- [x] **Step 2: Comprobar** — tsc; `npm test` (199 en verde); dev: los tres casos de la especificación (existente, nueva, sin segunda persona). *(Los tres casos en pantalla quedan para las pruebas de aceptación diferidas.)*
+- [x] **Step 3: Commit** — `git commit -am "Alta de pareja: segunda persona opcional vinculada sin revelar si ya era paciente"` (10aa79e)
 
 ---
 
@@ -164,9 +164,9 @@ it('un menor con el teléfono de un adulto existente (su padre) no es duplicado'
 **Files:**
 - Create: `docs/make-cambios-2026-10-b4.md` (ruta `Reenviar consentimiento`: filtro por `datosProcesados.accion`, mensaje a `telefono` o a `tutor1_telefono`/`tutor2_telefono` con `datosProcesados.enlace`, Telegram ahora / WhatsApp después), `docs/arranque-consentimientos.md` (tarea 57: el día de la entrega, listado de pacientes con consentimiento pendiente, aviso a psicólogos, uso de "Marcar firmado" para los que firmaron en papel y "Reenviar" para el resto).
 
-- [ ] **Step 1: Escribir los dos documentos.**
+- [x] **Step 1: Escribir los dos documentos.** (30-10-2026)
 - [ ] **Step 2: Migración 018** aplicada por Sonia (de madrugada): `Aplicada el: ______`. Ruta de Make creada: `Hecha el: ______`.
 - [ ] **Step 3: Pruebas de aceptación** 1–5: [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5
-- [ ] **Step 4: Manual** (Pacientes: botones; Citas: segunda persona) + `check-manual.mjs` + republicar. Memoria "Seguridad pendiente": RLS no impide desmarcar desde el cliente.
+- [x] **Step 4: Manual** (Pacientes: botones; Citas: segunda persona) + `check-manual.mjs` *(hecho en la rama; **republicar al fusionar**)*. Memoria "Seguridad pendiente": RLS no impide desmarcar desde el cliente *(anotado)*.
 - [ ] **Step 5: Tablero** — 38, 39, 41 → `hecha`; 40 → `hecha (segunda persona opcional; si Jaime dice "siempre 2", hacerla obligatoria)`; 57 → documento listo, se ejecuta en B10; B4 → `hecha`.
 - [ ] **Step 6: Merge a `main` de madrugada** y commit de cierre.

@@ -32,6 +32,7 @@ export default function EventoSelect({
   disabled = false,
   required = false,
   inputStyle,
+  decorar,
 }: {
   eventos: EventoActivo[]
   value: string
@@ -42,6 +43,8 @@ export default function EventoSelect({
   disabled?: boolean
   required?: boolean
   inputStyle?: React.CSSProperties
+  /** Sufijo y/o deshabilitado por opción (p. ej. citas que el call center no puede tocar). */
+  decorar?: (ev: EventoActivo) => { sufijo?: string; deshabilitada?: boolean }
 }) {
   const isDisabled = disabled || loading || eventos.length === 0
 
@@ -62,11 +65,14 @@ export default function EventoSelect({
       required={required}
     >
       <option value="">{firstOptionText}</option>
-      {eventos.map((ev) => (
-        <option key={ev.id} value={ev.id}>
-          {ev.label}
-        </option>
-      ))}
+      {eventos.map((ev) => {
+        const d = decorar?.(ev) ?? {}
+        return (
+          <option key={ev.id} value={ev.id} disabled={d.deshabilitada}>
+            {ev.label}{d.sufijo ? ` ${d.sufijo}` : ''}
+          </option>
+        )
+      })}
     </select>
   )
 }

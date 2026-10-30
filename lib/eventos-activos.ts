@@ -22,6 +22,9 @@ export type EventoActivo = {
   tipo: 'cita' | 'bloqueo'
   /** Quién creó la fila ('psicologo' | 'agente' | 'call_center' | 'dante'); null en filas antiguas y en bloqueos. */
   origen: string | null
+  /** Fecha y hora de la cita (`YYYY-MM-DD`, `HH:MM:SS`); null en bloqueos. */
+  fecha: string | null
+  hora: string | null
 }
 
 /**
@@ -135,6 +138,8 @@ export async function fetchCitasActivas(params: {
     label: formatCitaLabel(r.fecha_cita, r.hora_cita),
     tipo: 'cita' as const,
     origen: r.origen ?? null,
+    fecha: r.fecha_cita,
+    hora: r.hora_cita,
   }))
 }
 
@@ -188,5 +193,7 @@ export async function fetchBloqueosActivos(params: {
     label: formatBloqueoLabel(r.motivo_bloqueo, r.accion, r.fecha_bloqueo_inicio, r.fecha_bloqueo_fin),
     tipo: 'bloqueo' as const,
     origen: null,
+    fecha: null,
+    hora: null,
   }))
 }

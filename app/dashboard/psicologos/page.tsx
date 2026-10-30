@@ -22,7 +22,7 @@ import {
   generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
 } from '@/lib/disponibilidad'
 import { ahoraMadrid } from '@/lib/fechas'
-import { leerOperador, guardarOperador } from '@/lib/call-center'
+import { leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, type Rol } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
@@ -295,6 +295,8 @@ export default function PsicologosPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const esPsicologo = perfil?.rol === 'psicologo'
   const esCallCenter = perfil?.rol === 'call_center'
+  // Sin fila en perfiles = agente.
+  const rol: Rol = perfil?.rol ?? 'agente'
 
   // Operador del call center (B3): nombre libre que viaja con cada acción y se
   // recuerda en el navegador por usuario. Vacío = se envía null y nada se bloquea.
@@ -340,6 +342,8 @@ export default function PsicologosPage() {
 
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  // Texto del aviso de éxito cuando no es el genérico (avisos y solicitudes al equipo).
+  const [exitoTexto, setExitoTexto] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -430,6 +434,12 @@ export default function PsicologosPage() {
   const esModificarBloqueo = accion === 'Modificar bloqueo personal'
   const requiereSelectorBloqueo = accion === 'Desbloquear agenda' || esModificarBloqueo
   const eventoActual = [...citasActivas, ...bloqueosActivos].find((e) => e.id === eventoSeleccionadoId)
+  // Citas creadas por un psicólogo (B3): el call center no puede cambiarlas ni
+  // anularlas; las ve deshabilitadas y puede avisar a los agentes para que lo hagan.
+  const citasProtegidas = citasActivas.filter((c) => !puedeGestionarCita(rol, c.origen))
+  const TEXTO_CITA_PROTEGIDA = 'Esta cita la creó el psicólogo: solo él o un agente pueden cambiarla o anularla.'
+  const [avisoAgentes, setAvisoAgentes] = useState<{ citaId: string; comentario: string } | null>(null)
+  useEffect(() => { setAvisoAgentes(null) }, [pacienteId, accion])
 
   // ── Disponibilidad (horario + huecos ocupados) ─────────────────────────────
   // Agente (o sin perfil): modo aviso, todo seleccionable con aviso antes de enviar.
@@ -860,6 +870,68 @@ export default function PsicologosPage() {
     }
   }
 
+  // Call center: pedir a los agentes que cambien o anulen una cita creada por el
+  // psicólogo. Va por la ruta "Otro" de Make (aviso por Telegram, sin cambio de estado).
+  async function enviarAvisoAgentes() {
+    if (!avisoAgentes || !effPsicologoId || !effCentroId || !pacienteSeleccionado) return
+    const cita = citasActivas.find((c) => c.id === avisoAgentes.citaId)
+    if (!cita) { setError(ERROR_CITA_NO_ENCONTRADA); return }
+    if (!avisoAgentes.comentario.trim()) { setError('Escribe el comentario para el equipo.'); return }
+    setLoading(true)
+    setError('')
+    setSuccess(false)
+    try {
+      const comentario = comentarioAvisoCita(
+        { fecha: cita.fecha ?? '', hora: cita.hora ?? '', psicologoNombre: psicologoNombreEff },
+        avisoAgentes.comentario,
+      )
+      const payload = {
+        mensaje:             'Formulario Web Psicólogos',
+        responseId:          'web_' + Date.now(),
+        timestampFormulario: new Date().toISOString(),
+        datosProcesados: {
+          psicologo_nombre:   psicologoNombreEff,
+          psicologo_id:       effPsicologoId,
+          centro_id:          effCentroId,
+          accion:             'Otro',
+          paciente_id:        pacienteSeleccionado.id,
+          paciente_iniciales: pacienteSeleccionado.iniciales ?? null,
+          accion_id:          cita.id,
+          gcal_event_id:      cita.gcalEventId,
+          comentario,
+          operador:           operadorEnvio,
+          created_by:         perfil?.nombre ?? psicologoNombreEff,
+          created_by_id:      userId,
+          origen:             perfil?.rol ?? 'agente',
+        },
+        respuestasFormulario: {
+          'Selecciona tu centro': centroNombreEff,
+          '¿Qué necesitas hoy?':  'Otro',
+        },
+      }
+      const res = await fetch('/api/webhook/psicologos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('Error en webhook: ' + res.status)
+      await supabase.from('formulario_citas_psicologos').insert({
+        centro:          centroNombreEff,
+        psicologo:       psicologoNombreEff,
+        accion:          'Otro',
+        response_id:     payload.responseId,
+        timestamp_envio: payload.timestampFormulario,
+      })
+      setAvisoAgentes(null)
+      setExitoTexto('Aviso enviado al equipo.')
+      setSuccess(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Comprueba duplicados (reglas de la especificación §5) y, si procede, crea el paciente.
   async function ejecutarAlta(omitirDuplicados: boolean) {
     if (!effPsicologoId || !effCentroId) return
@@ -1040,6 +1112,7 @@ export default function PsicologosPage() {
     e.preventDefault()
     setError('')
     setSuccess(false)
+    setExitoTexto(null)
     setResumenSerie(null)
 
     if (!effCentroId || !effPsicologoId || !accion) {
@@ -1145,6 +1218,11 @@ export default function PsicologosPage() {
     }
     if ((requiereSelectorCita || requiereSelectorBloqueo) && !eventoSeleccionadoId) {
       setError('Debes seleccionar el evento sobre el que actuar.')
+      return
+    }
+    // Defensa: la opción ya está deshabilitada en el selector, pero el envío no debe salir nunca.
+    if (requiereSelectorCita && eventoActual && !puedeGestionarCita(rol, eventoActual.origen)) {
+      setError(TEXTO_CITA_PROTEGIDA)
       return
     }
     if (esModificarBloqueo && !modFechaInicio && !modFechaFin) {
@@ -1445,7 +1523,7 @@ export default function PsicologosPage() {
         >
           ✅ {resumenSerie
             ? `¡Listo! Se ${resumenSerie.agendadas === 1 ? 'ha agendado 1 cita' : `han agendado ${resumenSerie.agendadas} citas`}.`
-            : '¡Listo! La acción se ha registrado correctamente.'}
+            : exitoTexto ?? '¡Listo! La acción se ha registrado correctamente.'}
         </div>
       )}
       {success && resumenSerie && resumenSerie.noDisponibles.length > 0 && (
@@ -1972,7 +2050,54 @@ export default function PsicologosPage() {
                     disabled={!pacienteId}
                     inputStyle={inputStyle}
                     required
+                    decorar={(ev) => ({
+                      sufijo: ev.origen === 'psicologo' ? '(creada por el psicólogo)' : undefined,
+                      deshabilitada: !puedeGestionarCita(rol, ev.origen),
+                    })}
                   />
+                  {esCallCenter && citasProtegidas.length > 0 && (
+                    <div style={{ marginTop: 10, fontSize: 13, color: '#8a5a00', background: '#fff7e6', border: '1.5px solid #f5d08a', borderRadius: 10, padding: '12px 14px', lineHeight: 1.5 }}>
+                      <div>{TEXTO_CITA_PROTEGIDA}</div>
+                      {!avisoAgentes ? (
+                        <button
+                          type="button"
+                          onClick={() => setAvisoAgentes({ citaId: citasProtegidas[0].id, comentario: '' })}
+                          style={{ marginTop: 10, padding: '7px 14px', borderRadius: 20, border: `1.5px solid ${BRAND_BLUE}`, background: '#fff', color: BRAND_BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          Avisar a los agentes
+                        </button>
+                      ) : (
+                        <div style={{ marginTop: 10 }}>
+                          <label style={labelStyle}>Cita</label>
+                          <select
+                            value={avisoAgentes.citaId}
+                            onChange={(e) => setAvisoAgentes({ ...avisoAgentes, citaId: e.target.value })}
+                            style={{ ...inputStyle, cursor: 'pointer', marginBottom: 12 }}
+                          >
+                            {citasProtegidas.map((c) => (
+                              <option key={c.id} value={c.id}>{c.label}</option>
+                            ))}
+                          </select>
+                          <label style={labelStyle}>Comentario para el equipo</label>
+                          <textarea
+                            value={avisoAgentes.comentario}
+                            onChange={(e) => setAvisoAgentes({ ...avisoAgentes, comentario: e.target.value })}
+                            placeholder="Ej. El paciente no puede ese día y pide pasarla a la semana siguiente"
+                            rows={3}
+                            style={{ ...inputStyle, resize: 'vertical', fontFamily: "'Montserrat', inherit" }}
+                          />
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                            <button type="button" onClick={enviarAvisoAgentes} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              {loading ? 'Enviando…' : 'Enviar aviso'}
+                            </button>
+                            <button type="button" onClick={() => setAvisoAgentes(null)} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: '1.5px solid #dde1ea', background: '#fff', color: '#666', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </FormField>
               )}
 

@@ -3,6 +3,7 @@ import type { Paciente, Psicologo, Centro, Rol } from '@/types/database'
 import PacientesClient from './PacientesClient'
 import type { PacienteTableRow } from './PacientesClient'
 import { filtroPacientesDePsicologo, ETIQUETA_TIPO, TIPOS_CONSULTA, COLUMNA_PSICOLOGO } from '@/lib/pacientes-tipos'
+import type { Actor } from '@/lib/consentimiento'
 
 export default async function PacientesPage() {
   const supabase = await createSupabaseServerClient()
@@ -12,11 +13,13 @@ export default async function PacientesPage() {
     data: { user },
   } = await supabase.auth.getUser()
   const { data: perfil } = user
-    ? await supabase.from('perfiles').select('rol, psicologo_id').eq('id', user.id).maybeSingle()
+    ? await supabase.from('perfiles').select('rol, psicologo_id, nombre').eq('id', user.id).maybeSingle()
     : { data: null }
   const esPsicologo = perfil?.rol === 'psicologo'
   // Sin fila en perfiles = agente.
   const rol: Rol = (perfil?.rol as Rol | undefined) ?? 'agente'
+  // Quién firma las acciones de consentimiento (reenviar, marcar firmado).
+  const actor: Actor = { nombre: perfil?.nombre ?? user?.email ?? 'Agente', id: user?.id ?? null, rol }
 
   const [{ data: psicologos }, { data: centros }] = await Promise.all([
     supabase.from('psicologos').select('*').order('nombre'),
@@ -71,6 +74,9 @@ export default async function PacientesPage() {
     es_menor: p.es_menor,
     edad: p.edad,
     consentimiento: p.consentimiento,
+    consentimiento_origen: p.consentimiento_origen ?? null,
+    consentimiento_marcado_por: p.consentimiento_marcado_por ?? null,
+    consentimiento_marcado_en: p.consentimiento_marcado_en ?? null,
     dni: p.DNI ?? null,
     fecha_incorporacion: p.fecha_incorporacion,
   }))
@@ -113,6 +119,7 @@ export default async function PacientesPage() {
           psicologos={psi.map((p) => ({ id: p.id, nombre: p.nombre, activo: p.activo, tipos_consulta: p.tipos_consulta ?? [] }))}
           puedeEditarPsicologos={!esPsicologo}
           rol={rol}
+          actor={actor}
         />
       </div>
     </div>

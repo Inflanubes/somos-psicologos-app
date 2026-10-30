@@ -5,6 +5,8 @@ import { ESTADOS_PACIENTE, type EstadoPaciente, type TipoCita, type Rol } from '
 import { supabase } from '@/lib/supabase'
 import { etiquetaOrigen } from '@/lib/call-center'
 import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, type ColumnaPsicologo } from '@/lib/pacientes-tipos'
+import type { Actor } from '@/lib/consentimiento'
+import ConsentimientoAcciones from '../_components/ConsentimientoAcciones'
 
 export interface PacienteTableRow {
   id: string
@@ -27,6 +29,9 @@ export interface PacienteTableRow {
   es_menor: boolean
   edad: number | null
   consentimiento: boolean | null
+  consentimiento_origen: 'formulario' | 'manual' | null
+  consentimiento_marcado_por: string | null
+  consentimiento_marcado_en: string | null
   dni: string | null
   fecha_incorporacion: string | null
 }
@@ -63,12 +68,15 @@ export default function PacientesClient({
   psicologos = [],
   puedeEditarPsicologos = false,
   rol = 'agente',
+  actor,
 }: {
   pacientes: PacienteTableRow[]
   psicologos?: PsicologoOpcion[]
   puedeEditarPsicologos?: boolean
   /** Rol de quien mira: el agente ve el operador del call center, los demás no. */
   rol?: Rol
+  /** Quién reenvía o marca el consentimiento. */
+  actor: Actor
 }) {
   const [pacientes, setPacientes] = useState(pacientesIniciales)
   const [search, setSearch] = useState('')
@@ -316,22 +324,19 @@ export default function PacientesClient({
                       {p.estado}
                     </span>
                   </td>
-                  <td data-label="Consentimiento" style={{ padding: '13px 14px', whiteSpace: 'nowrap' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: '3px 10px',
-                        borderRadius: 20,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        background: p.consentimiento ? '#dcfce7' : '#fef3c7',
-                        color: p.consentimiento ? '#166534' : '#92400e',
-                        border: `1px solid ${p.consentimiento ? '#bbf7d0' : '#fde68a'}`,
-                      }}
-                    >
-                      {p.consentimiento ? '✓ Firmado' : 'Pendiente'}
-                    </span>
+                  <td data-label="Consentimiento" style={{ padding: '13px 14px', maxWidth: 230 }}>
+                    <ConsentimientoAcciones
+                      paciente={p}
+                      rol={rol}
+                      actor={actor}
+                      onCambio={(c) => setPacientes((prev) => prev.map((x) => (x.id !== p.id ? x : {
+                        ...x,
+                        consentimiento: c.consentimiento ?? x.consentimiento,
+                        consentimiento_origen: c.consentimiento_origen ?? null,
+                        consentimiento_marcado_por: c.consentimiento_marcado_por ?? null,
+                        consentimiento_marcado_en: c.consentimiento_marcado_en ?? null,
+                      })))}
+                    />
                   </td>
                   <td data-label="Fecha cita" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
                     {formatFecha(p.fecha_cita)}

@@ -36,3 +36,16 @@ export function buscarSegundaPersona<T extends { id: string; nombre: string }>(n
   const n = normalizarNombre(nombre)
   return candidatos.find((c) => normalizarNombre(c.nombre) === n) ?? null
 }
+
+/**
+ * La segunda persona ya era paciente: solo se le pone este psicólogo de pareja si
+ * la columna está libre o ya es suya. Nunca se pisa a otro psicólogo de pareja
+ * sin pasar por las reglas de duplicados del alta normal.
+ */
+export function decidirVinculoPareja(
+  existente: { psicologo_pareja_id: string | null },
+  psicologoId: string,
+): 'vincular' | 'otro_psicologo' {
+  const actual = existente.psicologo_pareja_id
+  return !actual || actual === psicologoId ? 'vincular' : 'otro_psicologo'
+}

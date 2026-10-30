@@ -1,6 +1,6 @@
 // lib/pareja.test.ts
 import { describe, it, expect } from 'vitest'
-import { validarSegundaPersona, buscarSegundaPersona } from './pareja'
+import { validarSegundaPersona, buscarSegundaPersona, decidirVinculoPareja } from './pareja'
 
 const primera = { nombre: 'Ana Belén', telefono: '600111222' }
 
@@ -35,5 +35,15 @@ describe('buscarSegundaPersona', () => {
   it('sin coincidencia de nombre devuelve null', () => {
     expect(buscarSegundaPersona('Luis García', candidatos)).toBeNull()
     expect(buscarSegundaPersona('Luis Gómez', [])).toBeNull()
+  })
+})
+
+describe('decidirVinculoPareja', () => {
+  it('vincula si la columna de pareja está libre o ya es de este psicólogo', () => {
+    expect(decidirVinculoPareja({ psicologo_pareja_id: null }, 'psi-1')).toBe('vincular')
+    expect(decidirVinculoPareja({ psicologo_pareja_id: 'psi-1' }, 'psi-1')).toBe('vincular')
+  })
+  it('no pisa a otro psicólogo de pareja', () => {
+    expect(decidirVinculoPareja({ psicologo_pareja_id: 'psi-2' }, 'psi-1')).toBe('otro_psicologo')
   })
 })

@@ -17,7 +17,7 @@ import BuscadorTelefono from './BuscadorTelefono'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
-import { validarSegundaPersona, buscarSegundaPersona } from '@/lib/pareja'
+import { validarSegundaPersona, buscarSegundaPersona, decidirVinculoPareja } from '@/lib/pareja'
 import { getCentroActivo, setCentroActivo, centroIdEfectivo, restaurarCentroActivo, TODOS_LOS_CENTROS, type CentroActivo } from '@/lib/centro-activo'
 import { faseTrasFijarAccion } from '@/lib/prefill-citas'
 import {
@@ -946,7 +946,12 @@ export default function PsicologosPage() {
         .update({ [columna]: effPsicologoId })
         .eq('id', conf.decision.paciente.id)
       if (errVinc) { setError('No se pudo vincular al paciente: ' + errVinc.message); return }
-      if (await registrarSegundaPersona(conf.decision.paciente.id)) setExitoTexto('Pareja registrada.')
+      try {
+        if (await registrarSegundaPersona(conf.decision.paciente.id)) setExitoTexto('Pareja registrada.')
+      } catch (err) {
+        setNpConfirmacion(null)
+        throw errorPareja('El paciente se vinculó', err)
+      }
       setNpConfirmacion(null)
       setSuccess(true)
       resetForm()
@@ -1165,20 +1170,28 @@ export default function PsicologosPage() {
 
     const { data: candidatos, error: errBusq } = await supabase
       .from('pacientes')
-      .select('id, nombre')
+      .select('id, nombre, psicologo_pareja_id')
       .eq('telefono', segunda.telefono)
       .eq('es_menor', false)
       .neq('id', primeraId)
-    if (errBusq) throw new Error('La pareja no se pudo registrar: ' + errBusq.message)
-    const existente = buscarSegundaPersona(segunda.nombre, (candidatos ?? []) as { id: string; nombre: string }[])
+    if (errBusq) throw new Error(errBusq.message)
+    const existente = buscarSegundaPersona(
+      segunda.nombre,
+      (candidatos ?? []) as { id: string; nombre: string; psicologo_pareja_id: string | null }[],
+    )
 
     let segundaId: string
     if (existente) {
+      // Ya es paciente de pareja de otro psicólogo: no se pisa sin pasar por las reglas
+      // de duplicados del alta normal. Mensaje genérico: no se revela que ya era paciente.
+      if (decidirVinculoPareja(existente, effPsicologoId) === 'otro_psicologo') {
+        throw new Error('no se pudo completar el vínculo')
+      }
       const { error } = await supabase
         .from('pacientes')
         .update({ psicologo_pareja_id: effPsicologoId, pareja_de: primeraId })
         .eq('id', existente.id)
-      if (error) throw new Error('La pareja no se pudo registrar: ' + error.message)
+      if (error) throw new Error(error.message)
       segundaId = existente.id
     } else {
       const iniciales = generarIniciales(segunda.nombre)
@@ -1201,7 +1214,7 @@ export default function PsicologosPage() {
         })
         .select('id')
         .single()
-      if (error || !nueva) throw new Error('La pareja no se pudo registrar: ' + (error?.message ?? 'sin identificador'))
+      if (error || !nueva) throw new Error(error?.message ?? 'sin identificador')
       segundaId = nueva.id
       // Alta en Make: manda el consentimiento de adulto a su teléfono.
       await fetch('/api/webhook/psicologos', {
@@ -1246,8 +1259,16 @@ export default function PsicologosPage() {
       })
     }
     const { error: errPrimera } = await supabase.from('pacientes').update({ pareja_de: segundaId }).eq('id', primeraId)
-    if (errPrimera) throw new Error('La pareja no se pudo enlazar: ' + errPrimera.message)
+    if (errPrimera) throw new Error(errPrimera.message)
     return true
+  }
+
+  // La primera persona ya está guardada: si la segunda falla, se dice así y se limpia el
+  // formulario para que no se vuelva a enviar el alta de la primera.
+  function errorPareja(primeraQueda: string, err: unknown): Error {
+    resetForm()
+    const motivo = err instanceof Error ? err.message : 'error desconocido'
+    return new Error(`${primeraQueda}, pero la pareja no se pudo registrar: ${motivo}. Avisa al equipo para completarla.`)
   }
 
   async function crearPaciente() {
@@ -1348,7 +1369,11 @@ export default function PsicologosPage() {
       }),
     })
 
-    if (await registrarSegundaPersona(nuevoPaciente.id)) setExitoTexto('Pareja registrada.')
+    try {
+      if (await registrarSegundaPersona(nuevoPaciente.id)) setExitoTexto('Pareja registrada.')
+    } catch (err) {
+      throw errorPareja('El paciente se creó', err)
+    }
     setSuccess(true)
     resetForm()
   }

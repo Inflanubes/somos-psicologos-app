@@ -49,13 +49,20 @@ export function destinatariosReenvio(p: PacienteReenvio, tutores: Tutores | null
   return lista
 }
 
-/** `datosProcesados` de la acción "Reenviar consentimiento" hacia Make. */
+/**
+ * `datosProcesados` de la acción "Reenviar consentimiento" hacia Make.
+ * Lleva `psicologo_id` porque Make busca al psicólogo (módulo 3) antes del router:
+ * sin él, ninguna ruta se ejecuta aunque el webhook responda 200.
+ */
 export function payloadReenvio(
-  p: PacienteReenvio & { id: string },
+  p: PacienteReenvio & { id: string; psicologo_id: string | null; psicologo_nombre: string | null; centro_id: string | null },
   tutores: Tutores | null,
   actor: Actor,
 ): Record<string, unknown> {
   return {
+    psicologo_id: p.psicologo_id,
+    psicologo_nombre: p.psicologo_nombre,
+    centro_id: p.centro_id,
     accion: ACCION_REENVIAR,
     paciente_id: p.id,
     paciente_nombre: p.nombre,

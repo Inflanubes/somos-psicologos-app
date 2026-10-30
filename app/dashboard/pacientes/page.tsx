@@ -55,6 +55,7 @@ export default async function PacientesPage() {
     nombre: p.nombre,
     telefono: p.telefono,
     email: p.email,
+    centro_id: p.centro_id,
     centro_nombre: centroMap[p.centro_id] ?? '—',
     psicologo_adultos_id: p.psicologo_adultos_id,
     psicologo_pareja_id: p.psicologo_pareja_id,

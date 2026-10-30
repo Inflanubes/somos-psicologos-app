@@ -15,7 +15,12 @@ import {
 export type PacienteConsentimiento = Pick<
   Paciente,
   'id' | 'nombre' | 'telefono' | 'es_menor' | 'consentimiento' | 'consentimiento_origen' | 'consentimiento_marcado_por' | 'consentimiento_marcado_en'
->
+> & {
+  /** Psicólogo de referencia del paciente: Make lo busca antes de enrutar la acción. */
+  psicologo_id: string | null
+  psicologo_nombre: string | null
+  centro_id: string | null
+}
 
 const SIN_TELEFONO = 'Este paciente no tiene teléfono al que enviar el consentimiento.'
 

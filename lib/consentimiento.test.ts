@@ -41,13 +41,16 @@ describe('destinatariosReenvio', () => {
 })
 
 describe('payloadReenvio', () => {
-  it('lleva la acción exacta y el enlace según es_menor', () => {
+  it('lleva la acción exacta, el psicólogo (Make lo busca antes de enrutar) y el enlace según es_menor', () => {
     const p = payloadReenvio(
-      { id: 'p1', nombre: 'Leo', telefono: '611', es_menor: true },
+      { id: 'p1', nombre: 'Leo', telefono: '611', es_menor: true, psicologo_id: 'psi-1', psicologo_nombre: 'Jaime', centro_id: 'c-1' },
       { T1_nombre_completo: 'Pa', 'T1_teléfono': '611', T2_nombre_completo: 'Ma', 'T2_teléfono': '622' },
       { nombre: 'Marta', id: 'u1', rol: 'agente' },
     )
     expect(p).toEqual({
+      psicologo_id: 'psi-1',
+      psicologo_nombre: 'Jaime',
+      centro_id: 'c-1',
       accion: 'Reenviar consentimiento',
       paciente_id: 'p1',
       paciente_nombre: 'Leo',
@@ -64,8 +67,13 @@ describe('payloadReenvio', () => {
     })
   })
   it('adulto sin tutores: campos de tutor vacíos y enlace de adulto', () => {
-    const p = payloadReenvio({ id: 'p2', nombre: 'Ana', telefono: '600', es_menor: false }, null, { nombre: 'Jaime', id: null, rol: 'psicologo' })
+    const p = payloadReenvio(
+      { id: 'p2', nombre: 'Ana', telefono: '600', es_menor: false, psicologo_id: 'psi-1', psicologo_nombre: 'Jaime', centro_id: null },
+      null,
+      { nombre: 'Jaime', id: null, rol: 'psicologo' },
+    )
     expect(p.enlace).toBe('https://www.somospsicologos.es/consentimiento/')
+    expect(p.centro_id).toBeNull()
     expect(p.tutor1_nombre).toBeNull()
     expect(p.tutor1_telefono).toBeNull()
     expect(p.tutor2_nombre).toBeNull()

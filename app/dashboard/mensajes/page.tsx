@@ -98,7 +98,8 @@ export default function MensajesPage() {
       const [{ data: pac }, { data: psi }, { data: cen }] = await Promise.all([
         supabase
           .from('pacientes')
-          .select('id,nombre,telefono,email,estado,psicologo_adultos_id,psicologo_pareja_id,psicologo_infantil_id,centro_id,fecha_cambio_estado,recomendado_por,es_menor,consentimiento,consentimiento_origen,consentimiento_marcado_por,consentimiento_marcado_en')
+          // select('*') a propósito: si la app se despliega antes que una migración, la pantalla sigue cargando.
+          .select('*')
           .in('estado', [
             'Revisar recomendado',
             'Psicólogo',
@@ -426,7 +427,7 @@ export default function MensajesPage() {
                             {p.psicologos_paciente.length > 1 ? 'Psicólogos asignados: ' : 'Psicólogo asignado: '}
                             <strong>{p.psicologo_nombre}</strong>
                           </div>
-                          <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={p} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
+                          <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={{ ...p, psicologo_nombre: p.psicologos_paciente[0]?.nombre ?? null }} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                           <Badge text={`${p.dias_espera} día${p.dias_espera !== 1 ? 's' : ''} esperando`} color="amber" />
@@ -490,7 +491,7 @@ export default function MensajesPage() {
                         <div style={{ minWidth: 200 }}>
                           <div style={{ fontWeight: 600, fontSize: 14, color: '#272626', marginBottom: 4 }}>{p.nombre}</div>
                           <div style={{ fontSize: 13, color: '#4a5870' }}>📞 {p.telefono}</div>
-                          <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={p} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
+                          <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={{ ...p, psicologo_nombre: p.psicologos_paciente[0]?.nombre ?? null }} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
                           <div style={{ marginTop: 6 }}>
                             <Badge text={p.estado} color={p.estado === 'Dudoso' ? 'amber' : 'gray'} />
                           </div>
@@ -561,7 +562,7 @@ export default function MensajesPage() {
                           <div style={{ fontSize: 13, color: '#4a5870', marginTop: 2 }}>
                             Recomendado por: <strong>{p.recomendado_por_nombre ?? '—'}</strong> · Psicólogo asignado: <strong>{p.psicologo_nombre}</strong>
                           </div>
-                          <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={p} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
+                          <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={{ ...p, psicologo_nombre: p.psicologos_paciente[0]?.nombre ?? null }} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                           <Badge text={`${p.dias_espera} día${p.dias_espera !== 1 ? 's' : ''} pendiente`} color="amber" />
@@ -611,7 +612,7 @@ export default function MensajesPage() {
                             <div style={{ fontSize: 13, color: '#4a5870', marginTop: 2 }}>
                               Psicólogo asignado: <strong>{p.psicologo_nombre}</strong>
                             </div>
-                            <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={p} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
+                            <div style={{ marginTop: 8 }}><ConsentimientoAcciones paciente={{ ...p, psicologo_nombre: p.psicologos_paciente[0]?.nombre ?? null }} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
                             <div style={{
                               marginTop: 10,
                               background: '#f7f9f9',
@@ -714,7 +715,7 @@ export default function MensajesPage() {
                           <div>
                             <span style={{ fontWeight: 500, color: '#272626' }}>{p.nombre}</span>
                             <span style={{ color: '#8899bb', marginLeft: 10 }}>📞 {p.telefono}</span>
-                            <div style={{ marginTop: 6 }}><ConsentimientoAcciones paciente={p} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
+                            <div style={{ marginTop: 6 }}><ConsentimientoAcciones paciente={{ ...p, psicologo_nombre: p.psicologos_paciente[0]?.nombre ?? null }} rol="agente" actor={actor} onCambio={() => {}} compacto /></div>
                           </div>
                           {enviados[`espera-${p.id}`] ? (
                             <Badge text="✓ Enviado" color="blue" />

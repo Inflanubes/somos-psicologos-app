@@ -10,9 +10,9 @@ Escenario: **Formulario Citas Psicologos** (el mismo de `make-cambios-2026-10-22
 - **Supabase: migración `018_consentimiento_manual.sql`** (`pacientes`: `consentimiento_origen`,
   `consentimiento_marcado_por`, `consentimiento_marcado_en`, `pareja_de`). La aplica Sonia de madrugada.
   `Aplicada el: ______`
-  **Bloqueante: aplicar la migración ANTES de desplegar la app.** Comunicaciones pide esas columnas por nombre y
-  daría error sin ellas; Pacientes y Citas seguirían funcionando pero «Marcar firmado» y el alta de pareja con
-  segunda persona fallarían al guardar.
+  **Aplicar la migración antes de desplegar la app.** Si la app sale antes, las pantallas cargan igual (leen con
+  `select('*')`), pero «Marcar firmado», «Desmarcar» y el alta de pareja con segunda persona fallan al guardar
+  con un error visible hasta que esté la migración.
 - **Make: pendiente de Sonia.** `Hecha el: ______`
 
 ## Qué manda la app
@@ -24,6 +24,11 @@ El call center no tiene estos botones. Llega al mismo webhook que todas las acci
 mensaje:              "Formulario Web Psicólogos"
 respuestasFormulario: { "¿Qué necesitas hoy?": "Reenviar consentimiento" }
 datosProcesados:
+  psicologo_id      uuid del psicólogo de referencia del paciente (el primero que tenga: adultos, pareja, infantil)
+                    ← imprescindible: el módulo 3 busca el psicólogo por este id antes del router, y el router
+                      solo enruta si lo encuentra. Sin él no se ejecutaría ninguna ruta.
+  psicologo_nombre  texto o null
+  centro_id         uuid o null
   accion:           "Reenviar consentimiento"      ← texto exacto, filtrar por este campo (como la ruta 14)
   paciente_id       uuid
   paciente_nombre   texto
@@ -38,6 +43,9 @@ datosProcesados:
 
 La app **no** envía nada si el paciente no tiene teléfono (ni él ni sus tutores): avisa en pantalla y no llama al
 webhook. Así que a Make siempre llega al menos un teléfono.
+
+Si el paciente no tuviera ningún psicólogo (no debería: la base lo exige), `psicologo_id` llegaría a null y la
+ejecución se quedaría en el módulo 3 como cualquier otra acción sin psicólogo.
 
 No se escribe nada en `pacientes` ni en `acciones_psicologos`: es solo un envío.
 
@@ -84,5 +92,7 @@ pareja`, `es_menor = false`, `email`, `fecha_nacimiento` y `edad` a `null`, y un
 primera persona) que Make puede ignorar. La ruta 14 ya le manda el consentimiento de adulto a su teléfono.
 Si la segunda persona ya era paciente, no se manda nada a Make (solo se le vincula en Supabase).
 
-Comprobar que la ruta 14 **no falla con `fecha_nacimiento` y `edad` a null** (el módulo 213 busca por
-teléfono; los módulos de Supabase de esa rama deben aceptar vacío en esos campos).
+Comprobar que la ruta 14 **no falla con `fecha_nacimiento` y `edad` a null**. Según el blueprint del 22-10
+la ruta 14 **no escribe en `pacientes`** (el módulo 213 busca en `agentes`, el 214 avisa al equipo y los
+250/251/254 mandan el enlace), así que no hay riesgo de upserts cruzados entre dos personas con el mismo móvil;
+solo hay que confirmar que ningún módulo de esa rama exige esos dos campos.

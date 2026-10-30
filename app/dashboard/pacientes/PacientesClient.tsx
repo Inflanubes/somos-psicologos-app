@@ -13,6 +13,7 @@ export interface PacienteTableRow {
   nombre: string
   telefono: string
   email: string
+  centro_id: string
   centro_nombre: string
   psicologo_nombre: string
   /** Psicólogo por tipo de consulta (migración 014); al menos uno relleno. */
@@ -326,7 +327,12 @@ export default function PacientesClient({
                   </td>
                   <td data-label="Consentimiento" style={{ padding: '13px 14px', maxWidth: 230 }}>
                     <ConsentimientoAcciones
-                      paciente={p}
+                      paciente={{
+                        ...p,
+                        // Psicólogo de referencia: el primero que tenga (adultos, pareja, infantil).
+                        psicologo_id: p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id,
+                        psicologo_nombre: nombrePsi(p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id),
+                      }}
                       rol={rol}
                       actor={actor}
                       onCambio={(c) => setPacientes((prev) => prev.map((x) => (x.id !== p.id ? x : {

@@ -42,8 +42,13 @@ export type Props = {
   onClickCita?: (e: EventoCalendario) => void
   /** Cambia → recarga inmediata y de nuevo a los 4 s y 10 s. */
   recargaKey?: number
-  /** Último cambio hecho desde el formulario; se aplica en local sin esperar a Make. */
-  cambioLocal?: AccionLocal | null
+  /** Último cambio hecho desde el formulario (varios en una serie); se aplica en local sin esperar a Make. */
+  cambioLocal?: AccionLocal | AccionLocal[] | null
+}
+
+function aplicarCambios(citas: EventoCalendario[], cambio: AccionLocal | AccionLocal[] | null): EventoCalendario[] {
+  if (!cambio) return citas
+  return (Array.isArray(cambio) ? cambio : [cambio]).reduce(aplicarAccionLocal, citas)
 }
 
 export default function CalendarioAgenda({
@@ -98,7 +103,7 @@ export default function CalendarioAgenda({
         setDatos(d)
         let lista = marcarPrimeras(d.citas, d.historial)
         // Hasta que Make haya escrito, el último cambio del formulario se vuelve a aplicar (es idempotente).
-        if (cambioRef.current) lista = aplicarAccionLocal(lista, cambioRef.current)
+        lista = aplicarCambios(lista, cambioRef.current)
         setCitas(lista)
         setError(null)
         setCargadoPara(clave)
@@ -118,7 +123,7 @@ export default function CalendarioAgenda({
   // Cambio local nuevo: se aplica sobre las citas cargadas sin esperar a la recarga.
   useEffect(() => {
     if (!cambioLocal) return
-    setCitas((prev) => aplicarAccionLocal(prev, cambioLocal))
+    setCitas((prev) => aplicarCambios(prev, cambioLocal))
   }, [cambioLocal])
 
   const cargando = cargadoPara !== clave

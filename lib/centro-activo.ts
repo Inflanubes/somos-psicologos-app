@@ -2,10 +2,24 @@
 // Desde la migración 014 un psicólogo es una sola fila; sus centros están en
 // `psicologos_centros`. Se guarda el centro elegido por usuario en localStorage
 // para sobrevivir recargas sin re-login (`psicologoId` es siempre el único id).
+// Desde B2 la pastilla "Todos" se guarda como `centroId: 'todos'`.
+
+/** Valor de `centroId` cuando el psicólogo elige la pastilla "Todos". */
+export const TODOS_LOS_CENTROS = 'todos'
 
 export type CentroActivo = {
   psicologoId: string
+  /** Id de centro o `TODOS_LOS_CENTROS`. */
   centroId: string
+}
+
+/**
+ * Centro que fija el formulario: `null` con "Todos" (el formulario pide centro),
+ * `undefined` si no hay selección guardada (quien llama decide el respaldo).
+ */
+export function centroIdEfectivo(sel: CentroActivo | null): string | null | undefined {
+  if (!sel) return undefined
+  return sel.centroId === TODOS_LOS_CENTROS ? null : sel.centroId
 }
 
 const storageKey = (userId: string) => `centro-activo:${userId}`

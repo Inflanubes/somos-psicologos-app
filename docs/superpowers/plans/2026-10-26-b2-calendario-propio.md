@@ -70,7 +70,7 @@
   - `export function marcarPrimeras(citas: EventoCalendario[], historial: { accion_id: string | null; paciente_id: string | null; fecha_cita: string | null; creado_en: string }[]): EventoCalendario[]` — `primera = true` si no hay fila de historial del mismo paciente con `accion_id !== cita.id` y (`fecha_cita < cita.fecha` o igual fecha con `creado_en` anterior a la fila de la propia cita). Sin fila propia en el histórico (cita recién creada, trigger aún sin correr): se compara solo por fecha.
   - `export type AccionLocal = { tipo: 'agendar'; cita: EventoCalendario } | { tipo: 'cambiar'; citaId: string; fecha: string; hora: string; centroId: string | null } | { tipo: 'anular'; citaId: string }`; `export function aplicarAccionLocal(eventos: EventoCalendario[], a: AccionLocal): EventoCalendario[]` — agendar: añade; cambiar: mueve; anular: la cita pasa a `tipo: 'anulada'`. Los libres afectados se recalculan fuera (quien llama vuelve a ejecutar `calcularLibres` con las citas actualizadas) **[decisión del plan]**.
 
-- [ ] **Step 1: Tests** en `lib/calendario-huecos.test.ts` (helpers `t`, `psi()` locales):
+- [x] **Step 1: Tests** en `lib/calendario-huecos.test.ts` (helpers `t`, `psi()` locales):
 
 ```ts
 const AHORA = { fecha: '2026-10-26', minutos: 9 * 60 }
@@ -115,10 +115,10 @@ it('aplicarAccionLocal anular → anulada; cambiar → mueve', () => {
 
 En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`; `textoChip(1)`/`textoChip(4)`; `filtrarEventos` con un libre con `centros: ['mor','on']` y filtro `centroId: 'on'` → se conserva.
 
-- [ ] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/calendario.test.ts lib/calendario-huecos.test.ts`.
-- [ ] **Step 3: Implementar.**
-- [ ] **Step 4: Ejecutar** — PASS; `npx tsc --noEmit -p tsconfig.json` (si `AgendaSemanal` usa `colorCentro`, dejar un stub temporal o adelantar el cambio mínimo de la Tarea 3).
-- [ ] **Step 5: Commit** — `git add lib && git commit -m "Calendario: huecos libres, anuladas, bloqueos por hora, primera cita y colores por estado (puro)"`
+- [x] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/calendario.test.ts lib/calendario-huecos.test.ts`.
+- [x] **Step 3: Implementar.**
+- [x] **Step 4: Ejecutar** — PASS; `npx tsc --noEmit -p tsconfig.json` (si `AgendaSemanal` usa `colorCentro`, dejar un stub temporal o adelantar el cambio mínimo de la Tarea 3).
+- [x] **Step 5: Commit** — `git add lib && git commit -m "Calendario: huecos libres, anuladas, bloqueos por hora, primera cita y colores por estado (puro)"`
 
 ---
 
@@ -131,9 +131,9 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
 - Produces: `cargarSemanaCalendario(cliente: SupabaseClient<Database>, p: { lunes: string; psicologoIds: string[]; verAnuladas: boolean }): Promise<{ citas: EventoCalendario[]; bloqueos: EventoCalendario[]; anuladas: EventoCalendario[]; historial: HistorialAgendar[]; tramosDe: Map<string, Tramo[]>; citasDe: Map<string, CitaOcupada[]>; bloqueosDe: Map<string, Bloqueo[]> }` con `HistorialAgendar = { accion_id; paciente_id; fecha_cita; creado_en }`.
 - Consultas: citas y bloqueos activos de la semana (como hoy en `calendario/page.tsx:86-141`, con `paciente_id` → `pacienteId`); anuladas solo si `verAnuladas`: `acciones_historial.select('id, accion_id, psicologo_id, paciente_id, centro_id, fecha_cita, hora_cita, tipo_cita').eq('accion','Cancelar cita').gte('fecha_cita', lunes).lte('fecha_cita', domingo)`; histórico de "Agendar cita" de los `paciente_id` de la semana; `horarios_psicologos` (`dia_semana, hora_inicio, hora_fin, centro_id`) de `psicologoIds`; citas activas futuras y bloqueos activos de `psicologoIds` para `calcularLibres` (desde `lunes` hasta `domingo` basta: los libres solo se calculan en la semana visible). Iniciales de pacientes como hoy.
 
-- [ ] **Step 1: Implementar** moviendo el código de carga de `calendario/page.tsx` a este módulo.
-- [ ] **Step 2: Comprobar** — tsc limpio (la página aún no lo usa).
-- [ ] **Step 3: Commit** — `git add lib/calendario-datos.ts && git commit -m "Calendario: carga de la semana en un módulo reutilizable"`
+- [x] **Step 1: Implementar** moviendo el código de carga de `calendario/page.tsx` a este módulo.
+- [x] **Step 2: Comprobar** — tsc limpio (la página aún no lo usa).
+- [x] **Step 3: Commit** — `git add lib/calendario-datos.ts && git commit -m "Calendario: carga de la semana en un módulo reutilizable"`
 
 ---
 
@@ -150,12 +150,12 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
 - `calendario/page.tsx`: conserva filtros (y los psicólogos del desplegable: `call_center` solo activos; `agente` todos con sufijo "(inactivo)"), quita leyenda por centro y la carga; renderiza `<CalendarioAgenda rol filtros psicologosVisibles centros onClickLibre onClickCita />`. `onClickLibre` → `router.push(`/dashboard/psicologos?accion=agendar&centro=${centroId}&psicologo=${psicologoId}&fecha=${fecha}&hora=${hora}`)` (si el libre tiene `centros`, se usa el primero y el psicólogo elige en el formulario); `onClickCita` → `router.push(`/dashboard/psicologos?accion=cambiar&cita=${e.id}`)` (anuladas no son pulsables).
 - `globals.css`: estilos `.cal-chip`, `.cal-popover`; quitar `.cal-desktop`, `.cal-mobile`.
 
-- [ ] **Step 1: Mover `AgendaSemanal`** y ajustar imports.
-- [ ] **Step 2: `CalendarioAgenda`.**
-- [ ] **Step 3: Rejilla** (libres, chips, anuladas, bloqueos por hora, clics).
-- [ ] **Step 4: Página Calendario** y CSS.
-- [ ] **Step 5: Comprobar** — tsc limpio; `npm test`; `npm run dev`: con "Todos" chips; con un centro, bloques azules; clic lleva a Citas con la URL correcta (la Tarea 4 la interpreta); móvil un día.
-- [ ] **Step 6: Commit** — `git add -A app lib && git commit -m "Calendario propio: huecos libres, colores por estado, bloqueos por hora y clic"`
+- [x] **Step 1: Mover `AgendaSemanal`** y ajustar imports.
+- [x] **Step 2: `CalendarioAgenda`.**
+- [x] **Step 3: Rejilla** (libres, chips, anuladas, bloqueos por hora, clics).
+- [x] **Step 4: Página Calendario** y CSS.
+- [x] **Step 5: Comprobar** — tsc limpio; `npm test`; `npm run dev`: con "Todos" chips; con un centro, bloques azules; clic lleva a Citas con la URL correcta (la Tarea 4 la interpreta); móvil un día. **Quedó así:** tsc, eslint y tests en verde; la comprobación en pantalla no se hizo (login contra Supabase de producción): queda en las pruebas de aceptación de la Tarea 5.
+- [x] **Step 6: Commit** — `git add -A app lib && git commit -m "Calendario propio: huecos libres, colores por estado, bloqueos por hora y clic"`
 
 ---
 

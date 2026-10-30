@@ -315,6 +315,26 @@ body {
   cursor: default;
   color: #4a5870;
 }
+.cal-pastilla {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid #2f5aae;
+  background: #fff;
+  color: #2f5aae;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.cal-pastilla:hover {
+  background: #e3edff;
+}
+.cal-pastilla-activa,
+.cal-pastilla-activa:hover {
+  background: #2f5aae;
+  color: #fff;
+}
 
 /* --- Esqueleto de carga (global; algunos loading.tsx lo redefinen) --- */
 .skeleton {

@@ -1,8 +1,13 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, Paciente, Perfil, PsicologoCentro, TipoCita } from '@/types/database'
+import CalendarioAgenda from '@/app/dashboard/_components/CalendarioAgenda'
+import type { ClickLibre } from '@/app/dashboard/_components/AgendaSemanal'
+import type { EventoCalendario } from '@/lib/calendario'
+import type { AccionLocal } from '@/lib/calendario-huecos'
 import {
   filtroPacientesDePsicologo, tiposDisponibles, evaluarDuplicado, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, TIPOS_CONSULTA,
   type TipoConsulta, type DecisionDuplicado, type PacienteExistente, type ColumnaPsicologo,
@@ -11,7 +16,7 @@ import EventoSelect from '@/components/EventoSelect'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
-import { getCentroActivo, setCentroActivo, clearCentroActivo, type CentroActivo } from '@/lib/centro-activo'
+import { getCentroActivo, setCentroActivo, centroIdEfectivo, TODOS_LOS_CENTROS, type CentroActivo } from '@/lib/centro-activo'
 import {
   generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
 } from '@/lib/disponibilidad'
@@ -35,6 +40,13 @@ type AccionPsicologo =
   | 'Baja laboral'
 
 type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
+
+/** Relleno del formulario desde el calendario o la URL. */
+type Prefill =
+  | { accion: 'Agendar cita'; centroId: string; psicologoId: string; fecha: string; hora: string }
+  | { accion: 'Cambiar cita'; centroId: string; psicologoId: string; pacienteId: string; citaId: string }
+
+const ERROR_CITA_NO_ENCONTRADA = 'No encontramos esa cita: puede que ya se haya anulado.'
 
 const ACCIONES: AccionPsicologo[] = [
   'Agendar cita',
@@ -289,14 +301,28 @@ export default function PsicologosPage() {
   const [variantesCargadas, setVariantesCargadas] = useState(false)
   const [centroActivo, setCentroActivoState] = useState<CentroActivo | null>(null)
   const esMultiCentro = esPsicologo && misCentros.length > 1
-  const necesitaElegirCentro = esMultiCentro && !centroActivo
 
   // For a psychologist the centro/psicólogo are fixed to their own profile (or
   // to the chosen center when they work in several). Use these as the source of
   // truth so a successful action (which resets the form) or a slow auto-fill
   // can never leave the next submit without them.
+  // Multicentro sin pastilla elegida (o con "Todos"): el formulario pide el centro (psiCentroId = null).
   const psiPsicologoId = miFicha?.id ?? perfil?.psicologo_id ?? null
-  const psiCentroId    = centroActivo?.centroId ?? (misCentros.length === 1 ? misCentros[0] : null) ?? perfil?.centro_id ?? null
+  const centroPastilla = centroIdEfectivo(centroActivo)
+  const psiCentroId    = centroPastilla !== undefined
+    ? centroPastilla
+    : esMultiCentro ? null : ((misCentros.length === 1 ? misCentros[0] : null) ?? perfil?.centro_id ?? null)
+
+  // Calendario propio junto al formulario: recarga tras cada envío y cambio optimista.
+  const [recargaKey, setRecargaKey] = useState(0)
+  const [cambioLocal, setCambioLocal] = useState<AccionLocal | AccionLocal[] | null>(null)
+  // Relleno del formulario desde un clic en el calendario o desde la URL (?accion=…).
+  // Se aplica por fases porque los efectos que encadenan centro → psicólogo → paciente
+  // → citas vacían los campos siguientes al cambiar los anteriores.
+  const [prefill, setPrefill] = useState<Prefill | null>(null)
+  const [prefillFase, setPrefillFase] = useState(0)
+  const formRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
   const effCentroId    = esPsicologo ? (psiCentroId ?? centroId) : centroId
   const effPsicologoId = esPsicologo ? (psiPsicologoId ?? psicologoId) : psicologoId
 
@@ -325,13 +351,16 @@ export default function PsicologosPage() {
       const enCentro = new Set(psicologosCentros.filter((pc) => pc.centro_id === centroId).map((pc) => pc.psicologo_id))
       const veInactivos = perfilCargado && perfil?.rol !== 'call_center'
       setFilteredPsicologos(psicologos.filter((p) => enCentro.has(p.id) && (p.activo || veInactivos)))
+    } else if (esPsicologo && miFicha) {
+      // Psicólogo con "Todos": su ficha sigue fijada aunque el centro esté por elegir.
+      setFilteredPsicologos([miFicha])
     } else {
       setFilteredPsicologos([])
     }
     setPsicologoId('')
     setPacientes([])
     setPacienteId('')
-  }, [centroId, psicologos, psicologosCentros, perfilCargado, perfil?.rol])
+  }, [centroId, psicologos, psicologosCentros, perfilCargado, perfil?.rol, esPsicologo, miFicha])
 
   // Load patients filtered by selected psychologist
   useEffect(() => {
@@ -484,8 +513,11 @@ export default function PsicologosPage() {
       const ids = (pcs ?? []).map((r) => r.centro_id)
       setMisCentros(ids)
       const guardada = getCentroActivo(uid)
-      if (guardada && guardada.psicologoId === ficha.id && ids.includes(guardada.centroId)) setCentroActivoState(guardada)
-      else if (ids.length === 1) setCentroActivoState({ psicologoId: ficha.id, centroId: ids[0] })
+      if (guardada && guardada.psicologoId === ficha.id && (ids.includes(guardada.centroId) || guardada.centroId === TODOS_LOS_CENTROS)) {
+        setCentroActivoState(guardada)
+      } else if (ids.length === 1) {
+        setCentroActivoState({ psicologoId: ficha.id, centroId: ids[0] })
+      }
       setVariantesCargadas(true)
     }
     cargar()
@@ -534,6 +566,130 @@ export default function PsicologosPage() {
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [psicologoId, accion, pacienteId])
+
+  // ── Relleno desde el calendario o la URL, por fases ───────────────────────
+  // Fase 0: datos base cargados → centro (psicólogo con pastilla concreta: la pastilla).
+  useEffect(() => {
+    if (!prefill || prefillFase !== 0) return
+    if (!perfilCargado || psicologos.length === 0 || (esPsicologo && !variantesCargadas)) return
+    setSuccess(false)
+    setError('')
+    setResumenSerie(null)
+    if (esPsicologo) {
+      if (psiCentroId === null) setCentroId(prefill.centroId)
+      else if (prefill.centroId && prefill.centroId !== psiCentroId && misCentros.includes(prefill.centroId)) elegirCentro(prefill.centroId)
+    } else {
+      // Cita antigua sin centro: el primero en el que trabaja el psicólogo.
+      const centro = prefill.centroId || (psicologosCentros.find((pc) => pc.psicologo_id === prefill.psicologoId)?.centro_id ?? '')
+      if (centro !== prefill.centroId) setPrefill({ ...prefill, centroId: centro })
+      setCentroId(centro)
+    }
+    setPrefillFase(1)
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill, prefillFase, perfilCargado, psicologos.length, esPsicologo, variantesCargadas, psiCentroId, misCentros, psicologosCentros])
+
+  // Fase 1: el centro ya está y la lista de psicólogos lo incluye → psicólogo.
+  useEffect(() => {
+    if (!prefill || prefillFase !== 1) return
+    const centroListo = esPsicologo ? psiCentroId !== null || centroId === prefill.centroId : centroId === prefill.centroId
+    if (!centroListo) return
+    const ficha = psicologos.find((p) => p.id === prefill.psicologoId)
+    const trabajaAhi = esPsicologo
+      ? prefill.psicologoId === psiPsicologoId
+      : psicologosCentros.some((pc) => pc.psicologo_id === prefill.psicologoId && pc.centro_id === prefill.centroId)
+    if (!ficha || !trabajaAhi || (esCallCenter && !ficha.activo)) {
+      setError(!ficha || !trabajaAhi ? 'No encontramos a ese psicólogo en ese centro.' : 'Este psicólogo no recibe citas nuevas.')
+      setPrefill(null)
+      setPrefillFase(0)
+      return
+    }
+    if (!filteredPsicologos.some((p) => p.id === prefill.psicologoId)) return
+    if (psicologoId !== prefill.psicologoId) { setPsicologoId(prefill.psicologoId); return }
+    setPrefillFase(2)
+  }, [prefill, prefillFase, esPsicologo, psiCentroId, centroId, psicologos, psicologosCentros, psiPsicologoId, esCallCenter, filteredPsicologos, psicologoId])
+
+  // Fase 2: acción y, según el caso, fecha y hora (agendar) o paciente (cambiar).
+  useEffect(() => {
+    if (!prefill || prefillFase !== 2) return
+    setAccion(prefill.accion)
+    if (prefill.accion === 'Agendar cita') {
+      setFecha(prefill.fecha)
+      setHora(prefill.hora)
+      setPrefill(null)
+      setPrefillFase(0)
+      return
+    }
+    if (!prefill.pacienteId) {
+      setError(ERROR_CITA_NO_ENCONTRADA)
+      setPrefill(null)
+      setPrefillFase(0)
+      return
+    }
+    setPacienteId(prefill.pacienteId)
+    setPrefillFase(3)
+  }, [prefill, prefillFase])
+
+  // Fases 3 y 4 (cambiar): esperar a que se carguen las citas activas del paciente y elegir la cita.
+  useEffect(() => {
+    if (!prefill || prefill.accion !== 'Cambiar cita') return
+    if (prefillFase === 3 && loadingEventos) { setPrefillFase(4); return }
+    if (prefillFase !== 4 || loadingEventos) return
+    if (citasActivas.some((c) => c.id === prefill.citaId)) setEventoSeleccionadoId(prefill.citaId)
+    else setError(ERROR_CITA_NO_ENCONTRADA)
+    setPrefill(null)
+    setPrefillFase(0)
+  }, [prefill, prefillFase, loadingEventos, citasActivas])
+
+  const rellenarDesdeLibre = useCallback((h: ClickLibre) => {
+    // Psicólogo con "Todos" y hueco libre en varios centros: el centro lo elige en el formulario.
+    const centroId = esPsicologo && psiCentroId === null && (h.centros?.length ?? 0) > 1 ? '' : h.centroId
+    setPrefill({ accion: 'Agendar cita', centroId, psicologoId: h.psicologoId, fecha: h.fecha, hora: h.hora })
+    setPrefillFase(0)
+  }, [esPsicologo, psiCentroId])
+
+  const rellenarDesdeCita = useCallback((e: EventoCalendario) => {
+    if (!e.pacienteId) { setError(ERROR_CITA_NO_ENCONTRADA); return }
+    setPrefill({ accion: 'Cambiar cita', centroId: e.centroId ?? '', psicologoId: e.psicologoId, pacienteId: e.pacienteId, citaId: e.id })
+    setPrefillFase(0)
+  }, [])
+
+  // Enlaces desde la página Calendario (?accion=agendar… / ?accion=cambiar&cita=…).
+  const aplicarURL = useCallback(async (sp: URLSearchParams) => {
+    const accionUrl = sp.get('accion')
+    if (accionUrl === 'agendar') {
+      setPrefill({
+        accion: 'Agendar cita', centroId: sp.get('centro') ?? '', psicologoId: sp.get('psicologo') ?? '',
+        fecha: sp.get('fecha') ?? '', hora: sp.get('hora') ?? '',
+      })
+      setPrefillFase(0)
+    } else if (accionUrl === 'cambiar' && sp.get('cita')) {
+      const { data } = await supabase
+        .from('acciones_psicologos')
+        .select('id, psicologo_id, centro_id, paciente_id, activo')
+        .eq('id', sp.get('cita') as string)
+        .maybeSingle()
+      if (!data || !data.activo || !data.psicologo_id || !data.paciente_id) {
+        setError(ERROR_CITA_NO_ENCONTRADA)
+      } else {
+        setPrefill({ accion: 'Cambiar cita', centroId: data.centro_id ?? '', psicologoId: data.psicologo_id, pacienteId: data.paciente_id, citaId: data.id })
+        setPrefillFase(0)
+      }
+    }
+    router.replace('/dashboard/psicologos')
+  }, [router])
+
+  // Agenda de al lado: el psicólogo solo se ve a sí mismo; los demás, los del centro elegido (o todos).
+  const psicologosAgenda = useMemo(() => {
+    if (esPsicologo) return miFicha ? [miFicha] : []
+    if (!centroId) return psicologos
+    const enCentro = new Set(psicologosCentros.filter((pc) => pc.centro_id === centroId).map((pc) => pc.psicologo_id))
+    return psicologos.filter((p) => enCentro.has(p.id))
+  }, [esPsicologo, miFicha, centroId, psicologos, psicologosCentros])
+  const filtrosAgenda = useMemo(
+    () => ({ centroId: effCentroId ?? '', psicologoId: effPsicologoId ?? '', tipoCita: '' }),
+    [effCentroId, effPsicologoId],
+  )
 
   // Load active blocks of the selected psychologist (for Desbloquear agenda)
   useEffect(() => {
@@ -1106,6 +1262,24 @@ export default function PsicologosPage() {
       } else if (pideTipoCita && fecha && hora) {
         añadirCitaLocal({ fecha, hora }, excluirAccionId)
       }
+      // Calendario de al lado: cambio optimista y recarga (ahora, 4 s y 10 s).
+      if (accion === 'Agendar cita' && effPsicologoId) {
+        const sello = Date.now()
+        setCambioLocal(enviadas.map((f, i): AccionLocal => ({
+          tipo: 'agendar',
+          cita: {
+            id: `local:${sello}:${i}`, tipo: 'cita', psicologoId: effPsicologoId, psicologoNombre,
+            centroId: effCentroId || null, fecha: f, hora: hora.slice(0, 5), tipoCita: tipoCita || null,
+            iniciales: pacienteSeleccionado?.iniciales ?? null, inicio: null, fin: null, motivo: null,
+            primera: false, pacienteId: pacienteSeleccionado?.id ?? null,
+          },
+        })))
+      } else if (accion === 'Cambiar cita' && eventoActual) {
+        setCambioLocal({ tipo: 'cambiar', citaId: eventoActual.id, fecha, hora: hora.slice(0, 5), centroId: effCentroId || null })
+      } else if (accion === 'Cancelar cita' && eventoActual) {
+        setCambioLocal({ tipo: 'anular', citaId: eventoActual.id })
+      }
+      setRecargaKey((k) => k + 1)
       resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
@@ -1115,16 +1289,13 @@ export default function PsicologosPage() {
     }
   }
 
+  // Pastillas del psicólogo multicentro: un centro concreto o "Todos" (el formulario pide centro).
   function elegirCentro(centroElegido: string) {
     if (!miFicha) return
     const seleccion: CentroActivo = { psicologoId: miFicha.id, centroId: centroElegido }
     setCentroActivoState(seleccion)
     if (userId) setCentroActivo(userId, seleccion)
-  }
-
-  function cambiarDeCentro() {
-    setCentroActivoState(null)
-    if (userId) clearCentroActivo(userId)
+    if (centroElegido === TODOS_LOS_CENTROS) setCentroId('')
     setAccion('')
     setPacienteId('')
     setEventoSeleccionadoId('')
@@ -1132,74 +1303,6 @@ export default function PsicologosPage() {
 
   function nombreCentro(id: string): string {
     return centros.find((c) => c.id === id)?.nombre ?? 'Centro'
-  }
-
-  // Psicólogo multi-centro sin centro elegido: pedir el centro antes del formulario.
-  // (El psicólogo nunca se elige: es siempre su única ficha.)
-  if (necesitaElegirCentro) {
-    return (
-      <div className="page-pad" style={{ maxWidth: 560 }}>
-        <h1
-          style={{
-            fontFamily: 'var(--font-lora, "Lora", Georgia, serif)',
-            fontSize: 26,
-            fontWeight: 600,
-            color: '#272626',
-            margin: '0 0 6px',
-          }}
-        >
-          Citas
-        </h1>
-        <p style={{ fontSize: 13.5, color: '#888', margin: '0 0 28px' }}>
-          Trabajas en más de un centro
-        </p>
-        <div
-          className="page-pad"
-          style={{
-            background: '#ffffff',
-            borderRadius: 16,
-            boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
-          }}
-        >
-          <div style={{ ...labelStyle, marginBottom: 16 }}>¿En qué centro vas a trabajar hoy?</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {misCentros.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => elegirCentro(id)}
-                style={{
-                  padding: '16px 18px',
-                  border: '1.5px solid #dde1ea',
-                  borderRadius: 10,
-                  background: '#fafbfc',
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: BRAND_BLUE,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  transition: 'background 0.15s, border 0.15s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#eef2fb'
-                  e.currentTarget.style.borderColor = BRAND_BLUE
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fafbfc'
-                  e.currentTarget.style.borderColor = '#dde1ea'
-                }}
-              >
-                {nombreCentro(id)}{psiPsicologoId && centroApagado(psiPsicologoId, id) ? ' (no recibe citas nuevas)' : ''}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: 12.5, color: '#888', marginTop: 16, marginBottom: 0 }}>
-            Podrás cambiar de centro en cualquier momento desde el formulario.
-          </p>
-        </div>
-      </div>
-    )
   }
 
   // Bloque "Ya es paciente" de cada tutor: botón, buscador y resultados, o la
@@ -1289,6 +1392,9 @@ export default function PsicologosPage() {
         }
       `}</style>
     <div className="page-pad" style={{ maxWidth: 1320 }}>
+      <Suspense fallback={null}>
+        <ParametrosURL onParams={aplicarURL} />
+      </Suspense>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1
@@ -1368,6 +1474,7 @@ export default function PsicologosPage() {
 
       {/* Form card */}
       <div
+        ref={formRef}
         className="form-card page-pad"
         style={{
           background: '#ffffff',
@@ -1378,6 +1485,7 @@ export default function PsicologosPage() {
         <form onSubmit={handleSubmit}>
           {/* Centro + Psicólogo — hidden for a psychologist (form fixed to them) */}
           {esPsicologo ? (
+            <>
             <div
               style={{
                 background: '#eef2fb',
@@ -1391,33 +1499,51 @@ export default function PsicologosPage() {
             >
               Estás gestionando tu propia agenda como{' '}
               <strong>{filteredPsicologos.find((p) => p.id === psicologoId)?.nombre ?? perfil?.nombre}</strong>
-              {esMultiCentro && (
+              {!esMultiCentro && psiCentroId && (
                 <>
-                  {' '}en <strong>{centros.find((c) => c.id === effCentroId)?.nombre ?? ''}</strong>
+                  {' '}en <strong>{centros.find((c) => c.id === psiCentroId)?.nombre ?? ''}</strong>
                 </>
               )}
               .
               {esMultiCentro && (
-                <button
-                  type="button"
-                  onClick={cambiarDeCentro}
-                  style={{
-                    marginLeft: 10,
-                    padding: '3px 10px',
-                    border: `1px solid ${BRAND_BLUE}`,
-                    borderRadius: 16,
-                    background: '#fff',
-                    color: BRAND_BLUE,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  Cambiar de centro
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }} role="group" aria-label="Centro">
+                  {[TODOS_LOS_CENTROS, ...misCentros].map((id) => {
+                    const activa = id === TODOS_LOS_CENTROS ? psiCentroId === null : psiCentroId === id
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => elegirCentro(id)}
+                        className={activa ? 'cal-pastilla cal-pastilla-activa' : 'cal-pastilla'}
+                        aria-pressed={activa}
+                      >
+                        {id === TODOS_LOS_CENTROS
+                          ? 'Todos'
+                          : `${nombreCentro(id)}${psiPsicologoId && centroApagado(psiPsicologoId, id) ? ' (no recibe citas nuevas)' : ''}`}
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </div>
+            {esMultiCentro && psiCentroId === null && (
+              <FormField label="Centro" required>
+                <select
+                  value={centroId}
+                  onChange={(e) => setCentroId(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                  required
+                >
+                  <option value="">Selecciona un centro</option>
+                  {centros.filter((c) => misCentros.includes(c.id)).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre}{psiPsicologoId && centroApagado(psiPsicologoId, c.id) ? ' (no recibe citas nuevas)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            )}
+            </>
           ) : (
           <div className="r-grid-2" style={{ gap: 16 }}>
             <FormField label="Centro" required>
@@ -2156,39 +2282,39 @@ export default function PsicologosPage() {
         </form>
       </div>
 
-      {/* Google Calendar embed */}
-      {psicologoSeleccionado?.calendar_id && (
-        <div className="calendar-panel" style={{
-          background: '#fff', borderRadius: 16,
-          boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
-          padding: '24px', width: '100%',
-        }}>
-          <div style={{
-            fontSize: 12.5, fontWeight: 700, color: BRAND_BLUE,
-            textTransform: 'uppercase', letterSpacing: '0.04em',
-            marginBottom: 16,
-          }}>
-            Calendario — {psicologoSeleccionado.nombre}
-          </div>
-          {/* Escritorio: vista semana */}
-          <iframe
-            className="cal-desktop"
-            src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(psicologoSeleccionado.calendar_id)}&ctz=Europe%2FMadrid&mode=WEEK&showTitle=0&showNav=1&showPrint=0&showTabs=0&showCalendars=0&hl=es`}
-            style={{ width: '100%', height: 600, border: 0, borderRadius: 8 }}
-            scrolling="no"
+      {/* Calendario propio: huecos libres, citas y bloqueos; un clic rellena el formulario */}
+      <div className="calendar-panel">
+        {perfilCargado && (
+          <CalendarioAgenda
+            rol={perfil?.rol ?? 'agente'}
+            filtros={filtrosAgenda}
+            psicologosVisibles={psicologosAgenda}
+            centros={centros}
+            onClickLibre={rellenarDesdeLibre}
+            onClickCita={rellenarDesdeCita}
+            recargaKey={recargaKey}
+            cambioLocal={cambioLocal}
           />
-          {/* Móvil: vista agenda (lista), más usable en pantalla estrecha */}
-          <iframe
-            className="cal-mobile"
-            src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(psicologoSeleccionado.calendar_id)}&ctz=Europe%2FMadrid&mode=AGENDA&showTitle=0&showNav=1&showPrint=0&showTabs=0&showCalendars=0&hl=es`}
-            style={{ width: '100%', height: 520, border: 0, borderRadius: 8 }}
-            scrolling="no"
-          />
-        </div>
-      )}
+        )}
+      </div>
 
       </div>{/* end layout-wrapper */}
     </div>
     </>
   )
+}
+
+/**
+ * Lee `?accion=agendar&centro=…&psicologo=…&fecha=…&hora=…` o `?accion=cambiar&cita=…`
+ * (enlaces desde la página Calendario) una sola vez al montar.
+ */
+function ParametrosURL({ onParams }: { onParams: (sp: URLSearchParams) => void }) {
+  const sp = useSearchParams()
+  const aplicado = useRef(false)
+  useEffect(() => {
+    if (aplicado.current) return
+    aplicado.current = true
+    if (sp.get('accion')) onParams(new URLSearchParams(sp.toString()))
+  }, [sp, onParams])
+  return null
 }

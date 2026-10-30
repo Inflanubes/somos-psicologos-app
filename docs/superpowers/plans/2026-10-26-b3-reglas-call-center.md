@@ -225,6 +225,6 @@ it('comentarios', () => {
 - [ ] **Step 2: Pruebas de aceptación** 1–7 de la especificación:
   - [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7
 - [x] **Step 3: Manual** (ficha Citas para call center: operador, buscador, avisos, acciones nuevas) + `check-manual.mjs` + republicar.
-  **Quedó así (30-10-2026):** manual actualizado en la rama y check OK; el artifact se republica al hacer el merge (como en B2).
+  **Hecho (30-10-2026):** manual actualizado y republicado tras el merge (versión 17 del artifact, check OK con 264 literales).
 - [x] **Step 4: Tablero** — 42, 43, 44, 45, 48, 49, 50 → `hecha`; 51 → sigue `espera cliente` con nota "activar en `ACCIONES_SOLICITUD_ACTIVAS`"; 36 → `verificar` tras 51; B3 → `hecha`. Memoria: actualizar la nota "Call center rutas 6-9".
-- [ ] **Step 5: Merge a `main` de madrugada** y commit de cierre.
+- [x] **Step 5: Merge a `main`** y commit de cierre. Hecho el 30-10-2026 por la noche (ed13c26, fast-forward, en GitHub; el cliente aún no usa el sistema, así que no hizo falta madrugada). Manual republicado (versión 17).

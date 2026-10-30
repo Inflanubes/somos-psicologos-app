@@ -171,10 +171,14 @@ describe('correcciones de la revisión B3', () => {
     expect(psicologoActualExistente({ psicologo_adultos_id: null, psicologo_pareja_id: null, psicologo_infantil_id: 'i' }, null)).toBe('i')
     expect(psicologoActualExistente({ psicologo_adultos_id: null, psicologo_pareja_id: null, psicologo_infantil_id: null }, null)).toBe(null)
   })
-  it('accionAltaExistente: el call center solo solicita cambio si ese tipo ya tiene otro psicólogo', () => {
-    expect(accionAltaExistente('call_center', true)).toBe('solicitar_cambio')
-    expect(accionAltaExistente('call_center', false)).toBe('vincular')
-    expect(accionAltaExistente('agente', true)).toBe('vincular')
-    expect(accionAltaExistente('psicologo', true)).toBe('vincular')
+  it('accionAltaExistente: el call center pide cambio solo si el tipo ya tiene otro psicólogo y aún no lo ha visto', () => {
+    // columna libre (alta normal de pareja): vincula como los demás
+    expect(accionAltaExistente('call_center', false, false)).toBe('vincular')
+    // otro psicólogo en ese tipo, sin cita pasada: puede solicitar el cambio
+    expect(accionAltaExistente('call_center', true, false)).toBe('solicitar_cambio')
+    // otro psicólogo y el paciente ya tuvo cita con él: debe escribirlo en Otros
+    expect(accionAltaExistente('call_center', true, true)).toBe('escribir_en_otros')
+    expect(accionAltaExistente('agente', true, true)).toBe('vincular')
+    expect(accionAltaExistente('psicologo', true, false)).toBe('vincular')
   })
 })

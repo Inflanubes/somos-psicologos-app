@@ -96,13 +96,20 @@ export function psicologoActualExistente(p: PsicologosFicha, columnaOcupadaPor: 
   return columnaOcupadaPor ?? p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id ?? null
 }
 
+export type AccionAltaExistente = 'vincular' | 'solicitar_cambio' | 'escribir_en_otros'
+
 /**
- * Qué botón principal ve quien da de alta un teléfono que ya existe: el call center
- * solo pide cambio de psicólogo si ese tipo de consulta ya tiene otro psicólogo;
- * si la columna está libre (alta normal de pareja) vincula como los demás.
+ * Qué botón principal ve quien da de alta un teléfono que ya existe (regla de Sonia, 30-10-2026):
+ * - agentes y psicólogos: vinculan siempre;
+ * - call center con la columna del tipo libre (alta normal de pareja): vincula;
+ * - call center con otro psicólogo en ese tipo y el paciente SIN cita pasada con él
+ *   (primera cita aún no celebrada): puede solicitar el cambio de psicólogo (ruta Cambio solicitado);
+ * - call center y el paciente YA ha tenido cita con su psicólogo: no puede pedir el cambio aquí,
+ *   tiene que escribir la solicitud en "Otros (aviso al equipo)".
  */
-export function accionAltaExistente(rol: Rol, columnaOcupada: boolean): 'solicitar_cambio' | 'vincular' {
-  return rol === 'call_center' && columnaOcupada ? 'solicitar_cambio' : 'vincular'
+export function accionAltaExistente(rol: Rol, columnaOcupada: boolean, yaVistoPorPsicologo: boolean): AccionAltaExistente {
+  if (rol !== 'call_center' || !columnaOcupada) return 'vincular'
+  return yaVistoPorPsicologo ? 'escribir_en_otros' : 'solicitar_cambio'
 }
 
 // ── Citas el mismo día ──────────────────────────────────────────────────────

@@ -289,6 +289,8 @@ export default function PsicologosPage() {
     decision: Extract<DecisionDuplicado, { tipo: 'confirmar' }>
     nombrePsi: string
     nombreOcupa: string | null
+    /** Call center: true si el paciente ya tuvo alguna cita (no anulada) con su psicólogo actual. */
+    yaVisto: boolean
   } | null>(null)
   // Tutor que ya es paciente: id de su ficha (se copian nombre, teléfono y correo).
   const [npT1PacienteId, setNpT1PacienteId] = useState<string | null>(null)
@@ -1070,6 +1072,22 @@ export default function PsicologosPage() {
     }
   }
 
+  // Call center: el paciente ya tuvo cita con su psicólogo → la solicitud se escribe en
+  // "Otros (aviso al equipo)". Se deja el formulario preparado: acción Otro, el paciente
+  // existente con su psicólogo actual y el comentario con el cambio que se pide.
+  function escribirSolicitudEnOtros() {
+    const conf = npConfirmacion
+    if (!conf) return
+    const existente = conf.decision.paciente
+    const actualId = psicologoActualExistente(existente, conf.decision.columnaOcupadaPor ?? null) ?? ''
+    const comentario = comentarioCambioPsicologo(psicologoNombreEff, operadorEnvio)
+    setNpConfirmacion(null)
+    resetForm()
+    setAccion('Otro')
+    setComentarioSolicitud(comentario)
+    aplicarSeleccionBuscador({ centroId: '', psicologoId: actualId, pacienteId: existente.id })
+  }
+
   // Comprueba duplicados (reglas de la especificación §5) y, si procede, crea el paciente.
   async function ejecutarAlta(omitirDuplicados: boolean) {
     if (!effPsicologoId || !effCentroId) return
@@ -1101,7 +1119,22 @@ export default function PsicologosPage() {
       const nombreOcupa = decision.columnaOcupadaPor
         ? psicologos.find((x) => x.id === decision.columnaOcupadaPor)?.nombre ?? 'otro psicólogo'
         : null
-      setNpConfirmacion({ decision, nombrePsi: nombreDePsicologo(decision.paciente), nombreOcupa })
+      // Call center con otro psicólogo en ese tipo: ¿el paciente ya ha tenido cita con él?
+      // (alguna cita no anulada anterior a hoy). Si sí, no puede pedir el cambio aquí.
+      let yaVisto = false
+      if (esCallCenter && decision.columnaOcupadaPor) {
+        const { data: pasadas, error: errPasadas } = await supabase
+          .from('acciones_psicologos')
+          .select('id')
+          .eq('paciente_id', decision.paciente.id)
+          .eq('accion', 'Agendar cita')
+          .eq('activo', true)
+          .lt('fecha_cita', todayISODate())
+          .limit(1)
+        if (errPasadas) throw new Error('No se pudo comprobar si el paciente ya tuvo cita: ' + errPasadas.message)
+        yaVisto = (pasadas ?? []).length > 0
+      }
+      setNpConfirmacion({ decision, nombrePsi: nombreDePsicologo(decision.paciente), nombreOcupa, yaVisto })
       return
     }
     await crearPaciente()
@@ -2649,16 +2682,22 @@ export default function PsicologosPage() {
                     <>
                       {' '}<strong>{npConfirmacion.decision.paciente.nombre}</strong> ya tiene psicólogo de{' '}
                       {ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}: <strong>{npConfirmacion.nombreOcupa}</strong>.{' '}
-                      {accionAltaExistente(rol, true) === 'solicitar_cambio'
+                      {accionAltaExistente(rol, true, npConfirmacion.yaVisto) === 'solicitar_cambio'
                         ? 'El cambio de psicólogo lo hace el equipo: puedes solicitarlo.'
-                        : esPsicologo ? 'Si continúas, pasará a ser tuyo.' : 'Si continúas, pasará a este psicólogo.'}
+                        : accionAltaExistente(rol, true, npConfirmacion.yaVisto) === 'escribir_en_otros'
+                          ? 'Este paciente ya ha tenido cita con su psicólogo: el cambio tiene que pedirse en «Otros (aviso al equipo)».'
+                          : esPsicologo ? 'Si continúas, pasará a ser tuyo.' : 'Si continúas, pasará a este psicólogo.'}
                     </>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {accionAltaExistente(rol, !!npConfirmacion.nombreOcupa) === 'solicitar_cambio' ? (
+                  {accionAltaExistente(rol, !!npConfirmacion.nombreOcupa, npConfirmacion.yaVisto) === 'solicitar_cambio' ? (
                     <button type="button" onClick={solicitarCambioPsicologo} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                       Solicitar cambio de psicólogo
+                    </button>
+                  ) : accionAltaExistente(rol, !!npConfirmacion.nombreOcupa, npConfirmacion.yaVisto) === 'escribir_en_otros' ? (
+                    <button type="button" onClick={escribirSolicitudEnOtros} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Escribir la solicitud en Otros
                     </button>
                   ) : (
                     <button type="button" onClick={vincularExistente} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>

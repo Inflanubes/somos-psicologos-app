@@ -92,10 +92,14 @@ Reglas propias del call center en Citas (bloque B3, 30-10-2026):
 - **Citas creadas por un psicólogo**: en Cambiar/Cancelar cita salen deshabilitadas con "(creada por el
   psicólogo)". Puede **avisar a los agentes** con un comentario (ruta "Otro" de Make, Telegram). Las citas
   creadas por el call center, Dante o un agente, y las antiguas sin `origen`, sí las puede gestionar.
-- **Teléfono que ya es de otro psicólogo** al dar de alta: si ese tipo de consulta ya tiene otro psicólogo, no
-  puede vincular; el botón es **"Solicitar cambio de psicólogo"** (ruta "Cambio solicitado", aviso a los agentes,
-  el paciente pasa a ese estado). Si el tipo está libre (por ejemplo, un adulto existente que se da de alta en
-  pareja) vincula como los demás con "Sí, asignar a este psicólogo", que es también el botón del agente.
+- **Teléfono que ya es de otro psicólogo** al dar de alta (regla de Sonia, 30-10-2026): si ese tipo de consulta
+  ya tiene otro psicólogo, no puede vincular. Si el paciente **aún no ha tenido cita** con ese psicólogo (ninguna
+  cita no anulada anterior a hoy), el botón es **"Solicitar cambio de psicólogo"** (ruta "Cambio solicitado",
+  aviso a los agentes, el paciente pasa a ese estado). Si **ya ha tenido cita**, sale el aviso "Este paciente ya
+  ha tenido cita con su psicólogo: el cambio tiene que pedirse en «Otros (aviso al equipo)»" y el botón
+  **"Escribir la solicitud en Otros"**, que deja el formulario en la acción Otros con ese paciente, su psicólogo
+  actual y el comentario "Pide pasar a …" ya escrito. Si el tipo está libre (un adulto existente que se da de alta
+  en pareja) vincula como los demás con "Sí, asignar a este psicólogo", que es también el botón del agente.
 - No ve la etiqueta de **consentimiento** firmado / pendiente.
 - **Dos citas el mismo día** (todos los roles): al agendar o cambiar una cita de un paciente que ya tiene otra
   activa ese día, la app pregunta si quiere modificarla ("Ir a cambiarla") o si es otra cita ("Sí, es otra cita").

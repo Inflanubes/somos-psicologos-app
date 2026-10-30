@@ -220,7 +220,7 @@ it('comentarios', () => {
 
 ### Task 8: Cierre
 
-- [ ] **Step 1: Migración 017** aplicada por Sonia (de madrugada). `Aplicada el: ______`. Make: mapeo de `operador` (`docs/make-cambios-2026-10-b3.md`). `Hecho el: ______`.
+- [ ] **Step 1: Migración 017** aplicada por Sonia. `Aplicada el: 30-10-2026` (comprobado: columna `operador` en las tres tablas). Make: mapeo de `operador` (`docs/make-cambios-2026-10-b3.md`). `Hecho el: ______`.
   **Orden obligatorio:** la 017 va ANTES de desplegar la app (el buscador y las altas del call center con operador necesitan la columna).
 - [ ] **Step 2: Pruebas de aceptación** 1–7 de la especificación:
   - [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7

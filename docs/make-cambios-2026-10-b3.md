@@ -63,7 +63,8 @@ La app ya envía `Otro` (ruta 9) desde call center y agentes, con `paciente_id`,
 Las otras tres (`Sin disponibilidad`, `hablar con psicologo`, `Cambio solicitado`) se activan en la app en
 `lib/call-center.ts` → `ACCIONES_SOLICITUD_ACTIVAS` cuando Jaime decida (tarea 51). Además, la app envía
 `Cambio solicitado` (ruta 8) cuando el call center intenta dar de alta un teléfono cuyo tipo de consulta ya tiene
-otro psicólogo ("Solicitar cambio de psicólogo"). En ese envío `psicologo_id` / `psicologo_nombre` son el
+otro psicólogo y el paciente aún no ha tenido cita con él ("Solicitar cambio de psicólogo"; si ya la tuvo, la app
+le manda a escribirlo en "Otros", ruta 9). En ese envío `psicologo_id` / `psicologo_nombre` son el
 psicólogo **actual** del paciente (el Telegram de la ruta 8 dice "antes estaba con {{3.nombre}}") y el deseado
 viaja en `comentario` ("Pide pasar a …") y en `psicologo_deseado_id` / `psicologo_deseado_nombre` (campos nuevos,
 Make puede ignorarlos). Make no necesita cambios para esto: las rutas están listas desde el 22-10.

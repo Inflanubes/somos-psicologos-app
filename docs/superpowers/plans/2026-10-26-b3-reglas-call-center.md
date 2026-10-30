@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Estado 30-10-2026:** Tareas 1–7 hechas en la rama  (7 commits sobre  e34d643). Queda la Tarea 8 (cierre).
+>
 > **Revisar al empezar:** escrito el 26-10-2026 contra `main`. Si B1 o B2 ya están fusionados, `app/dashboard/psicologos/page.tsx` habrá cambiado de líneas: buscar por los nombres de función y constante que se citan, no por número de línea.
 
 **Goal:** El call center trabaja con reglas propias (no toca citas de psicólogos, busca por teléfono, deja su operador, pide cambios de psicólogo en vez de vincular, avisa de citas repetidas) y dispone de las acciones de solicitud hacia el equipo, que los agentes también tienen.
@@ -65,7 +67,7 @@
   - `etiquetaOrigen(origen: string | null, operador: string | null, rolQueMira: Rol): string`.
   - `comentarioAvisoCita(c: { fecha: string; hora: string; psicologoNombre: string }, texto: string): string`; `comentarioCambioPsicologo(nombrePsicologo: string, operador: string | null): string`; `textoAvisoMismoDia(c: CitaDia): string` (con el día en formato `lunes 27/10` **[decisión del plan]**).
 
-- [ ] **Step 1: Tests**
+- [x] **Step 1: Tests**
 
 ```ts
 it('call center no gestiona citas de psicólogo; origen nulo sí', () => {
@@ -105,10 +107,10 @@ it('comentarios', () => {
 })
 ```
 
-- [ ] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/call-center.test.ts`.
-- [ ] **Step 3: Implementar** módulo, migración, tipos y `fetchCitasActivas`.
-- [ ] **Step 4: Ejecutar** — PASS; tsc limpio.
-- [ ] **Step 5: Commit** — `git add lib/call-center.ts lib/call-center.test.ts types/database.ts lib/eventos-activos.ts && git commit -m "Call center: reglas puras, operador en tipos y origen en citas activas"`
+- [x] **Step 2: Ejecutar y ver fallar** — `npx vitest run lib/call-center.test.ts`.
+- [x] **Step 3: Implementar** módulo, migración, tipos y `fetchCitasActivas`.
+- [x] **Step 4: Ejecutar** — PASS; tsc limpio.
+- [x] **Step 5: Commit** — `git add lib/call-center.ts lib/call-center.test.ts types/database.ts lib/eventos-activos.ts && git commit -m "Call center: reglas puras, operador en tipos y origen en citas activas"`
 
 ---
 
@@ -123,9 +125,10 @@ it('comentarios', () => {
 - Pacientes: `page.tsx` añade `operador: p.operador ?? null` y pasa `rol`; `PacientesClient` muestra `etiquetaOrigen(p.origen, p.operador, rol)` en lugar de la lógica actual de `p.origen`.
 - `docs/make-cambios-2026-10-b3.md`: módulos de las rutas 1, 3 y 4 que insertan/actualizan `acciones_psicologos`: añadir el campo `operador` = `{{1.datosProcesados.operador}}`. Opcional: añadir "Operador: …" a los Telegram del call center.
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; `npm test`; en dev con usuario call center, el campo se recuerda tras recargar; alta de paciente → `operador` en la fila.
-- [ ] **Step 3: Commit** — `git commit -am "Call center: campo Operador guardado en altas y enviado a Make"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; `npm test`; en dev con usuario call center, el campo se recuerda tras recargar; alta de paciente → `operador` en la fila.
+  **Quedó así (30-10-2026):** tsc y npm test en verde; la comprobación en navegador/Make queda para las pruebas de aceptación del final (decisión de Sonia 30-10).
+- [x] **Step 3: Commit** — `git commit -am "Call center: campo Operador guardado en altas y enviado a Make"`
 
 ---
 
@@ -139,9 +142,10 @@ it('comentarios', () => {
 - Bajo el selector, si `esCallCenter` y alguna cita está deshabilitada: el texto fijo de la especificación y el botón `Avisar a los agentes`, que despliega un `<select>` con esas citas, un textarea `Comentario para el equipo` y "Enviar aviso". Envío: misma función de webhook (`/api/webhook/psicologos`) con `accion: 'Otro'`, `paciente_id`, `paciente_iniciales`, `centro_id`, `psicologo_id`, `comentario: comentarioAvisoCita(...)`, `operador`, `created_by`, `created_by_id`, `origen`; registro en `formulario_citas_psicologos`; mensaje de éxito "Aviso enviado al equipo."
 - `handleSubmit`: si `requiereSelectorCita` y la cita elegida no es gestionable → error con el texto fijo (defensa aunque la opción esté deshabilitada).
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; `npm test`; dev: cita creada por un psicólogo (hacerla con un usuario psicólogo) → call center la ve deshabilitada y el aviso llega por Telegram (Make ruta 9).
-- [ ] **Step 3: Commit** — `git commit -am "Call center: no cambia citas creadas por el psicólogo y puede avisar a los agentes"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; `npm test`; dev: cita creada por un psicólogo (hacerla con un usuario psicólogo) → call center la ve deshabilitada y el aviso llega por Telegram (Make ruta 9).
+  **Quedó así (30-10-2026):** tsc y npm test en verde; la comprobación en navegador/Make queda para las pruebas de aceptación del final (decisión de Sonia 30-10).
+- [x] **Step 3: Commit** — `git commit -am "Call center: no cambia citas creadas por el psicólogo y puede avisar a los agentes"`
 
 ---
 
@@ -157,9 +161,10 @@ it('comentarios', () => {
 - `onSeleccionar`: `centroId` = centro de la cita activa más próxima si existe, si no `centro_id` de la ficha, si no `''`; `psicologoId` = psicólogo de esa cita o el primero no nulo de adultos/pareja/infantil.
 - En `page.tsx`, `onSeleccionar` hace `setCentroId`, luego `setPsicologoId` y guarda `pacientePendienteId`; un efecto fija `setPacienteId` cuando `pacientes` contiene ese id (como el flujo de B2 con `cita=`).
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; `npm test`; dev: teléfono de un tutor → aparece el menor; "Usar en el formulario" rellena los tres campos; retardo de 300 ms y sin consulta con menos de 4 dígitos.
-- [ ] **Step 3: Commit** — `git add app/dashboard/psicologos && git commit -m "Citas: buscador por teléfono con histórico de citas"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; `npm test`; dev: teléfono de un tutor → aparece el menor; "Usar en el formulario" rellena los tres campos; retardo de 300 ms y sin consulta con menos de 4 dígitos.
+  **Quedó así (30-10-2026):** tsc y npm test en verde; la comprobación en navegador/Make queda para las pruebas de aceptación del final (decisión de Sonia 30-10).
+- [x] **Step 3: Commit** — `git add app/dashboard/psicologos && git commit -m "Citas: buscador por teléfono con histórico de citas"`
 
 ---
 
@@ -172,9 +177,10 @@ it('comentarios', () => {
 - Caja de confirmación: botón principal = `esCallCenter ? 'Solicitar cambio de psicólogo' : 'Sí, asignar a este psicólogo'`. Para call center `onClick` = `solicitarCambioPsicologo()`: envía `Cambio solicitado` con `paciente_id = npConfirmacion.decision.paciente.id`, `paciente_iniciales` del existente, `centro_id = effCentroId`, `psicologo_id = effPsicologoId`, `comentario = comentarioCambioPsicologo(nombre del psicólogo del formulario, operador)`, `operador`, atribución; éxito: "Solicitud enviada: el equipo cambiará el psicólogo." y `resetForm()`. Para agentes y psicólogos, `vincularExistente()` como hoy.
 - Consentimiento: envolver el bloque en `{pacienteSeleccionado && !esCallCenter && (…)}`.
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; dev: call center con teléfono existente → botón y Telegram (ruta 8, estado `Cambio solicitado` y aparece en Comunicaciones); agente → "Sí, asignar a este psicólogo" vincula como hoy; call center no ve la etiqueta de consentimiento.
-- [ ] **Step 3: Commit** — `git commit -am "Call center: solicitar cambio de psicólogo en el alta y sin etiqueta de consentimiento"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; dev: call center con teléfono existente → botón y Telegram (ruta 8, estado `Cambio solicitado` y aparece en Comunicaciones); agente → "Sí, asignar a este psicólogo" vincula como hoy; call center no ve la etiqueta de consentimiento.
+  **Quedó así (30-10-2026):** tsc y npm test en verde; la comprobación en navegador/Make queda para las pruebas de aceptación del final (decisión de Sonia 30-10).
+- [x] **Step 3: Commit** — `git commit -am "Call center: solicitar cambio de psicólogo en el alta y sin etiqueta de consentimiento"`
 
 ---
 
@@ -187,9 +193,10 @@ it('comentarios', () => {
 - Estado `avisoMismoDia: { citas: ReturnType<typeof citasMismoDia>; continuar: () => void } | null`.
 - En `handleSubmit`, cuando `accion` es Agendar o Cambiar y pasan las validaciones: consulta `acciones_psicologos.select('id, fecha_cita, hora_cita, psicologo_id, centro_id').eq('paciente_id', pacienteId).eq('accion','Agendar cita').eq('activo', true).eq('fecha_cita', fecha)`; `citasMismoDia(filas, fecha, hora, excluirAccionId)`; si hay alguna y aún no se ha confirmado (`confirmadoMismoDia` false) → guardar en `avisoMismoDia` y salir. Caja con `textoAvisoMismoDia(cita)` por cita, botones `Ir a cambiarla` (→ `setAccion('Cambiar cita')`, psicólogo y centro de esa cita, `eventoSeleccionadoId` cuando cargue; cierra la caja) y `Sí, es otra cita` (→ `confirmadoMismoDia = true`, cierra y reenvía). `confirmadoMismoDia` se resetea al cambiar fecha, hora o paciente.
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; dev: prueba de aceptación 5 con los tres roles.
-- [ ] **Step 3: Commit** — `git commit -am "Citas: aviso cuando el paciente ya tiene cita ese día"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; dev: prueba de aceptación 5 con los tres roles.
+  **Quedó así (30-10-2026):** tsc y npm test en verde; la comprobación en navegador/Make queda para las pruebas de aceptación del final (decisión de Sonia 30-10).
+- [x] **Step 3: Commit** — `git commit -am "Citas: aviso cuando el paciente ya tiene cita ese día"`
 
 ---
 
@@ -204,9 +211,10 @@ it('comentarios', () => {
 - `handleSubmit`: validación de paciente ("Debes seleccionar un paciente para esta acción.") y de comentario para `Otro` ("Escribe el comentario para el equipo."). Payload `datosProcesados`: `accion`, `paciente_id`, `paciente_iniciales`, `centro_id`, `psicologo_id`, `comentario`, `operador`, atribución; el resto `null`. `respuestasFormulario` como siempre. Registro en `formulario_citas_psicologos`. Éxito: "Solicitud enviada al equipo."
 - `docs/roles-y-permisos.md`: fila de Citas para call center y agentes con las acciones de solicitud; nota de cómo activar las tres pendientes.
 
-- [ ] **Step 1: Implementar.**
-- [ ] **Step 2: Comprobar** — tsc; `npm test`; dev: "Otros (aviso al equipo)" visible para agente y call center, Telegram recibido; activar temporalmente `'Sin disponibilidad'` en la lista y comprobar que el paciente pasa a ese estado y sale en Comunicaciones › Sin disponibilidad (tarea 36); volver a dejar solo `Otro`.
-- [ ] **Step 3: Commit** — `git commit -am "Citas: acciones de solicitud al equipo para call center y agentes"`
+- [x] **Step 1: Implementar.**
+- [x] **Step 2: Comprobar** — tsc; `npm test`; dev: "Otros (aviso al equipo)" visible para agente y call center, Telegram recibido; activar temporalmente `'Sin disponibilidad'` en la lista y comprobar que el paciente pasa a ese estado y sale en Comunicaciones › Sin disponibilidad (tarea 36); volver a dejar solo `Otro`.
+  **Quedó así (30-10-2026):** tsc y npm test en verde; la comprobación en navegador/Make queda para las pruebas de aceptación del final (decisión de Sonia 30-10).
+- [x] **Step 3: Commit** — `git commit -am "Citas: acciones de solicitud al equipo para call center y agentes"`
 
 ---
 

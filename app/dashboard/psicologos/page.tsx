@@ -23,7 +23,7 @@ import {
   generarHuecos, diaBloqueado, trabajaEseDia, motivoAviso, nombreDia, etiquetaMotivo, ESTADOS_VETO_DURO, ESTADOS_FUERA_HORARIO,
 } from '@/lib/disponibilidad'
 import { ahoraMadrid } from '@/lib/fechas'
-import { leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, type Rol } from '@/lib/call-center'
+import { leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo, type Rol } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
@@ -970,6 +970,66 @@ export default function PsicologosPage() {
       setAvisoAgentes(null)
       setExitoTexto('Aviso enviado al equipo.')
       setSuccess(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Call center (B3, tarea 48): el teléfono ya es de un paciente con otro psicólogo.
+  // No puede vincularlo: pide el cambio al equipo (ruta "Cambio solicitado" de Make,
+  // aviso a Marta; el paciente pasa a estado "Cambio solicitado").
+  async function solicitarCambioPsicologo() {
+    const conf = npConfirmacion
+    if (!conf || !effPsicologoId || !effCentroId) return
+    setLoading(true)
+    setError('')
+    setSuccess(false)
+    try {
+      const existente = conf.decision.paciente
+      const payload = {
+        mensaje:             'Formulario Web Psicólogos',
+        responseId:          'web_' + Date.now(),
+        timestampFormulario: new Date().toISOString(),
+        datosProcesados: {
+          psicologo_nombre:   psicologoNombreEff,
+          psicologo_id:       effPsicologoId,
+          centro_id:          effCentroId,
+          accion:             'Cambio solicitado',
+          paciente_id:        existente.id,
+          paciente_iniciales: generarIniciales(existente.nombre),
+          paciente_nombre:    existente.nombre,
+          telefono:           existente.telefono ?? null,
+          tipo_consulta:      npTipoConsulta,
+          comentario:         comentarioCambioPsicologo(psicologoNombreEff, operadorEnvio),
+          operador:           operadorEnvio,
+          created_by:         perfil?.nombre ?? psicologoNombreEff,
+          created_by_id:      userId,
+          origen:             perfil?.rol ?? 'agente',
+        },
+        respuestasFormulario: {
+          'Selecciona tu centro': centroNombreEff,
+          '¿Qué necesitas hoy?':  'Cambio solicitado',
+        },
+      }
+      const res = await fetch('/api/webhook/psicologos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('Error en webhook: ' + res.status)
+      await supabase.from('formulario_citas_psicologos').insert({
+        centro:          centroNombreEff,
+        psicologo:       psicologoNombreEff,
+        accion:          'Cambio solicitado',
+        response_id:     payload.responseId,
+        timestamp_envio: payload.timestampFormulario,
+      })
+      setNpConfirmacion(null)
+      setExitoTexto('Solicitud enviada: el equipo cambiará el psicólogo.')
+      setSuccess(true)
+      resetForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido. Inténtalo de nuevo.')
     } finally {
@@ -2064,8 +2124,8 @@ export default function PsicologosPage() {
                 </select>
               </FormField>
 
-              {/* Estado del consentimiento informado (lo actualiza Make al recibir el formulario firmado) */}
-              {pacienteSeleccionado && (
+              {/* Estado del consentimiento informado (lo actualiza Make al recibir el formulario firmado). El call center no lo ve. */}
+              {pacienteSeleccionado && !esCallCenter && (
                 <div style={{ marginTop: -10, marginBottom: 18 }}>
                   <span
                     style={{
@@ -2447,14 +2507,23 @@ export default function PsicologosPage() {
                   {npConfirmacion.nombreOcupa && (
                     <>
                       {' '}<strong>{npConfirmacion.decision.paciente.nombre}</strong> ya tiene psicólogo de{' '}
-                      {ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}: <strong>{npConfirmacion.nombreOcupa}</strong>. Si continúas, pasará a ser tuyo.
+                      {ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}: <strong>{npConfirmacion.nombreOcupa}</strong>.{' '}
+                      {esCallCenter
+                        ? 'El cambio de psicólogo lo hace el equipo: puedes solicitarlo.'
+                        : esPsicologo ? 'Si continúas, pasará a ser tuyo.' : 'Si continúas, pasará a este psicólogo.'}
                     </>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={vincularExistente} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    Sí, vincular a mi lista
-                  </button>
+                  {esCallCenter ? (
+                    <button type="button" onClick={solicitarCambioPsicologo} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Solicitar cambio de psicólogo
+                    </button>
+                  ) : (
+                    <button type="button" onClick={vincularExistente} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      {esPsicologo ? 'Sí, vincular a mi lista' : 'Sí, asignar a este psicólogo'}
+                    </button>
+                  )}
                   <button type="button" onClick={crearAunqueCoincida} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: `1.5px solid ${BRAND_BLUE}`, background: '#fff', color: BRAND_BLUE, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                     No, es otra persona
                   </button>

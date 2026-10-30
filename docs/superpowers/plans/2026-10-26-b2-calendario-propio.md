@@ -185,7 +185,7 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
 
 ### Task 5: Cierre — manual, tablero, merge
 
-- [ ] **Step 1: Pruebas de aceptación** 1–7 de la especificación, marcadas aquí (Sonia; rama `b2-calendario-propio`, 6 commits sobre `main`; revisión independiente hecha el 30-10-2026, 3 importantes corregidos, menores diferidos anotados en el tablero). Probar además: "Cambiar cita" con el paciente ya elegido y clic en su cita; call center con un psicólogo con un centro apagado; ancho del calendario en Citas en portátil:
+- [ ] **Step 1: Pruebas de aceptación** 1–7 de la especificación, marcadas aquí. **Diferidas (decisión de Sonia, 30-10-2026): las pruebas de aceptación de todos los bloques se hacen juntas al final, con el sistema aún sin uso por el cliente; por eso el merge va antes que las pruebas.** (Sonia; rama `b2-calendario-propio`, 6 commits sobre `main`; revisión independiente hecha el 30-10-2026, 3 importantes corregidos, menores diferidos anotados en el tablero). Probar además: "Cambiar cita" con el paciente ya elegido y clic en su cita; call center con un psicólogo con un centro apagado; ancho del calendario en Citas en portátil:
   - [ ] 1 chips y bloques, clic → Citas
   - [ ] 2 pastillas del psicólogo
   - [ ] 3 refresco al agendar / anular + Ver anuladas
@@ -195,4 +195,4 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
   - [ ] 7 móvil
 - [x] **Step 2: Manual** — fichas Calendario y Citas en `docs/manual-somos/index.html` (colores, chips, Ver anuladas, pastillas, desaparece Google), `node docs/manual-somos/check-manual.mjs` → OK (30-10-2026, 216 literales). **Quedó así:** artifact sin republicar hasta el merge a `main` (el manual describe producción).
 - [x] **Step 3: Tablero** — 14, 15, 16, 18, 17, 19, 20, 53, 29 → `verificar` (30-10-2026; pasarán a `hecha` tras las pruebas de aceptación y el merge); en 19 la nota del enlace a Google Calendar; B2 → `verificar`.
-- [ ] **Step 4: Merge a `main` de madrugada** y commit de cierre.
+- [x] **Step 4: Merge a `main`** y commit de cierre — hecho el 30-10-2026 de día (el sistema no está en uso; Sonia pidió integrar ya y probar todo al final): fast-forward sobre `09ced10`, tsc y 162 tests en verde en `main`, subido a GitHub, rama borrada, manual republicado.

@@ -491,7 +491,7 @@ curl -s -X POST http://localhost:3000/api/disponibilidad -H "Authorization: Bear
 
 - [x] **Step 1: Migración 016** (archivo listo: `Supabase/migrations/016_horarios_por_centro.sql`) — Sonia la aplica en el SQL Editor **de madrugada** o con Dante y Make parados. Anotar aquí la fecha: `Aplicada el: 29-10-2026` (Sonia, de día: la app aún no está en uso por el cliente). Comprobación: horarios con centro asignado automáticamente → BEA y JAIME (revisar en Psicólogos); franjas sin centro → 0. Revisar el `SELECT` final (psicólogos con `revisar = true`) y avisar a un agente para que repase esos horarios en Psicólogos.
 - [x] **Step 2: Variable `DANTE_API_TOKEN`** en el hosting y en `.env.local` (en `.env.local` ya está desde el 29-10-2026; el JSON de n8n se generó con ese valor: usa el mismo en el hosting). Anotar: `Puesta el: 29-10-2026` (Sonia).
-- [ ] **Step 3: Pruebas de aceptación** (las 6 de la especificación, apartado "Comprobación de aceptación") contra la app desplegada desde la rama o en local con la base ya migrada. Marcar cada una:
+- [ ] **Step 3: Pruebas de aceptación** (las 6 de la especificación, apartado "Comprobación de aceptación") contra la app desplegada desde la rama o en local con la base ya migrada. Marcar cada una. **Diferidas (decisión de Sonia, 30-10-2026): se hacen junto con las de los demás bloques al final; el texto listo para seguirlas está en el chat del 30-10-2026 y en la especificación.**
   - [ ] 1 Jaime L 10–14 Moratalaz / L 16–20 San Blas
   - [ ] 2 Solape presencial rechazado; Online admitido; una sola cita a las 11
   - [ ] 3 Centro apagado: call center bloqueado al agendar, agente con aviso; cambiar/cancelar siguen

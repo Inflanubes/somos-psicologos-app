@@ -8,6 +8,8 @@ Escenario: **Formulario Citas Psicologos** (webhook `bfgrht…`). Mismo escenari
 - **App: hecho** en la rama `b3-reglas-call-center` (30-10-2026).
 - **Supabase: migración `017_operador.sql`** (columna `operador text` en `pacientes`, `acciones_psicologos`
   y `acciones_historial`; el trigger de historial la copia). La aplica Sonia de madrugada. `Aplicada el: ______`
+  **Bloqueante: aplicar la migración ANTES de desplegar la app.** Si la app nueva sale sin la columna, el buscador
+  por teléfono da error y las altas del call center con operador fallan (las de agentes y psicólogos siguen).
 - **Make: pendiente de Sonia.** `Hecho el: ______`
 
 ## Qué manda la app
@@ -38,6 +40,9 @@ Hasta que se mapee, las citas llegan sin operador (no rompe nada; la columna que
 Notas:
 - En las rutas 3 y 4 se **sobrescribe** el operador con el de la última acción (igual que `ultima_accion_por`).
   Si se prefiere conservar el del alta de la cita, mapear solo la ruta 1 y dejar las otras dos sin tocar.
+- Si se mapea en 3 y 4, **mapear también el vacío** (que un `null` de la app deje la columna a `null`, sin la opción
+  "no actualizar si está vacío"): si no, una cita del call center que luego cambia un agente copiaría al historial el
+  operador antiguo junto al `realizado_por` del agente.
 - El trigger de historial (`registrar_historial_accion`, migración 017) copia `operador` a `acciones_historial`
   en cada acción, así que las estadísticas por operador saldrán del historial sin más cambios.
 - No es necesario tocar las rutas 5, 10, 11, 12 ni 15 (bloqueos): el campo llega pero no hace falta guardarlo.
@@ -57,5 +62,8 @@ La app ya envía `Otro` (ruta 9) desde call center y agentes, con `paciente_id`,
 `centro_id`, `psicologo_id`, `comentario`, `operador` y la atribución (`created_by`, `created_by_id`, `origen`).
 Las otras tres (`Sin disponibilidad`, `hablar con psicologo`, `Cambio solicitado`) se activan en la app en
 `lib/call-center.ts` → `ACCIONES_SOLICITUD_ACTIVAS` cuando Jaime decida (tarea 51). Además, la app envía
-`Cambio solicitado` (ruta 8) cuando el call center intenta dar de alta un teléfono que ya es de otro psicólogo
-("Solicitar cambio de psicólogo"). Make no necesita cambios para esto: las rutas están listas desde el 22-10.
+`Cambio solicitado` (ruta 8) cuando el call center intenta dar de alta un teléfono cuyo tipo de consulta ya tiene
+otro psicólogo ("Solicitar cambio de psicólogo"). En ese envío `psicologo_id` / `psicologo_nombre` son el
+psicólogo **actual** del paciente (el Telegram de la ruta 8 dice "antes estaba con {{3.nombre}}") y el deseado
+viaja en `comentario` ("Pide pasar a …") y en `psicologo_deseado_id` / `psicologo_deseado_nombre` (campos nuevos,
+Make puede ignorarlos). Make no necesita cambios para esto: las rutas están listas desde el 22-10.

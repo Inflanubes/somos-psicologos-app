@@ -6,6 +6,9 @@ import {
   citasMismoDia,
   comentarioAvisoCita,
   comentarioCambioPsicologo,
+  patronBusquedaTelefono,
+  psicologoActualExistente,
+  accionAltaExistente,
   guardarOperador,
   leerOperador,
   esAccionSolicitud,
@@ -152,5 +155,26 @@ describe('operador recordado en el navegador', () => {
     conLocalStorage(null)
     expect(() => guardarOperador('u1', 'Ana')).not.toThrow()
     expect(leerOperador('u1')).toBe('')
+  })
+})
+
+describe('correcciones de la revisión B3', () => {
+  it('patronBusquedaTelefono encuentra teléfonos guardados con espacios, guiones o prefijo', () => {
+    expect(patronBusquedaTelefono('600112233')).toBe('%6%0%0%1%1%2%2%3%3%')
+    expect(patronBusquedaTelefono('+34 600-11 22 33')).toBe('%6%0%0%1%1%2%2%3%3%')
+    expect(patronBusquedaTelefono('6001')).toBe('%6%0%0%1%')
+  })
+  it('psicologoActualExistente: el que ocupa la columna, si no el primero de la ficha', () => {
+    const p = { psicologo_adultos_id: 'a', psicologo_pareja_id: null, psicologo_infantil_id: 'i' }
+    expect(psicologoActualExistente(p, 'x')).toBe('x')
+    expect(psicologoActualExistente(p, null)).toBe('a')
+    expect(psicologoActualExistente({ psicologo_adultos_id: null, psicologo_pareja_id: null, psicologo_infantil_id: 'i' }, null)).toBe('i')
+    expect(psicologoActualExistente({ psicologo_adultos_id: null, psicologo_pareja_id: null, psicologo_infantil_id: null }, null)).toBe(null)
+  })
+  it('accionAltaExistente: el call center solo solicita cambio si ese tipo ya tiene otro psicólogo', () => {
+    expect(accionAltaExistente('call_center', true)).toBe('solicitar_cambio')
+    expect(accionAltaExistente('call_center', false)).toBe('vincular')
+    expect(accionAltaExistente('agente', true)).toBe('vincular')
+    expect(accionAltaExistente('psicologo', true)).toBe('vincular')
   })
 })

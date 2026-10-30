@@ -92,9 +92,10 @@ Reglas propias del call center en Citas (bloque B3, 30-10-2026):
 - **Citas creadas por un psicólogo**: en Cambiar/Cancelar cita salen deshabilitadas con "(creada por el
   psicólogo)". Puede **avisar a los agentes** con un comentario (ruta "Otro" de Make, Telegram). Las citas
   creadas por el call center, Dante o un agente, y las antiguas sin `origen`, sí las puede gestionar.
-- **Teléfono que ya es de otro psicólogo** al dar de alta: no puede vincular; el botón es **"Solicitar cambio de
-  psicólogo"** (ruta "Cambio solicitado", aviso a los agentes, el paciente pasa a ese estado). Para el agente
-  el botón es "Sí, asignar a este psicólogo".
+- **Teléfono que ya es de otro psicólogo** al dar de alta: si ese tipo de consulta ya tiene otro psicólogo, no
+  puede vincular; el botón es **"Solicitar cambio de psicólogo"** (ruta "Cambio solicitado", aviso a los agentes,
+  el paciente pasa a ese estado). Si el tipo está libre (por ejemplo, un adulto existente que se da de alta en
+  pareja) vincula como los demás con "Sí, asignar a este psicólogo", que es también el botón del agente.
 - No ve la etiqueta de **consentimiento** firmado / pendiente.
 - **Dos citas el mismo día** (todos los roles): al agendar o cambiar una cita de un paciente que ya tiene otra
   activa ese día, la app pregunta si quiere modificarla ("Ir a cambiarla") o si es otra cita ("Sí, es otra cita").

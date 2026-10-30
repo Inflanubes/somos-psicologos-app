@@ -26,6 +26,7 @@ import { ahoraMadrid } from '@/lib/fechas'
 import {
   leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
   citasMismoDia, textoAvisoMismoDia, ACCIONES_SOLICITUD_ACTIVAS, ETIQUETA_SOLICITUD, esAccionSolicitud,
+  psicologoActualExistente, accionAltaExistente,
   type Rol, type CitaDia, type AccionSolicitud,
 } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
@@ -702,6 +703,9 @@ export default function PsicologosPage() {
       setError('')
       setResumenSerie(null)
       if (!s.centroId) { terminar('Este paciente no tiene centro ni psicólogo: elígelos en el formulario.'); return }
+      // Si cambia el centro, vaciar también el psicólogo aquí: el efecto de centro lo vacía en el
+      // siguiente commit y la fase 1 leería el psicólogo antiguo (y su lista) como si fueran los nuevos.
+      if (centroId !== s.centroId) setPsicologoId('')
       setCentroId(s.centroId)
       setSeleccionBuscador({ ...s, fase: 1 })
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -1011,13 +1015,19 @@ export default function PsicologosPage() {
     setSuccess(false)
     try {
       const existente = conf.decision.paciente
+      // A Make va el psicólogo ACTUAL del paciente (su Telegram dice "antes estaba con …");
+      // el deseado (el del formulario) va en el comentario.
+      const actualId = psicologoActualExistente(existente, conf.decision.columnaOcupadaPor ?? null)
+      const actualNombre = psicologos.find((p) => p.id === actualId)?.nombre ?? ''
       const payload = {
         mensaje:             'Formulario Web Psicólogos',
         responseId:          'web_' + Date.now(),
         timestampFormulario: new Date().toISOString(),
         datosProcesados: {
-          psicologo_nombre:   psicologoNombreEff,
-          psicologo_id:       effPsicologoId,
+          psicologo_nombre:   actualNombre,
+          psicologo_id:       actualId,
+          psicologo_deseado_id:     effPsicologoId,
+          psicologo_deseado_nombre: psicologoNombreEff,
           centro_id:          effCentroId,
           accion:             'Cambio solicitado',
           paciente_id:        existente.id,
@@ -1124,8 +1134,9 @@ export default function PsicologosPage() {
         created_by:    perfil?.nombre ?? psicologoNombreEff ?? null,
         created_by_id: userId,
         origen:        perfil?.rol ?? 'agente',
-        // Operador del call center (migración 017); null para los demás roles.
-        operador:      operadorEnvio,
+        // Operador del call center (migración 017). Solo se manda la columna cuando hay valor:
+        // así las altas de agentes y psicólogos no fallan si la app se despliega antes que la migración.
+        ...(operadorEnvio ? { operador: operadorEnvio } : {}),
       })
       .select('id')
       .single()
@@ -2638,14 +2649,14 @@ export default function PsicologosPage() {
                     <>
                       {' '}<strong>{npConfirmacion.decision.paciente.nombre}</strong> ya tiene psicólogo de{' '}
                       {ETIQUETA_TIPO[npTipoConsulta].toLowerCase()}: <strong>{npConfirmacion.nombreOcupa}</strong>.{' '}
-                      {esCallCenter
+                      {accionAltaExistente(rol, true) === 'solicitar_cambio'
                         ? 'El cambio de psicólogo lo hace el equipo: puedes solicitarlo.'
                         : esPsicologo ? 'Si continúas, pasará a ser tuyo.' : 'Si continúas, pasará a este psicólogo.'}
                     </>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {esCallCenter ? (
+                  {accionAltaExistente(rol, !!npConfirmacion.nombreOcupa) === 'solicitar_cambio' ? (
                     <button type="button" onClick={solicitarCambioPsicologo} disabled={loading} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: BRAND_BLUE, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                       Solicitar cambio de psicólogo
                     </button>

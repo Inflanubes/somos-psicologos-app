@@ -70,6 +70,41 @@ export function sufijoBusquedaTelefono(s: string): string {
   return d.length > 9 ? d.slice(-9) : d
 }
 
+/**
+ * Patrón `ilike` con comodín entre dígitos: encuentra también teléfonos guardados
+ * con espacios, guiones o prefijo ("600 11 22 33", "+34600112233"). Con 9 dígitos
+ * apenas da falsos positivos.
+ */
+export function patronBusquedaTelefono(s: string): string {
+  const d = sufijoBusquedaTelefono(s)
+  return d ? `%${d.split('').join('%')}%` : ''
+}
+
+// ── Alta con teléfono existente ─────────────────────────────────────────────
+type PsicologosFicha = {
+  psicologo_adultos_id: string | null
+  psicologo_pareja_id: string | null
+  psicologo_infantil_id: string | null
+}
+
+/**
+ * Psicólogo actual del paciente existente: el que ocupa la columna del tipo elegido,
+ * o si está libre el primero de la ficha. Es el que se manda a Make en 'Cambio
+ * solicitado' (su Telegram dice "antes estaba con …"); el deseado va en el comentario.
+ */
+export function psicologoActualExistente(p: PsicologosFicha, columnaOcupadaPor: string | null): string | null {
+  return columnaOcupadaPor ?? p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id ?? null
+}
+
+/**
+ * Qué botón principal ve quien da de alta un teléfono que ya existe: el call center
+ * solo pide cambio de psicólogo si ese tipo de consulta ya tiene otro psicólogo;
+ * si la columna está libre (alta normal de pareja) vincula como los demás.
+ */
+export function accionAltaExistente(rol: Rol, columnaOcupada: boolean): 'solicitar_cambio' | 'vincular' {
+  return rol === 'call_center' && columnaOcupada ? 'solicitar_cambio' : 'vincular'
+}
+
 // ── Citas el mismo día ──────────────────────────────────────────────────────
 export type CitaDia = {
   id: string

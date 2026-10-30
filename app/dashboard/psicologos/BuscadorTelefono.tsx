@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, EstadoPaciente } from '@/types/database'
-import { etiquetaOrigen, estadoCitaHistorico, sufijoBusquedaTelefono, type Rol } from '@/lib/call-center'
+import { etiquetaOrigen, estadoCitaHistorico, sufijoBusquedaTelefono, patronBusquedaTelefono, type Rol } from '@/lib/call-center'
 import { todayISODate } from '@/lib/eventos-activos'
 
 /**
@@ -99,7 +99,8 @@ export default function BuscadorTelefono({
     setBuscando(true)
     const t = setTimeout(async () => {
       try {
-        const patron = `%${sufijo}%`
+        // Comodín entre dígitos: encuentra también teléfonos guardados con espacios, guiones o prefijo.
+        const patron = patronBusquedaTelefono(sufijo)
         const [{ data: propios, error: e1 }, { data: tutores, error: e2 }] = await Promise.all([
           supabase.from('pacientes').select(COLUMNAS_PACIENTE).ilike('telefono', patron).limit(10),
           supabase.from('asociados_menores').select('id_menor').or(`"T1_teléfono".ilike.${patron},"T2_teléfono".ilike.${patron}`).limit(10),

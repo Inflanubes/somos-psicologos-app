@@ -221,8 +221,10 @@ it('comentarios', () => {
 ### Task 8: Cierre
 
 - [ ] **Step 1: Migración 017** aplicada por Sonia (de madrugada). `Aplicada el: ______`. Make: mapeo de `operador` (`docs/make-cambios-2026-10-b3.md`). `Hecho el: ______`.
+  **Orden obligatorio:** la 017 va ANTES de desplegar la app (el buscador y las altas del call center con operador necesitan la columna).
 - [ ] **Step 2: Pruebas de aceptación** 1–7 de la especificación:
   - [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7
-- [ ] **Step 3: Manual** (ficha Citas para call center: operador, buscador, avisos, acciones nuevas) + `check-manual.mjs` + republicar.
-- [ ] **Step 4: Tablero** — 42, 43, 44, 45, 48, 49, 50 → `hecha`; 51 → sigue `espera cliente` con nota "activar en `ACCIONES_SOLICITUD_ACTIVAS`"; 36 → `verificar` tras 51; B3 → `hecha`. Memoria: actualizar la nota "Call center rutas 6-9".
+- [x] **Step 3: Manual** (ficha Citas para call center: operador, buscador, avisos, acciones nuevas) + `check-manual.mjs` + republicar.
+  **Quedó así (30-10-2026):** manual actualizado en la rama y check OK; el artifact se republica al hacer el merge (como en B2).
+- [x] **Step 4: Tablero** — 42, 43, 44, 45, 48, 49, 50 → `hecha`; 51 → sigue `espera cliente` con nota "activar en `ACCIONES_SOLICITUD_ACTIVAS`"; 36 → `verificar` tras 51; B3 → `hecha`. Memoria: actualizar la nota "Call center rutas 6-9".
 - [ ] **Step 5: Merge a `main` de madrugada** y commit de cierre.

@@ -175,11 +175,11 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
   - URL: `useSearchParams()` dentro de un componente hijo envuelto en `<Suspense>` (requisito del App Router); al montar, `accion=agendar` → mismo efecto que `onClickLibre`; `accion=cambiar&cita=` → mismo que `onClickCita`. Después `router.replace('/dashboard/psicologos')` para limpiar la URL.
   - Quitar iframes, `.calendar-panel` y `.cal-desktop/.cal-mobile`.
 
-- [ ] **Step 1: `centro-activo.ts` y pastillas.**
-- [ ] **Step 2: Sustituir el iframe por `CalendarioAgenda`** y clics.
-- [ ] **Step 3: URL y refresco.**
-- [ ] **Step 4: Comprobar** — tsc limpio; `npm test`; en `npm run dev`: pruebas de aceptación 2, 3 y 5 de la especificación; `?accion=cambiar&cita=inexistente` muestra el error y el formulario sigue usable.
-- [ ] **Step 5: Commit** — `git commit -am "Citas: calendario propio en lugar de Google, clic que rellena, refresco y centros con Todos"`
+- [x] **Step 1: `centro-activo.ts` y pastillas.**
+- [x] **Step 2: Sustituir el iframe por `CalendarioAgenda`** y clics.
+- [x] **Step 3: URL y refresco.**
+- [x] **Step 4: Comprobar** — tsc limpio; `npm test`; en `npm run dev`: pruebas de aceptación 2, 3 y 5 de la especificación; `?accion=cambiar&cita=inexistente` muestra el error y el formulario sigue usable. **Quedó así:** tsc, eslint, tests y `npm run build` en verde; sin prueba en pantalla (login contra producción): las pruebas 2, 3 y 5 y la URL con cita inexistente quedan en la Tarea 5.
+- [x] **Step 5: Commit** — `git commit -am "Citas: calendario propio en lugar de Google, clic que rellena, refresco y centros con Todos"`
 
 ---
 
@@ -193,6 +193,6 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
   - [ ] 5 bloqueo hora a hora
   - [ ] 6 call center e inactivo
   - [ ] 7 móvil
-- [ ] **Step 2: Manual** — fichas Calendario y Citas en `docs/manual-somos/index.html` (colores, chips, Ver anuladas, pastillas, desaparece Google), `node docs/manual-somos/check-manual.mjs` → OK, republicar.
-- [ ] **Step 3: Tablero** — 14, 15, 16, 18, 17, 19, 20, 53, 29 → `hecha`; en 19 la nota "preguntar el día de la entrega si quieren enlace a Google Calendar"; B2 → `hecha`.
+- [x] **Step 2: Manual** — fichas Calendario y Citas en `docs/manual-somos/index.html` (colores, chips, Ver anuladas, pastillas, desaparece Google), `node docs/manual-somos/check-manual.mjs` → OK (30-10-2026, 216 literales). **Quedó así:** artifact sin republicar hasta el merge a `main` (el manual describe producción).
+- [x] **Step 3: Tablero** — 14, 15, 16, 18, 17, 19, 20, 53, 29 → `verificar` (30-10-2026; pasarán a `hecha` tras las pruebas de aceptación y el merge); en 19 la nota del enlace a Google Calendar; B2 → `verificar`.
 - [ ] **Step 4: Merge a `main` de madrugada** y commit de cierre.

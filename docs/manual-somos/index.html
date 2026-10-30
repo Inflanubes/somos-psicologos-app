@@ -192,7 +192,7 @@ footer img{width:28px; height:28px}
     <h1>Cómo funciona<br><em>vuestra app</em>, pieza a pieza</h1>
     <p class="lead">Qué hace cada pantalla, qué ve cada persona del equipo, qué mensajes aparecen y por qué, y qué pasa por detrás cada vez que alguien agenda una cita. Este documento crece con la app: cuando añadimos algo, lo veréis en Novedades.</p>
     <div class="meta">
-      <span class="pildora">Versión del 29-10-2026</span>
+      <span class="pildora">Versión del 30-10-2026</span>
       <span class="pildora">Preparado por Be Banana</span>
     </div>
     <ol class="indice">
@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-10-30">30-10-2026</time><span>Calendario propio con huecos libres: la app deja de incrustar Google Calendar y enseña su propia agenda semanal en Calendario y en Citas, con los huecos libres de cada psicólogo, colores por estado (libre, ocupada, primera cita, anulada, bloqueada), los bloqueos hora a hora y la casilla <code class="ui">Ver anuladas</code>. Un clic en un hueco rellena el formulario para agendar; un clic en una cita, para cambiarla. El calendario se actualiza solo al agendar, cambiar o anular. Los psicólogos con varios centros eligen arriba entre <code class="ui">Todos</code> y cada centro, sin la pregunta de antes al entrar. <a href="#p-calendario">Ver Calendario</a> · <a href="#p-citas">Ver Citas</a>.</span></li>
         <li><time datetime="2026-10-29">29-10-2026</time><span>Horarios por centro y reglas de agenda: cada franja del horario pertenece a un centro (así nadie tiene citas a la vez en dos sitios); cada centro de un psicólogo se puede apagar para citas nuevas sin desactivarlo; sin horario no se le pueden dar citas; nadie agenda en el pasado ni con menos de 2 horas (los agentes sí, con aviso y la casilla <code class="ui">Citar fuera de horario</code>); y Dante pide los huecos a la app, con las mismas reglas. <a href="#disponibilidad">Ver las reglas</a> · <a href="#p-psicologos">Ver la ficha de Psicólogos</a>.</span></li>
         <li><time datetime="2026-10-22">22-10-2026</time><span>Las citas también se pueden repetir de forma <b>semanal</b>, igual que cada 15 días o cada 4 semanas: hasta un año, siempre el mismo día de la semana y a la misma hora. <a href="#repetir">Ver cómo funciona</a>.</span></li>
         <li><time datetime="2026-10-21">21-10-2026</time><span>Citas que se repiten: al agendar se puede repetir la cita cada 15 días o cada 4 semanas, durante hasta un año, siempre el mismo día de la semana y a la misma hora. Las fechas que no están libres no se agendan y la app avisa de cuáles son para colocarlas por separado. <a href="#repetir">Ver cómo funciona</a>.</span></li>
@@ -244,7 +245,7 @@ footer img{width:28px; height:28px}
     <article class="pieza">
       <div class="icono"><span aria-hidden="true">📅</span></div>
       <h3>Google Calendar</h3>
-      <p>Un calendario por psicólogo, el mismo en todos sus centros. Es lo que el psicólogo ve en su móvil. Make lo mantiene al día.</p>
+      <p>Un calendario por psicólogo, el mismo en todos sus centros. Es lo que el psicólogo ve en su móvil. Make lo mantiene al día. La app ya no lo incrusta: enseña su propio calendario con lo que se gestiona desde ella.</p>
     </article>
     <article class="pieza">
       <div class="icono"><span aria-hidden="true">✈️</span></div>
@@ -354,9 +355,10 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-citas">
       <div class="ficha-cab"><h3>Citas</h3><span class="chip r-agente">Agente</span><span class="chip r-psicologo">Psicólogo</span><span class="chip r-callcenter">Call center</span></div>
       <dl>
-        <dt>Para qué</dt><dd>El formulario donde se hace casi todo: <code class="ui">Gestiona citas, bloqueos y altas de pacientes</code>. A la derecha se ve el Google Calendar del psicólogo elegido.</dd>
+        <dt>Para qué</dt><dd>El formulario donde se hace casi todo: <code class="ui">Gestiona citas, bloqueos y altas de pacientes</code>. A la derecha, el calendario propio de la app (el mismo que en <a href="#p-calendario">Calendario</a>): el psicólogo ve su agenda; el agente y el call center, la del centro y psicólogo elegidos en el formulario o la de todos si aún no han elegido.</dd>
         <dt>Qué se hace</dt><dd>Se elige centro, psicólogo y acción: agendar, cambiar o cancelar una cita, añadir un paciente, bloquear o desbloquear la agenda, vacaciones, asuntos propios, baja laboral o modificar un bloqueo. El detalle de cada acción está en <a href="#cita">El viaje de una cita</a>.</dd>
-        <dt>Varios centros</dt><dd>Si un psicólogo trabaja en más de uno, al entrar la app le pregunta <code class="ui">¿En qué centro vas a trabajar hoy?</code> y luego puede pulsar <code class="ui">Cambiar de centro</code>. La app lo recuerda en ese navegador.</dd>
+        <dt>Desde el calendario</dt><dd>Pulsar un hueco libre rellena centro, psicólogo, fecha, hora y la acción <code class="ui">Agendar cita</code>; pulsar una cita rellena <code class="ui">Cambiar cita</code> con esa cita elegida. Tras agendar, cambiar o anular, la cita aparece, se mueve o desaparece del calendario al momento (y se vuelve a leer de la base de datos a los pocos segundos, cuando Make ya la ha escrito).</dd>
+        <dt>Varios centros</dt><dd>Si un psicólogo trabaja en más de uno, arriba del formulario tiene unas pastillas: <code class="ui">Todos</code> y el nombre de cada centro (los apagados, con <code class="ui">(no recibe citas nuevas)</code>). Con un centro elegido, el formulario lo fija; con <code class="ui">Todos</code>, el calendario mezcla sus centros y el formulario pide el centro en un desplegable. La app recuerda la elección en ese navegador.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
@@ -392,6 +394,11 @@ footer img{width:28px; height:28px}
           <li><code class="ui">Tu ficha está desactivada: puedes gestionar tus citas y tu agenda, pero no añadir pacientes nuevos.</code><span class="donde">Psicólogos · aviso encima de la acción; «Añadir nuevo paciente» no aparece</span></li>
           <li><code class="ui">Este psicólogo está desactivado. Puedes gestionarlo con normalidad, pero el call center y Dante no pueden agendarle citas ni asignarle pacientes.</code><span class="donde">Agentes · al elegir un psicólogo desactivado</span></li>
 
+          <li class="grupo">Al venir del calendario</li>
+          <li><code class="ui">No encontramos esa cita: puede que ya se haya anulado.</code><span class="donde">La cita pulsada (o la del enlace) ya no está activa</span></li>
+          <li><code class="ui">No encontramos a ese psicólogo en ese centro.</code><span class="donde">El enlace trae un psicólogo que no trabaja en ese centro</span></li>
+          <li><code class="ui">Este psicólogo no recibe citas nuevas.</code><span class="donde">Call center · el psicólogo del hueco está desactivado</span></li>
+
           <li class="grupo">Todos los roles</li>
           <li><code class="ui">Cargando disponibilidad…</code><span class="donde">Texto del desplegable de hora mientras carga</span></li>
           <li><code class="ui">Indica la fecha y la hora de la cita.</code><span class="donde">Error al enviar</span></li>
@@ -422,20 +429,20 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-calendario">
       <div class="ficha-cab"><h3>Calendario</h3><span class="chip r-agente">Agente</span><span class="chip r-callcenter">Call center</span></div>
       <dl>
-        <dt>Para qué</dt><dd><code class="ui">Citas y bloqueos de todos los psicólogos. Filtra por centro, tipo de cita o psicólogo para ver la disponibilidad.</code></dd>
-        <dt>Cómo se ve</dt><dd>Semana de lunes a domingo, de 08:00 a 22:00. Cada cita ocupa una hora, con el color del centro donde es esa cita. Los bloqueos van en la fila de arriba, «Día», y salen con cualquier filtro de centro, porque un bloqueo no es de un centro sino del psicólogo. Del paciente solo se ven sus iniciales, nunca el nombre completo.</dd>
+        <dt>Para qué</dt><dd><code class="ui">Citas, bloqueos y huecos libres de todos los psicólogos. Pulsa un hueco para agendar o una cita para cambiarla.</code></dd>
+        <dt>Cómo se ve</dt><dd>Semana de lunes a domingo (siempre empieza en lunes), de 08:00 a 22:00. El color dice el estado, y la leyenda lo recuerda: <code class="ui">Libre</code> azul, <code class="ui">Ocupada</code> rojo, <code class="ui">Primera cita</code> naranja (el paciente no ha tenido ninguna cita antes), <code class="ui">Anulada</code> en blanco con borde rojo y texto tachado, <code class="ui">Bloqueada</code> gris. El centro va en el texto de cada bloque. Cada cita ocupa una hora; cada hueco libre, media (a las en punto, o también a y media si el psicólogo tiene 30'). Los bloqueos (vacaciones, asuntos propios, baja o bloqueo) se pintan hora a hora dentro del horario del psicólogo ese día y salen con cualquier filtro de centro. Del paciente solo se ven sus iniciales, nunca el nombre completo.</dd>
+        <dt>Huecos libres</dt><dd>Se calculan con las mismas reglas que el formulario (<a href="#disponibilidad">horario por centro, citas y bloqueos</a>), solo de hoy en adelante. Con un centro o un psicólogo elegido, cada hueco es un bloque azul <code class="ui" data-nocheck>Libre · <var>Marta</var></code>. Con <code class="ui">Todos los centros</code> y <code class="ui">Todos los psicólogos</code>, en vez de bloques sale un contador por media hora, <code class="ui" data-nocheck><var>4</var> libres</code>; al pulsarlo se despliega quién tiene hueco y en qué centro, y cada nombre se puede pulsar. Las citas anuladas solo se cargan al marcar <code class="ui">Ver anuladas</code>.</dd>
+        <dt>Quién ve qué</dt><dd>El call center ve las citas de los psicólogos desactivados pero no sus huecos libres (no puede agendarles); el agente ve ambos y puede elegirlos en el desplegable, marcados con <code class="ui">(inactivo)</code>.</dd>
         <dt>Qué se hace</dt><dd>Filtrar con <code class="ui">Todos los centros</code>, el tipo de cita (Adulto, Pareja, Menor, <code class="ui">Sin tipo</code>) y <code class="ui">Todos los psicólogos</code>. Moverse con <code class="ui">‹ Semana anterior</code>, <code class="ui">Hoy</code> y <code class="ui">Semana siguiente ›</code>; en el móvil, día a día con <code class="ui">‹ Día</code> y <code class="ui">Día ›</code>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
-          <li><code class="ui">Las celdas sombreadas en azul son las horas de trabajo de este psicólogo.</code><span class="donde">Al filtrar por un psicólogo con horario</span></li>
-          <li><code class="ui">Este psicólogo no tiene horario definido en Psicólogos.</code><span class="donde">Al filtrar por un psicólogo sin horario</span></li>
-          <li><code class="ui">No hay citas ni bloqueos esta semana con los filtros elegidos.</code></li>
+          <li><code class="ui">No hay citas ni huecos esta semana con los filtros elegidos.</code></li>
           <li><code class="ui">No se pudo cargar la semana</code><span class="donde">Error de carga (a veces sale el mensaje técnico de la base de datos)</span></li>
-          <li>Cada cita: <code class="ui" data-nocheck><var>10:00</var> <var>Marta</var></code> y debajo <code class="ui" data-nocheck><var>AB (Ana)</var> · <var>Adulto</var></code>. Cada bloqueo: el nombre del psicólogo y el motivo, o <code class="ui">Bloqueo</code> si no tiene motivo.</li>
+          <li>Cada cita: <code class="ui" data-nocheck><var>10:00</var> <var>Marta</var></code> y debajo <code class="ui" data-nocheck><var>AB (Ana)</var> · <var>Adulto</var> · <var>San Blas</var></code>. Cada hora bloqueada: el nombre del psicólogo y el motivo, o <code class="ui">Bloqueo</code> si no tiene motivo.</li>
         </ul>
       </details>
-      <p class="nota">Solo aparece lo que se gestiona desde la app o Dante. Lo que un psicólogo apunte a mano en su Google Calendar no sale aquí.</p>
+      <p class="nota">Solo aparece lo que se gestiona desde la app o Dante. Lo que un psicólogo apunte a mano en su Google Calendar no sale aquí. Si queréis un enlace para abrir el Google Calendar desde la app, decídnoslo.</p>
     </article>
 
     <article class="ficha" id="p-pacientes">
@@ -868,7 +875,7 @@ footer img{width:28px; height:28px}
 <footer class="clara">
   <div class="wrap">
     <img src="bebanana-icon.png" alt="Be Banana" width="28" height="28">
-    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 29-10-2026 · «Where humans use artificial intelligence with real intelligence»</span>
+    <span>Preparado por <b>Be Banana</b> para Somos Psicólogos · versión del 30-10-2026 · «Where humans use artificial intelligence with real intelligence»</span>
   </div>
 </footer>
 

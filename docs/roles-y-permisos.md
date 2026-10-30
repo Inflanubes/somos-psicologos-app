@@ -1,6 +1,6 @@
 # Roles y permisos de la app Somos Psicología
 
-Última revisión: 28-09-2026 (psicólogos desactivados en Citas y Dante).
+Última revisión: 30-10-2026 (bloque B3: reglas del call center en Citas).
 
 ## Una sola app
 
@@ -31,7 +31,7 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 | Psicólogos (centros, tipos, horario, permisos de agenda, activo) | `/dashboard/equipo` | Sí | No | No |
 | Agentes | `/dashboard/agentes` | Sí | No | No |
 | Usuarios (cuentas: altas, accesos y contraseñas) | `/dashboard/usuarios` | Sí | No | No |
-| Citas (formulario de agenda) | `/dashboard/psicologos` | Cualquier centro y psicólogo, todas las acciones | Fijado a su propia agenda | Cualquier centro y psicólogo, solo citas y altas de paciente |
+| Citas (formulario de agenda) | `/dashboard/psicologos` | Cualquier centro y psicólogo, todas las acciones y las solicitudes al equipo; buscador por teléfono | Fijado a su propia agenda | Cualquier centro y psicólogo activo; citas, altas de paciente y solicitudes al equipo; buscador por teléfono; campo Operador; no toca citas creadas por el psicólogo |
 | Comunicaciones (call center / avisos) | `/dashboard/mensajes` | Sí | No | No |
 | Mensajes a pacientes (reseña Google, libre) | `/dashboard/mensajes-psicologo` | No | Sí | No |
 
@@ -40,7 +40,10 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 Equipo interno de Somos. Acceso completo a todas las pantallas y a las API de gestión de usuarios.
 Es el único rol que puede crear, activar, desactivar y restablecer el acceso de otros usuarios.
 En el formulario de Citas puede elegir cualquier centro y psicólogo y usar todas las acciones,
-incluido Bloquear/Desbloquear agenda sin restricción.
+incluido Bloquear/Desbloquear agenda sin restricción, y también las **solicitudes al equipo** (ver
+"Solicitudes al equipo" más abajo). Puede cambiar o anular cualquier cita, también las creadas por un
+psicólogo ("modo dios"). Arriba de Citas tiene el **buscador por teléfono** (igual que el call center) y en
+Pacientes › Añadido por ve el operador del call center ("Call center (Ana)").
 
 #### Restablecer la contraseña de un usuario (psicólogo, agente o call center)
 
@@ -73,8 +76,43 @@ baja y modificar bloqueo personal están siempre disponibles.
 ### Call center
 
 Al entrar aterriza en **Calendario**. En Citas puede elegir **cualquier centro y cualquier psicólogo** y usar las
-acciones **Agendar cita, Cambiar cita, Cancelar cita y Añadir nuevo paciente**. No ve las acciones
-de bloqueo de agenda (bloquear, desbloquear, vacaciones, asuntos propios, baja, modificar bloqueo).
+acciones **Agendar cita, Cambiar cita, Cancelar cita y Añadir nuevo paciente**, más las **solicitudes al
+equipo** activas (hoy "Otros (aviso al equipo)"). No ve las acciones de bloqueo de agenda (bloquear,
+desbloquear, vacaciones, asuntos propios, baja, modificar bloqueo).
+
+Reglas propias del call center en Citas (bloque B3, 30-10-2026):
+
+- **Operador**: campo de texto opcional encima del formulario, recordado en su navegador. Viaja con cada
+  acción (`datosProcesados.operador`) y se guarda en `pacientes.operador` (altas) y, vía Make, en
+  `acciones_psicologos.operador` (migración 017). Los agentes lo ven en Pacientes y en el buscador
+  ("Call center (Ana)"); el psicólogo solo ve "Call center".
+- **Buscador por teléfono**: encuentra pacientes por su teléfono o por el de un tutor y muestra su histórico
+  de citas (fecha, hora, psicólogo, centro, activa / pasada / anulada; sin comentarios ni datos clínicos).
+  "Usar en el formulario" rellena centro, psicólogo y paciente.
+- **Citas creadas por un psicólogo**: en Cambiar/Cancelar cita salen deshabilitadas con "(creada por el
+  psicólogo)". Puede **avisar a los agentes** con un comentario (ruta "Otro" de Make, Telegram). Las citas
+  creadas por el call center, Dante o un agente, y las antiguas sin `origen`, sí las puede gestionar.
+- **Teléfono que ya es de otro psicólogo** al dar de alta: no puede vincular; el botón es **"Solicitar cambio de
+  psicólogo"** (ruta "Cambio solicitado", aviso a los agentes, el paciente pasa a ese estado). Para el agente
+  el botón es "Sí, asignar a este psicólogo".
+- No ve la etiqueta de **consentimiento** firmado / pendiente.
+- **Dos citas el mismo día** (todos los roles): al agendar o cambiar una cita de un paciente que ya tiene otra
+  activa ese día, la app pregunta si quiere modificarla ("Ir a cambiarla") o si es otra cita ("Sí, es otra cita").
+
+#### Solicitudes al equipo (call center y agentes)
+
+Acciones del desplegable de Citas que no tocan la agenda: piden paciente y comentario y van a Make con el
+texto exacto que esperan las rutas 6 a 9 (`docs/make-cambios-2026-10-22.md`, fuera del repo):
+
+| En pantalla | Texto a Make | Qué hace Make | Activa hoy |
+|---|---|---|---|
+| Otros (aviso al equipo) | `Otro` | Telegram a los agentes con el comentario (obligatorio) | Sí |
+| Sin cita disponible | `Sin disponibilidad` | Paciente a `Sin disponibilidad` + Telegram | No |
+| Pendiente de psicólogo | `hablar con psicologo` | Paciente a `Psicólogo` + Telegram | No |
+| Cambio de psicólogo | `Cambio solicitado` | Paciente a `Cambio solicitado` + Telegram | No |
+
+Para activar las tres pendientes (cuando Jaime decida, tarea 51 del tablero) basta añadirlas a
+`ACCIONES_SOLICITUD_ACTIVAS` en `lib/call-center.ts`; las pestañas de Comunicaciones se llenan solas.
 En el Panel General ve **solo su propia actividad** ("Mi actividad", componente `PanelCallCenter`): citas agendadas, cambiadas y canceladas y pacientes añadidos por él, con filtro hoy / esta semana / este mes, gráfico de citas por día, reparto por centro y psicólogo y sus últimas acciones. Nunca ve los datos globales de la clínica ni la tabla de pacientes. No ve pacientes, equipo, usuarios ni comunicaciones.
 
 Cada cita que registra queda atribuida a su usuario (`created_by` con su nombre y

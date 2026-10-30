@@ -25,7 +25,8 @@ import {
 import { ahoraMadrid } from '@/lib/fechas'
 import {
   leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
-  citasMismoDia, textoAvisoMismoDia, type Rol, type CitaDia,
+  citasMismoDia, textoAvisoMismoDia, ACCIONES_SOLICITUD_ACTIVAS, ETIQUETA_SOLICITUD, esAccionSolicitud,
+  type Rol, type CitaDia, type AccionSolicitud,
 } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
@@ -44,6 +45,8 @@ type AccionPsicologo =
   | 'Asuntos propios'
   | 'Vacaciones'
   | 'Baja laboral'
+  // Solicitudes al equipo (B3): 'Otro' | 'Sin disponibilidad' | 'hablar con psicologo' | 'Cambio solicitado'.
+  | AccionSolicitud
 
 type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
 
@@ -91,6 +94,10 @@ const LABEL_MAP: Record<AccionPsicologo, string> = {
   'Asuntos propios':       'Confirmar asuntos propios',
   'Vacaciones':            'Confirmar vacaciones',
   'Baja laboral':          'Confirmar baja laboral',
+  'Otro':                  'Enviar aviso al equipo',
+  'Sin disponibilidad':    'Enviar solicitud',
+  'hablar con psicologo':  'Enviar solicitud',
+  'Cambio solicitado':     'Enviar solicitud',
 }
 
 const BRAND_BLUE   = '#2f5aae'
@@ -253,6 +260,9 @@ export default function PsicologosPage() {
   const [modFechaInicio, setModFechaInicio] = useState('')
   const [modFechaFin, setModFechaFin] = useState('')
 
+  // Solicitudes al equipo (B3): comentario que viaja a Make (obligatorio en "Otro").
+  const [comentarioSolicitud, setComentarioSolicitud] = useState('')
+
   // Nuevo paciente fields
   const [npNombre, setNpNombre] = useState('')
   const [npTelefono, setNpTelefono] = useState('')
@@ -414,7 +424,7 @@ export default function PsicologosPage() {
   // Un psicólogo desactivado sigue gestionando su agenda pero no puede darse de
   // alta pacientes nuevos (el agente sí puede asignárselos).
   const psicologoInactivo = psicologoSeleccionado !== null && !psicologoSeleccionado.activo
-  const accionesDisponibles = ACCIONES.filter((a) => {
+  const accionesBase = ACCIONES.filter((a) => {
     if (a === 'Añadir nuevo paciente' && esPsicologo && psicologoInactivo) return false
     if (esCallCenter) return ACCIONES_CITA.includes(a) || a === 'Añadir nuevo paciente'
     return (
@@ -423,8 +433,13 @@ export default function PsicologosPage() {
       (psicologoSeleccionado?.puede_bloquear ?? false)
     )
   })
+  // Solicitudes al equipo (B3): call center y agentes; las activas se configuran en lib/call-center.ts.
+  const accionesDisponibles: AccionPsicologo[] = esPsicologo ? accionesBase : [...accionesBase, ...ACCIONES_SOLICITUD_ACTIVAS]
 
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
+  const esSolicitud = accion !== '' && esAccionSolicitud(accion)
+  // Acciones que piden elegir un paciente de la lista del psicólogo.
+  const pidePaciente = isCitaAction || esSolicitud
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
   const isCambiarCita = accion === 'Cambiar cita'
   const isNuevoPaciente = accion === 'Añadir nuevo paciente'
@@ -809,6 +824,7 @@ export default function PsicologosPage() {
     setDuracion('')
     setModFechaInicio('')
     setModFechaFin('')
+    setComentarioSolicitud('')
     setCitasActivas([])
     setBloqueosActivos([])
     setEventoSeleccionadoId('')
@@ -1278,11 +1294,15 @@ export default function PsicologosPage() {
       setError('Tu ficha está desactivada: no puedes añadir pacientes nuevos. Habla con el equipo.')
       return
     }
-    if (isCitaAction && !pacienteId) {
+    if (pidePaciente && !pacienteId) {
       setError('Debes seleccionar un paciente para esta acción.')
       return
     }
-    if (isCitaAction && !pacienteSeleccionado) {
+    if (esSolicitud && accion === 'Otro' && !comentarioSolicitud.trim()) {
+      setError('Escribe el comentario para el equipo.')
+      return
+    }
+    if (pidePaciente && !pacienteSeleccionado) {
       // El id elegido ya no está en la lista cargada (paciente borrado o reasignado
       // mientras el formulario estaba abierto). No enviamos nada a Make.
       setError('No encontramos ese paciente en tu lista. Recarga la página y vuelve a intentarlo.')
@@ -1420,9 +1440,11 @@ export default function PsicologosPage() {
           psicologo_id:         effPsicologoId,
           centro_id:            effCentroId,
           accion,
-          paciente_iniciales:   isCitaAction ? pacienteSeleccionado?.iniciales ?? null : null,
+          paciente_iniciales:   pidePaciente ? pacienteSeleccionado?.iniciales ?? null : null,
           // Id del paciente: Make busca por él (módulos 10/40/50) en vez de por iniciales.
-          paciente_id:          isCitaAction ? pacienteSeleccionado?.id ?? null : null,
+          paciente_id:          pidePaciente ? pacienteSeleccionado?.id ?? null : null,
+          // Solicitudes al equipo (rutas 6 a 9 de Make): comentario libre; null en el resto.
+          comentario:           esSolicitud ? comentarioSolicitud.trim() || null : null,
           fecha_cita:           isCitaAction ? fechaEnvio || null : null,
           hora_cita:            isCitaAction ? formatTime(hora) : null,
           tipo_cita:            pideTipoCita ? tipoCita || null : null,
@@ -1502,6 +1524,7 @@ export default function PsicologosPage() {
         })
       }
 
+      if (esSolicitud) setExitoTexto('Solicitud enviada al equipo.')
       setSuccess(true)
       // Ocupar la hora en local ya: Make escribe la fila unos segundos después,
       // así que una recarga inmediata no la vería.
@@ -1887,7 +1910,7 @@ export default function PsicologosPage() {
               </option>
               {accionesDisponibles.map((a) => (
                 <option key={a} value={a}>
-                  {a}
+                  {esAccionSolicitud(a) ? ETIQUETA_SOLICITUD[a] : a}
                 </option>
               ))}
             </select>
@@ -2142,12 +2165,21 @@ export default function PsicologosPage() {
             </div>
           )}
 
-          {/* CITA FIELDS */}
-          {isCitaAction && (
+          {/* CITA FIELDS (y solicitudes al equipo: paciente + comentario) */}
+          {pidePaciente && (
             <div>
               <SectionTitle>
-                {accion === 'Agendar cita' ? 'Nueva cita' : accion === 'Cancelar cita' ? 'Cancelar cita' : 'Cambiar cita'}
+                {esSolicitud
+                  ? ETIQUETA_SOLICITUD[accion as AccionSolicitud]
+                  : accion === 'Agendar cita' ? 'Nueva cita' : accion === 'Cancelar cita' ? 'Cancelar cita' : 'Cambiar cita'}
               </SectionTitle>
+              {esSolicitud && (
+                <InfoBox>
+                  {accion === 'Otro'
+                    ? 'Se avisa a los agentes por Telegram con tu comentario. No cambia nada en la agenda ni en el paciente.'
+                    : 'Se avisa a los agentes y el paciente pasa al estado correspondiente para que lo gestionen en Comunicaciones.'}
+                </InfoBox>
+              )}
 
               {/* Patient dropdown */}
               <FormField label="Paciente" required>
@@ -2195,6 +2227,19 @@ export default function PsicologosPage() {
                       : '⏳ Consentimiento pendiente'}
                   </span>
                 </div>
+              )}
+
+              {esSolicitud && (
+                <FormField label="Comentario para el equipo" required={accion === 'Otro'}>
+                  <textarea
+                    value={comentarioSolicitud}
+                    onChange={(e) => setComentarioSolicitud(e.target.value)}
+                    placeholder={accion === 'Otro' ? 'Ej. El paciente pide que le llame un agente por la tarde' : 'Opcional: detalles para el equipo'}
+                    rows={3}
+                    style={{ ...inputStyle, resize: 'vertical', fontFamily: "'Montserrat', inherit" }}
+                    required={accion === 'Otro'}
+                  />
+                </FormField>
               )}
 
               {/* Event selector: pick the existing appointment to change/cancel */}

@@ -122,3 +122,28 @@ export function textoEstadoConsentimiento(
 export function puedeDesmarcar(rol: string): boolean {
   return rol === 'agente'
 }
+
+export type CualTutor = 'T1' | 'T2' | 'ambos'
+
+/** Desmarcar en un menor es por tutor (decisión de Sonia, 30-10-2026). */
+export function camposTutoresDesmarcados(cual: CualTutor): Partial<AsociadoMenorInsert> {
+  if (cual === 'T1') return { T1_consentimiento: false }
+  if (cual === 'T2') return { T2_consentimiento: false }
+  return { T1_consentimiento: false, T2_consentimiento: false }
+}
+
+/** Opciones del selector de desmarcado: cada tutor que existe y, si hay dos, "Los dos". */
+export function opcionesDesmarcarTutores(tutores: Tutores): { cual: CualTutor; etiqueta: string }[] {
+  const t1 = limpio(tutores.T1_nombre_completo) ?? 'Tutor 1'
+  const t2 = limpio(tutores.T2_nombre_completo)
+  const lista: { cual: CualTutor; etiqueta: string }[] = [{ cual: 'T1', etiqueta: t1 }]
+  if (t2) lista.push({ cual: 'T2', etiqueta: t2 }, { cual: 'ambos', etiqueta: 'Los dos' })
+  return lista
+}
+
+/** Al reenviar, se avisa si el consentimiento ya consta como firmado (Make lo marca al recibir el formulario). */
+export function textoConfirmReenvio(nombre: string, firmado: boolean): string {
+  return firmado
+    ? `El consentimiento de ${nombre} ya está firmado. ¿Enviarlo de nuevo igualmente?`
+    : `¿Enviar de nuevo el consentimiento a ${nombre}?`
+}

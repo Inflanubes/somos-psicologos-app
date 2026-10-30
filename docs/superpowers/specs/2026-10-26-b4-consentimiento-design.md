@@ -49,7 +49,7 @@ pacientes
 - **Pacientes** (`PacientesClient`, agentes y psicólogos): en la columna Consentimiento, el estado con `textoEstadoConsentimiento` y dos botones pequeños: `Reenviar` y `Marcar firmado` (o `Desmarcar` si está firmado y el rol es agente). Confirmaciones: "¿Enviar de nuevo el consentimiento a {nombre}?" y "¿Marcar el consentimiento de {nombre} como firmado?" / "¿Quitar la marca de firmado de {nombre}?".
 - **Comunicaciones** (agentes): mismo botón `Reenviar consentimiento` en cada paciente de las pestañas.
 - **Call center**: no ve nada de consentimiento (B3 ya quita la etiqueta de Citas).
-- **Alta de pareja** (Citas, acción Añadir nuevo paciente con tipo pareja): bloque "Segunda persona (opcional)" con nombre y teléfono. Lógica al guardar: `candidatosDuplicado` por el teléfono de la segunda persona; si hay un adulto con mismo teléfono y mismo nombre (`normalizarNombre`), se actualiza `psicologo_pareja_id` y `pareja_de`; si no, insert mínimo + `pareja_de` en ambas direcciones + alta a Make (`Añadir nuevo paciente`, que manda el consentimiento). En pantalla solo: "Pareja registrada." **Nunca** "ya era paciente".
+- **Alta de pareja** (Citas, acción Añadir nuevo paciente con tipo pareja): bloque "Segunda persona (opcional)" con nombre y teléfono. Lógica al guardar: `candidatosDuplicado` por el teléfono de la segunda persona; si hay un adulto con mismo teléfono y mismo nombre (`normalizarNombre`), se actualiza `psicologo_pareja_id` y `pareja_de`; si no, insert mínimo + `pareja_de` en ambas direcciones + alta a Make (`Añadir nuevo paciente`, que manda el consentimiento). En pantalla solo: "Pareja registrada." **Nunca** "ya era paciente". *(Cambiado el 30-10-2026, ver "Decisiones de Sonia del 30-10-2026" al final.)*
 
 ## Make (apartado para Sonia)
 
@@ -66,3 +66,10 @@ Nueva ruta en "Formulario Citas Psicologos": `accion = Reenviar consentimiento` 
 3. Alta de pareja con segunda persona que ya es paciente: queda vinculada, la pantalla no lo revela, no se crea ficha nueva. Con segunda persona nueva: ficha creada y consentimiento enviado.
 4. Alta de un adulto con el teléfono de un menor existente (su hijo): no se bloquea (tests).
 5. Call center no ve botones ni estado de consentimiento en ninguna pantalla.
+
+## Decisiones de Sonia del 30-10-2026 (tras la primera ejecución)
+
+1. **Reenviar y la firma existente:** Make marca `consentimiento = true` al recibir el formulario, así que antes de reenviar hay que ver si ya está firmado. El estado se muestra siempre junto al botón (también en Comunicaciones) y, si consta firmado, la confirmación avisa: "El consentimiento de {nombre} ya está firmado. ¿Enviarlo de nuevo igualmente?".
+2. **Privacidad de la segunda persona:** agentes, psicólogos y call center tienen acceso a Pacientes y saben quién es paciente; la pantalla **sí** puede decir que la segunda persona ya era paciente. Lo que nunca lo revela es Dante ni el mensaje de confirmación que recibe quien pide la cita. Mensajes: "Pareja registrada: la segunda persona ya era paciente y se ha vinculado a este psicólogo (no se le reenvía el consentimiento)." / "Pareja registrada: se ha creado la ficha de la segunda persona y se le ha enviado el consentimiento." Si ya es paciente de pareja de otro psicólogo, no se pisa y la app dice de quién es.
+3. **Desmarcar en un menor** pregunta de qué progenitor se quita la firma ("¿De qué tutor quitas la firma?": tutor 1, tutor 2 o "Los dos"). Al quitar cualquiera, `pacientes.consentimiento` pasa a false (hacen falta las dos).
+4. **Segunda persona que ya era paciente:** no se le manda consentimiento. El consentimiento es por persona, no por psicólogo.

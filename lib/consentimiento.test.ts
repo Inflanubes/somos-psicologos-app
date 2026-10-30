@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   ENLACE_ADULTO, ENLACE_MENORES, enlaceConsentimiento, destinatariosReenvio, payloadReenvio,
   marcarFirmado, desmarcarFirmado, camposTutoresFirmados, textoEstadoConsentimiento, puedeDesmarcar,
+  camposTutoresDesmarcados, opcionesDesmarcarTutores, textoConfirmReenvio,
 } from './consentimiento'
 
 describe('enlaceConsentimiento', () => {
@@ -126,5 +127,28 @@ describe('textoEstadoConsentimiento', () => {
     expect(textoEstadoConsentimiento({ consentimiento: true, consentimiento_origen: null, consentimiento_marcado_por: null, consentimiento_marcado_en: null })).toBe('Firmado')
     expect(textoEstadoConsentimiento({ consentimiento: false, consentimiento_origen: null, consentimiento_marcado_por: null, consentimiento_marcado_en: null })).toBe('Pendiente')
     expect(textoEstadoConsentimiento({ consentimiento: null, consentimiento_origen: null, consentimiento_marcado_por: null, consentimiento_marcado_en: null })).toBe('Pendiente')
+  })
+})
+
+describe('desmarcar en un menor: por tutor (decisión de Sonia, 30-10-2026)', () => {
+  it('camposTutoresDesmarcados quita la firma del tutor elegido o de los dos', () => {
+    expect(camposTutoresDesmarcados('T1')).toEqual({ T1_consentimiento: false })
+    expect(camposTutoresDesmarcados('T2')).toEqual({ T2_consentimiento: false })
+    expect(camposTutoresDesmarcados('ambos')).toEqual({ T1_consentimiento: false, T2_consentimiento: false })
+  })
+  it('opcionesDesmarcarTutores ofrece solo los tutores que existen y "los dos" si hay dos', () => {
+    expect(opcionesDesmarcarTutores({ T1_nombre_completo: 'Pa', 'T1_teléfono': '611', T2_nombre_completo: 'Ma', 'T2_teléfono': null }))
+      .toEqual([{ cual: 'T1', etiqueta: 'Pa' }, { cual: 'T2', etiqueta: 'Ma' }, { cual: 'ambos', etiqueta: 'Los dos' }])
+    expect(opcionesDesmarcarTutores({ T1_nombre_completo: 'Pa', 'T1_teléfono': '611', T2_nombre_completo: null, 'T2_teléfono': null }))
+      .toEqual([{ cual: 'T1', etiqueta: 'Pa' }])
+    expect(opcionesDesmarcarTutores({ T1_nombre_completo: null, 'T1_teléfono': null, T2_nombre_completo: null, 'T2_teléfono': null }))
+      .toEqual([{ cual: 'T1', etiqueta: 'Tutor 1' }])
+  })
+})
+
+describe('textoConfirmReenvio', () => {
+  it('avisa si ya está firmado', () => {
+    expect(textoConfirmReenvio('Ana', false)).toBe('¿Enviar de nuevo el consentimiento a Ana?')
+    expect(textoConfirmReenvio('Ana', true)).toBe('El consentimiento de Ana ya está firmado. ¿Enviarlo de nuevo igualmente?')
   })
 })

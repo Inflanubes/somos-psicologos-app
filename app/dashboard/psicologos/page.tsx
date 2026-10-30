@@ -947,7 +947,8 @@ export default function PsicologosPage() {
         .eq('id', conf.decision.paciente.id)
       if (errVinc) { setError('No se pudo vincular al paciente: ' + errVinc.message); return }
       try {
-        if (await registrarSegundaPersona(conf.decision.paciente.id)) setExitoTexto('Pareja registrada.')
+        const pareja = await registrarSegundaPersona(conf.decision.paciente.id)
+        if (pareja) setExitoTexto(TEXTO_PAREJA[pareja])
       } catch (err) {
         setNpConfirmacion(null)
         throw errorPareja('El paciente se vinculó', err)
@@ -1161,9 +1162,10 @@ export default function PsicologosPage() {
   // Segunda persona de la pareja (B4, tarea 40). Si ya existe un adulto con ese
   // teléfono y ese nombre se le vincula como paciente de pareja del mismo psicólogo;
   // si no, se crea una ficha mínima y Make le pide el consentimiento ("Añadir nuevo
-  // paciente"). Las dos fichas quedan enlazadas con pareja_de. La pantalla nunca
-  // dice si la segunda persona ya era paciente. Devuelve true si se registró.
-  async function registrarSegundaPersona(primeraId: string): Promise<boolean> {
+  // paciente"). Las dos fichas quedan enlazadas con pareja_de. Quien da el alta (equipo)
+  // sí ve si ya era paciente; lo que no puede revelarlo es Dante ni el mensaje al
+  // paciente (decisión de Sonia, 30-10-2026). Devuelve cómo quedó o false si no había segunda persona.
+  async function registrarSegundaPersona(primeraId: string): Promise<'existente' | 'nueva' | false> {
     if (npEsMenor || npTipoConsulta !== 'pareja' || !effPsicologoId || !effCentroId) return false
     const segunda = validarSegundaPersona({ nombre: npNombre, telefono: npTelefono }, { nombre: npParejaNombre, telefono: npParejaTelefono })
     if (segunda.tipo !== 'ok') return false
@@ -1181,12 +1183,15 @@ export default function PsicologosPage() {
     )
 
     let segundaId: string
+    let resultado: 'existente' | 'nueva'
     if (existente) {
       // Ya es paciente de pareja de otro psicólogo: no se pisa sin pasar por las reglas
-      // de duplicados del alta normal. Mensaje genérico: no se revela que ya era paciente.
+      // de duplicados del alta normal; lo cambia el equipo desde Pacientes.
       if (decidirVinculoPareja(existente, effPsicologoId) === 'otro_psicologo') {
-        throw new Error('no se pudo completar el vínculo')
+        const otro = psicologos.find((x) => x.id === existente.psicologo_pareja_id)?.nombre ?? 'otro psicólogo'
+        throw new Error(`${existente.nombre} ya es paciente de pareja de ${otro}; el equipo puede cambiarlo desde Pacientes`)
       }
+      resultado = 'existente'
       const { error } = await supabase
         .from('pacientes')
         .update({ psicologo_pareja_id: effPsicologoId, pareja_de: primeraId })
@@ -1216,6 +1221,7 @@ export default function PsicologosPage() {
         .single()
       if (error || !nueva) throw new Error(error?.message ?? 'sin identificador')
       segundaId = nueva.id
+      resultado = 'nueva'
       // Alta en Make: manda el consentimiento de adulto a su teléfono.
       await fetch('/api/webhook/psicologos', {
         method: 'POST',
@@ -1260,7 +1266,12 @@ export default function PsicologosPage() {
     }
     const { error: errPrimera } = await supabase.from('pacientes').update({ pareja_de: segundaId }).eq('id', primeraId)
     if (errPrimera) throw new Error(errPrimera.message)
-    return true
+    return resultado
+  }
+
+  const TEXTO_PAREJA: Record<'existente' | 'nueva', string> = {
+    existente: 'Pareja registrada: la segunda persona ya era paciente y se ha vinculado a este psicólogo (no se le reenvía el consentimiento).',
+    nueva: 'Pareja registrada: se ha creado la ficha de la segunda persona y se le ha enviado el consentimiento.',
   }
 
   // La primera persona ya está guardada: si la segunda falla, se dice así y se limpia el
@@ -1370,7 +1381,8 @@ export default function PsicologosPage() {
     })
 
     try {
-      if (await registrarSegundaPersona(nuevoPaciente.id)) setExitoTexto('Pareja registrada.')
+      const pareja = await registrarSegundaPersona(nuevoPaciente.id)
+      if (pareja) setExitoTexto(TEXTO_PAREJA[pareja])
     } catch (err) {
       throw errorPareja('El paciente se creó', err)
     }
@@ -2235,8 +2247,9 @@ export default function PsicologosPage() {
                 <div>
                   <SectionTitle>Segunda persona (opcional)</SectionTitle>
                   <InfoBox>
-                    Si conoces a la otra persona de la pareja, indícala aquí: quedará con el mismo psicólogo
-                    y recibirá su consentimiento. Si no, déjalo en blanco.
+                    Si conoces a la otra persona de la pareja, indícala aquí: quedará con el mismo psicólogo.
+                    Si no era paciente, se le crea la ficha y recibe el consentimiento; si ya lo era, solo se
+                    vincula (el consentimiento es único por persona). Si no la conoces, déjalo en blanco.
                   </InfoBox>
                   <div className="r-grid-2" style={{ gap: 16 }}>
                     <FormField label="Segunda persona · Nombre completo">

@@ -17,7 +17,7 @@
 - Rama `b4-consentimiento` desde `main`. Commits en español. tsc limpio y `npm test` verde por tarea.
 - Texto de acción hacia Make exacto: `Reenviar consentimiento`. Enlaces exactos: `https://www.somospsicologos.es/consentimiento/` y `https://www.somospsicologos.es/consentimiento-menores/`.
 - Textos de interfaz exactos (sección "Textos de interfaz" de la especificación).
-- La pantalla **nunca** revela que la segunda persona de una pareja ya era paciente.
+- ~~La pantalla **nunca** revela que la segunda persona de una pareja ya era paciente.~~ Cambiado por Sonia el 30-10-2026: el equipo sí lo ve en pantalla; quien no debe revelarlo es Dante ni los mensajes al paciente (sección "Decisiones de Sonia del 30-10-2026" de la especificación).
 - `Supabase/migrations/` está fuera del repo git. Nada en producción sin autorización de Sonia en ese chat.
 
 ## Review Focus

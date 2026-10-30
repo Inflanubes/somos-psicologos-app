@@ -20,6 +20,8 @@ export type EventoActivo = {
   /** Human-readable label already formatted for display. */
   label: string
   tipo: 'cita' | 'bloqueo'
+  /** Quién creó la fila ('psicologo' | 'agente' | 'call_center' | 'dante'); null en filas antiguas y en bloqueos. */
+  origen: string | null
 }
 
 /**
@@ -109,7 +111,7 @@ export async function fetchCitasActivas(params: {
 
   const { data, error } = await sb
     .from(tabla)
-    .select('id, gcal_event_id, fecha_cita, hora_cita')
+    .select('id, gcal_event_id, fecha_cita, hora_cita, origen')
     .eq('psicologo_id', psicologoId)
     .eq('paciente_id', pacienteId)
     .eq('accion', 'Agendar cita')
@@ -125,12 +127,14 @@ export async function fetchCitasActivas(params: {
     gcal_event_id: string | null
     fecha_cita: string | null
     hora_cita: string | null
+    origen: string | null
   }
   return ((data ?? []) as CitaRow[]).map((r) => ({
     id: r.id,
     gcalEventId: r.gcal_event_id,
     label: formatCitaLabel(r.fecha_cita, r.hora_cita),
     tipo: 'cita' as const,
+    origen: r.origen ?? null,
   }))
 }
 
@@ -183,5 +187,6 @@ export async function fetchBloqueosActivos(params: {
     gcalEventId: r.gcal_event_id,
     label: formatBloqueoLabel(r.motivo_bloqueo, r.accion, r.fecha_bloqueo_inicio, r.fecha_bloqueo_fin),
     tipo: 'bloqueo' as const,
+    origen: null,
   }))
 }

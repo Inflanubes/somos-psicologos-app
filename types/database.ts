@@ -114,6 +114,8 @@ export type Paciente = {
   created_by: string | null
   created_by_id: string | null
   origen: string | null
+  /** Operador del call center que dio de alta al paciente (migración 017). */
+  operador: string | null
 }
 
 export type AccionCallCenter = {
@@ -155,6 +157,8 @@ export type AccionPsicologo = {
   created_by: string | null
   created_by_id: string | null
   origen: string | null
+  /** Operador del call center que hizo la acción (migración 017; lo mapea Make). */
+  operador: string | null
   es_paciente_recomendado: boolean | null
   recomendado_por: string | null
   activo: boolean | null
@@ -192,6 +196,8 @@ export type AccionHistorial = {
   realizado_por_id: string | null
   realizado_por: string | null
   origen: string | null
+  /** Copia de acciones_psicologos.operador (migración 017). */
+  operador: string | null
   creado_en: string
 }
 
@@ -228,6 +234,7 @@ export type PacienteInsert = {
   created_by?: string | null
   created_by_id?: string | null
   origen?: string | null
+  operador?: string | null
 }
 
 export type FormularioCitasPsicologosInsert = {

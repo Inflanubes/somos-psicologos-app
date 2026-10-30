@@ -185,7 +185,7 @@ En `lib/calendario.test.ts`: `estadoVisual` para los cinco casos; `modoContador`
 
 ### Task 5: Cierre — manual, tablero, merge
 
-- [ ] **Step 1: Pruebas de aceptación** 1–7 de la especificación, marcadas aquí:
+- [ ] **Step 1: Pruebas de aceptación** 1–7 de la especificación, marcadas aquí (Sonia; rama `b2-calendario-propio`, 6 commits sobre `main`; revisión independiente hecha el 30-10-2026, 3 importantes corregidos, menores diferidos anotados en el tablero). Probar además: "Cambiar cita" con el paciente ya elegido y clic en su cita; call center con un psicólogo con un centro apagado; ancho del calendario en Citas en portátil:
   - [ ] 1 chips y bloques, clic → Citas
   - [ ] 2 pastillas del psicólogo
   - [ ] 3 refresco al agendar / anular + Ver anuladas

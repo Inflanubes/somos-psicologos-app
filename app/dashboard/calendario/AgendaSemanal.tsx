@@ -4,7 +4,7 @@ import type { Tramo } from '@/lib/horarios'
 import { aMinutos } from '@/lib/horarios'
 import { etiquetaMotivo, diaSemanaISO } from '@/lib/disponibilidad'
 import {
-  FILAS_HORA, FILAS_POR_CITA, filaDeHora, bloqueoCubreDia, colorCentro, etiquetaDia, etiquetaTipoCita,
+  FILAS_HORA, FILAS_POR_CITA, filaDeHora, bloqueoCubreDia, COLORES_ESTADO, estadoVisual, etiquetaDia, etiquetaTipoCita,
   distribuirColumnas, type EventoCalendario,
 } from '@/lib/calendario'
 
@@ -37,7 +37,7 @@ type Props = {
 function Bloque({
   e, indiceCentro, nombreCentro, style,
 }: { e: EventoCalendario; indiceCentro: Map<string, number>; nombreCentro: Map<string, string>; style?: React.CSSProperties }) {
-  const c = colorCentro(e.centroId ? (indiceCentro.get(e.centroId) ?? 7) : 7)
+  const c = COLORES_ESTADO[estadoVisual(e)]
   const centro = e.centroId ? (nombreCentro.get(e.centroId) ?? '') : ''
   const esCita = e.tipo === 'cita'
   const titulo = esCita

@@ -6,7 +6,7 @@ import { todayISODate } from '@/lib/eventos-activos'
 import type { Centro, Psicologo, PsicologoCentro } from '@/types/database'
 import type { Tramo } from '@/lib/horarios'
 import {
-  lunesDeSemana, sumarDias, diasDeSemana, etiquetaRangoSemana, etiquetaDia, filtrarEventos, colorCentro,
+  lunesDeSemana, sumarDias, diasDeSemana, etiquetaRangoSemana, etiquetaDia, filtrarEventos,
   TIPOS_CITA_FILTRO, type EventoCalendario, type FiltrosCalendario,
 } from '@/lib/calendario'
 import AgendaSemanal from './AgendaSemanal'
@@ -124,6 +124,7 @@ export default function CalendarioPage() {
           // Centro de la cita (migración 014); una cita antigua sin centro solo se ve en "Todos".
           centroId: c.centro_id ?? null, fecha: c.fecha_cita, hora: c.hora_cita.slice(0, 5), tipoCita: c.tipo_cita,
           iniciales: c.paciente_id ? (iniciales.get(c.paciente_id) ?? null) : null, inicio: null, fin: null, motivo: null,
+          primera: false, pacienteId: c.paciente_id ?? null,
         })
       }
       for (const b of bloqueos.data ?? []) {
@@ -134,6 +135,7 @@ export default function CalendarioPage() {
           // Los bloqueos no tienen centro: afectan a toda la agenda del psicólogo.
           centroId: null, fecha: null, hora: null, tipoCita: null, iniciales: null,
           inicio: b.fecha_bloqueo_inicio, fin: b.fecha_bloqueo_fin, motivo: b.motivo_bloqueo,
+          primera: false, pacienteId: null,
         })
       }
       return lista
@@ -236,17 +238,6 @@ export default function CalendarioPage() {
               <option key={p.id} value={p.id}>{p.nombre}{filtros.centroId ? '' : ` · ${(centrosDe.get(p.id) ?? []).map((id) => nombreCentro.get(id) ?? '').filter(Boolean).join(' · ')}`}</option>
             ))}
           </select>
-        </div>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 14 }}>
-          {centros.map((c, i) => {
-            const col = colorCentro(i)
-            return (
-              <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#4a5870' }}>
-                <span style={{ width: 12, height: 12, borderRadius: 3, background: col.fondo, borderLeft: `3px solid ${col.borde}` }} />
-                {c.nombre}
-              </span>
-            )
-          })}
         </div>
         {filtros.psicologoId && (
           <div style={{ fontSize: 12, color: '#667799', marginTop: 10 }}>

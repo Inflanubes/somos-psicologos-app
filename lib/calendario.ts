@@ -1,11 +1,11 @@
 /**
- * Utilidades puras de la pestaña Calendario (agenda semanal): fechas de la
- * semana, filas de media hora, filtros y colores por centro.
+ * Utilidades puras de la agenda semanal (Calendario y Citas): fechas de la
+ * semana, filas de media hora, filtros y colores por estado.
  */
 import { aMinutos, type Tramo } from './horarios'
 import { diaSemanaISO } from './disponibilidad'
 
-export type TipoEvento = 'cita' | 'bloqueo'
+export type TipoEvento = 'cita' | 'anulada' | 'bloqueo' | 'libre'
 
 export type EventoCalendario = {
   id: string
@@ -22,6 +22,11 @@ export type EventoCalendario = {
   inicio: string | null
   fin: string | null
   motivo: string | null
+  /** Cita: el paciente no tiene ninguna otra cita anterior (activa ni en el histórico). */
+  primera: boolean
+  pacienteId: string | null
+  /** Libre sin filtro de centro: todos los centros donde esa hora está libre (centroId queda nulo). */
+  centros?: string[]
 }
 
 /** '' = todos. tipoCita admite 'sin_tipo' para las citas sin tipo. */
@@ -78,13 +83,27 @@ export function filaDeHora(hora: string): number {
   return Math.floor((m - 8 * 60) / 30)
 }
 
+/** true cuando no hay filtro de centro ni de psicólogo: la rejilla muestra contadores "N libres" en vez de bloques. */
+export function modoContador(f: FiltrosCalendario): boolean {
+  return !f.centroId && !f.psicologoId
+}
+
+export function textoChip(n: number): string {
+  return n === 1 ? '1 libre' : `${n} libres`
+}
+
 export function filtrarEventos(eventos: EventoCalendario[], f: FiltrosCalendario): EventoCalendario[] {
   return eventos.filter((e) => {
-    // Los bloqueos no tienen centro (afectan a la agenda entera): se ven con cualquier filtro.
-    const bloqueoSinCentro = e.tipo === 'bloqueo' && e.centroId === null
-    if (f.centroId && !bloqueoSinCentro && e.centroId !== f.centroId) return false
+    if (f.centroId) {
+      if (e.tipo === 'libre') {
+        if (!(e.centros ? e.centros.includes(f.centroId) : e.centroId === f.centroId)) return false
+      } else if (!(e.tipo === 'bloqueo' && e.centroId === null) && e.centroId !== f.centroId) {
+        // Los bloqueos no tienen centro (afectan a la agenda entera): se ven con cualquier filtro.
+        return false
+      }
+    }
     if (f.psicologoId && e.psicologoId !== f.psicologoId) return false
-    if (f.tipoCita && e.tipo === 'cita') {
+    if (f.tipoCita && (e.tipo === 'cita' || e.tipo === 'anulada')) {
       if (f.tipoCita === 'sin_tipo' ? e.tipoCita !== null : e.tipoCita !== f.tipoCita) return false
     }
     return true
@@ -142,21 +161,34 @@ export function distribuirColumnas(
   return resultado
 }
 
-/** Un color suave por centro (fondo, borde izquierdo y texto). */
-export const PALETA_CENTROS = [
-  { fondo: '#e3edff', borde: '#2f5aae', texto: '#1f3f80' },
-  { fondo: '#e6f6ec', borde: '#1e7d4f', texto: '#155f3b' },
-  { fondo: '#fff1dc', borde: '#ed8f0c', texto: '#8a5200' },
-  { fondo: '#f3e8ff', borde: '#7c3aed', texto: '#4c1d95' },
-  { fondo: '#ffe4e6', borde: '#e11d48', texto: '#9f1239' },
-  { fondo: '#e0f7fa', borde: '#0e7490', texto: '#155e75' },
-  { fondo: '#fef9c3', borde: '#a16207', texto: '#713f12' },
-  { fondo: '#e5e7eb', borde: '#4b5563', texto: '#1f2937' },
-] as const
+/** Estado que decide el color de un bloque de la agenda. */
+export type EstadoVisual = 'libre' | 'ocupada' | 'primera' | 'anulada' | 'bloqueo'
 
-export function colorCentro(indice: number): { fondo: string; borde: string; texto: string } {
-  return PALETA_CENTROS[((indice % PALETA_CENTROS.length) + PALETA_CENTROS.length) % PALETA_CENTROS.length]
+export type ColorEstado = { fondo: string; borde: string; texto: string; bordeEstilo?: 'dashed'; tachado?: true }
+
+/** Colores por estado (fondo, borde izquierdo y texto). Tabla de la especificación de B2. */
+export const COLORES_ESTADO: Record<EstadoVisual, ColorEstado> = {
+  libre: { fondo: '#e3edff', borde: '#2f5aae', texto: '#1f3f80' },
+  ocupada: { fondo: '#fee2e2', borde: '#dc2626', texto: '#7f1d1d' },
+  primera: { fondo: '#fff1dc', borde: '#ed8f0c', texto: '#8a5200' },
+  anulada: { fondo: '#ffffff', borde: '#dc2626', texto: '#991b1b', bordeEstilo: 'dashed', tachado: true },
+  bloqueo: { fondo: '#e5e7eb', borde: '#4b5563', texto: '#1f2937' },
 }
+
+export function estadoVisual(e: EventoCalendario): EstadoVisual {
+  if (e.tipo === 'libre') return 'libre'
+  if (e.tipo === 'bloqueo') return 'bloqueo'
+  if (e.tipo === 'anulada') return 'anulada'
+  return e.primera ? 'primera' : 'ocupada'
+}
+
+export const LEYENDA: { estado: EstadoVisual; etiqueta: string }[] = [
+  { estado: 'libre', etiqueta: 'Libre' },
+  { estado: 'ocupada', etiqueta: 'Ocupada' },
+  { estado: 'primera', etiqueta: 'Primera cita' },
+  { estado: 'anulada', etiqueta: 'Anulada' },
+  { estado: 'bloqueo', etiqueta: 'Bloqueada' },
+]
 
 export function etiquetaTipoCita(tipo: string | null): string {
   if (tipo === 'adulto') return 'Adulto'

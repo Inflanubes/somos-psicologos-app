@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   sumarDias, lunesDeSemana, diasDeSemana, etiquetaRangoSemana, etiquetaDia,
-  FILAS_HORA, filaDeHora, filtrarEventos, bloqueoCubreDia, tramoCubreCelda, colorCentro, etiquetaTipoCita,
+  FILAS_HORA, filaDeHora, filtrarEventos, bloqueoCubreDia, tramoCubreCelda, etiquetaTipoCita,
+  estadoVisual, COLORES_ESTADO, LEYENDA, modoContador, textoChip,
   distribuirColumnas,
   type EventoCalendario,
 } from './calendario'
@@ -9,12 +10,12 @@ import {
 const cita = (extra: Partial<EventoCalendario>): EventoCalendario => ({
   id: 'c1', tipo: 'cita', psicologoId: 'p1', psicologoNombre: 'Marta', centroId: 'sb',
   fecha: '2026-09-28', hora: '10:00', tipoCita: 'adulto', iniciales: 'AB (Ana)',
-  inicio: null, fin: null, motivo: null, ...extra,
+  inicio: null, fin: null, motivo: null, primera: false, pacienteId: 'pac1', ...extra,
 })
 const bloqueo = (extra: Partial<EventoCalendario>): EventoCalendario => ({
   id: 'b1', tipo: 'bloqueo', psicologoId: 'p1', psicologoNombre: 'Marta', centroId: 'sb',
   fecha: null, hora: null, tipoCita: null, iniciales: null,
-  inicio: '2026-09-28', fin: '2026-09-30', motivo: 'Vacaciones', ...extra,
+  inicio: '2026-09-28', fin: '2026-09-30', motivo: 'Vacaciones', primera: false, pacienteId: null, ...extra,
 })
 
 describe('fechas de semana', () => {
@@ -130,14 +131,47 @@ describe('distribuirColumnas (citas de una hora que se solapan en un día)', () 
 })
 
 describe('colores y etiquetas', () => {
-  it('colorCentro da la vuelta a la paleta', () => {
-    expect(colorCentro(0)).toEqual(colorCentro(8))
-    expect(colorCentro(3).fondo).not.toBe(colorCentro(4).fondo)
-  })
   it('etiquetaTipoCita', () => {
     expect(etiquetaTipoCita('adulto')).toBe('Adulto')
     expect(etiquetaTipoCita('pareja')).toBe('Pareja')
     expect(etiquetaTipoCita('menor')).toBe('Menor')
     expect(etiquetaTipoCita(null)).toBe('Sin tipo')
+  })
+})
+
+describe('estado visual, colores y contador', () => {
+  it('estadoVisual para los cinco casos', () => {
+    expect(estadoVisual(cita({ tipo: 'libre' }))).toBe('libre')
+    expect(estadoVisual(cita({}))).toBe('ocupada')
+    expect(estadoVisual(cita({ primera: true }))).toBe('primera')
+    expect(estadoVisual(cita({ tipo: 'anulada', primera: true }))).toBe('anulada')
+    expect(estadoVisual(bloqueo({}))).toBe('bloqueo')
+  })
+  it('COLORES_ESTADO y LEYENDA siguen la especificación', () => {
+    expect(COLORES_ESTADO.libre).toEqual({ fondo: '#e3edff', borde: '#2f5aae', texto: '#1f3f80' })
+    expect(COLORES_ESTADO.anulada).toMatchObject({ fondo: '#ffffff', borde: '#dc2626', texto: '#991b1b', bordeEstilo: 'dashed', tachado: true })
+    expect(LEYENDA.map((l) => l.etiqueta)).toEqual(['Libre', 'Ocupada', 'Primera cita', 'Anulada', 'Bloqueada'])
+  })
+  it('modoContador solo sin centro ni psicólogo', () => {
+    expect(modoContador({ centroId: '', psicologoId: '', tipoCita: 'adulto' })).toBe(true)
+    expect(modoContador({ centroId: 'sb', psicologoId: '', tipoCita: '' })).toBe(false)
+    expect(modoContador({ centroId: '', psicologoId: 'p1', tipoCita: '' })).toBe(false)
+  })
+  it('textoChip', () => {
+    expect(textoChip(1)).toBe('1 libre')
+    expect(textoChip(4)).toBe('4 libres')
+  })
+})
+
+describe('filtrarEventos con libres y anuladas', () => {
+  const libre = cita({ id: 'l1', tipo: 'libre', centroId: null, centros: ['mor', 'on'], tipoCita: null })
+  it('un libre con varios centros se conserva al filtrar por uno de ellos', () => {
+    expect(filtrarEventos([libre], { centroId: 'on', tipoCita: '', psicologoId: '' })).toHaveLength(1)
+    expect(filtrarEventos([libre], { centroId: 'sb', tipoCita: '', psicologoId: '' })).toHaveLength(0)
+  })
+  it('el filtro de tipo no afecta a libres ni bloqueos, pero sí a anuladas', () => {
+    const anulada = cita({ id: 'a1', tipo: 'anulada', tipoCita: 'pareja' })
+    const r = filtrarEventos([libre, anulada, bloqueo({})], { centroId: '', tipoCita: 'adulto', psicologoId: '' })
+    expect(r.map((e) => e.id)).toEqual(['l1', 'b1'])
   })
 })

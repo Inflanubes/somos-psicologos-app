@@ -37,6 +37,19 @@ export function esAccionSolicitud(a: string): a is AccionSolicitud {
   return (ACCIONES_SOLICITUD as readonly string[]).includes(a)
 }
 
+// ── Operador ────────────────────────────────────────────────────────────────
+/** Lo que se guarda cuando el call center no escribe su nombre (decisión de Sonia, 30-10-2026). */
+export const OPERADOR_SIN_NOMBRE = 'agente en general'
+
+/**
+ * Valor de `operador` que viaja con cada acción: el nombre escrito por el call center,
+ * "agente en general" si lo deja vacío (así se ve que no lo puso), y null para los demás roles.
+ */
+export function operadorParaEnvio(rol: Rol, texto: string): string | null {
+  if (rol !== 'call_center') return null
+  return texto.trim() || OPERADOR_SIN_NOMBRE
+}
+
 // ── Operador recordado en el navegador ──────────────────────────────────────
 const CLAVE_OPERADOR = 'operador:'
 

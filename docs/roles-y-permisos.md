@@ -84,8 +84,10 @@ Reglas propias del call center en Citas (bloque B3, 30-10-2026):
 
 - **Operador**: campo de texto opcional encima del formulario, recordado en su navegador. Viaja con cada
   acción (`datosProcesados.operador`) y se guarda en `pacientes.operador` (altas) y, vía Make, en
-  `acciones_psicologos.operador` (migración 017). Los agentes lo ven en Pacientes y en el buscador
-  ("Call center (Ana)"); el psicólogo solo ve "Call center".
+  `acciones_psicologos.operador` (migración 017, aplicada el 30-10-2026). Si lo dejan vacío se guarda
+  `agente en general` (decisión de Sonia, 30-10-2026), para distinguir que no pusieron el nombre. Los agentes lo
+  ven en Pacientes y en el buscador ("Call center (Ana)" o "Call center (agente en general)"); el psicólogo solo
+  ve "Call center".
 - **Buscador por teléfono**: encuentra pacientes por su teléfono o por el de un tutor y muestra su histórico
   de citas (fecha, hora, psicólogo, centro, activa / pasada / anulada; sin comentarios ni datos clínicos).
   "Usar en el formulario" rellena centro, psicólogo y paciente.

@@ -21,8 +21,10 @@ payload lleva un campo nuevo:
 datosProcesados.operador   → texto libre ("Ana") o null
 ```
 
-Solo el call center lo rellena (campo "Operador" encima del formulario, se recuerda en su navegador).
-Para agentes, psicólogos y Dante llega `null`. Nada se bloquea si está vacío.
+Solo el call center lo rellena (campo "Operador" encima del formulario, se recuerda en su navegador). Si lo deja
+vacío, la app manda **`agente en general`** (decisión de Sonia, 30-10-2026): así se ve que no pusieron el nombre.
+Para agentes, psicólogos y Dante llega `null`. Nada se bloquea si está vacío. Make no tiene que poner ningún
+valor por defecto: basta mapear el campo tal cual.
 
 Las **altas** (`Añadir nuevo paciente`) ya guardan `pacientes.operador` desde la app: Make no tiene que
 hacer nada en la ruta 14.
@@ -31,11 +33,14 @@ hacer nada en la ruta 14.
 
 Hasta que se mapee, las citas llegan sin operador (no rompe nada; la columna queda a null).
 
-| Ruta | Acción | Módulo que escribe en `acciones_psicologos` | Campo a añadir |
+| Ruta | Acción | Módulo que escribe en `acciones_psicologos` (blueprint del 22-10) | Campo a añadir |
 |---|---|---|---|
-| 1 | Agendar cita | el **Insert** de la fila `Agendar cita` | `operador` = `{{1.datosProcesados.operador}}` |
-| 3 | Cambiar cita | el **Update** por `accion_id` | `operador` = `{{1.datosProcesados.operador}}` |
-| 4 | Cancelar cita | el **Update** por `accion_id` | `operador` = `{{1.datosProcesados.operador}}` |
+| 1 | Agendar cita | **Módulo 14** · Supabase "Upsert a Record" · tabla `acciones_psicologos` (dentro de la rama "Paciente encontrado", justo después de Google Calendar 13) | `operador` = `{{1.datosProcesados.operador}}` (al lado de `created_by` = `{{1.datosProcesados.created_by}}`) |
+| 3 | Cambiar cita | **Módulo 42** · Supabase "Upsert a Record" · tabla `acciones_psicologos` (rama "Paciente encontrado", después de Google Calendar 44) | `operador` = `{{1.datosProcesados.operador}}` (al lado de `ultima_accion_por`) |
+| 4 | Cancelar cita | **Módulo 52** · Supabase "Upsert a Record" · tabla `acciones_psicologos` (rama "Paciente encontrado", antes de Google Calendar 54) | `operador` = `{{1.datosProcesados.operador}}` (al lado de `ultima_accion_por`) |
+
+Si la columna `operador` no aparece en el desplegable de campos del módulo, hay que refrescar la estructura de la
+tabla en el módulo (la migración 017 ya está aplicada desde el 30-10-2026).
 
 Notas:
 - En las rutas 3 y 4 se **sobrescribe** el operador con el de la última acción (igual que `ultima_accion_por`).

@@ -9,6 +9,7 @@ import {
   patronBusquedaTelefono,
   psicologoActualExistente,
   accionAltaExistente,
+  operadorParaEnvio,
   guardarOperador,
   leerOperador,
   esAccionSolicitud,
@@ -180,5 +181,15 @@ describe('correcciones de la revisión B3', () => {
     expect(accionAltaExistente('call_center', true, true)).toBe('escribir_en_otros')
     expect(accionAltaExistente('agente', true, true)).toBe('vincular')
     expect(accionAltaExistente('psicologo', true, false)).toBe('vincular')
+  })
+})
+
+describe('operadorParaEnvio', () => {
+  it('call center: el nombre escrito o "agente en general" si va vacío; otros roles: null', () => {
+    expect(operadorParaEnvio('call_center', ' Ana ')).toBe('Ana')
+    expect(operadorParaEnvio('call_center', '')).toBe('agente en general')
+    expect(operadorParaEnvio('call_center', '   ')).toBe('agente en general')
+    expect(operadorParaEnvio('agente', 'Ana')).toBe(null)
+    expect(operadorParaEnvio('psicologo', '')).toBe(null)
   })
 })

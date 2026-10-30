@@ -26,7 +26,7 @@ import { ahoraMadrid } from '@/lib/fechas'
 import {
   leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
   citasMismoDia, textoAvisoMismoDia, ACCIONES_SOLICITUD_ACTIVAS, ETIQUETA_SOLICITUD, esAccionSolicitud,
-  psicologoActualExistente, accionAltaExistente,
+  psicologoActualExistente, accionAltaExistente, operadorParaEnvio,
   type Rol, type CitaDia, type AccionSolicitud,
 } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
@@ -323,7 +323,8 @@ export default function PsicologosPage() {
     setOperador(valor)
     if (userId) guardarOperador(userId, valor)
   }
-  const operadorEnvio = esCallCenter ? operador.trim() || null : null
+  // Vacío → "agente en general" (decisión de Sonia): así se distingue el call center sin nombre.
+  const operadorEnvio = operadorParaEnvio(rol, operador)
 
   // Psicólogo logueado: su ficha única y la lista de centros donde trabaja
   // (migración 014). Si tiene más de un centro, debe elegir en cuál está hoy.
@@ -629,6 +630,9 @@ export default function PsicologosPage() {
       // Cita antigua sin centro: el primero en el que trabaja el psicólogo.
       const centro = prefill.centroId || (psicologosCentros.find((pc) => pc.psicologo_id === prefill.psicologoId)?.centro_id ?? '')
       if (centro !== prefill.centroId) setPrefill({ ...prefill, centroId: centro })
+      // Si cambia el centro, vaciar también el psicólogo aquí: el efecto de centro lo vacía en el
+      // siguiente commit y la fase 1 leería el psicólogo antiguo (y su lista) como si fueran los nuevos.
+      if (centro !== centroId) setPsicologoId('')
       setCentroId(centro)
     }
     setPrefillFase(1)
@@ -1826,7 +1830,7 @@ export default function PsicologosPage() {
                 style={inputStyle}
               />
               <div style={{ fontSize: 12, color: '#3a4a6b', marginTop: 6 }}>
-                Opcional. Se guarda con cada alta y cita para que el equipo sepa quién la gestionó.
+                Opcional. Se guarda con cada alta y cita para que el equipo sepa quién la gestionó; si lo dejas vacío se guarda «agente en general».
               </div>
             </div>
           )}

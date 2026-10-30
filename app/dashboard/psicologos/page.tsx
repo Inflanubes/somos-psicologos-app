@@ -13,6 +13,7 @@ import {
   type TipoConsulta, type DecisionDuplicado, type PacienteExistente, type ColumnaPsicologo,
 } from '@/lib/pacientes-tipos'
 import EventoSelect from '@/components/EventoSelect'
+import BuscadorTelefono from './BuscadorTelefono'
 import TimeSelect from '@/app/dashboard/_components/TimeSelect'
 import { fetchCitasActivas, fetchBloqueosActivos, todayISODate, type EventoActivo } from '@/lib/eventos-activos'
 import { getPerfilActual } from '@/lib/perfil'
@@ -330,6 +331,10 @@ export default function PsicologosPage() {
   // Calendario propio junto al formulario: recarga tras cada envío y cambio optimista.
   const [recargaKey, setRecargaKey] = useState(0)
   const [cambioLocal, setCambioLocal] = useState<AccionLocal | AccionLocal[] | null>(null)
+  // Selección desde el buscador por teléfono (B3): centro → psicólogo → paciente, por fases,
+  // porque los efectos que encadenan centro → psicólogo vacían los campos siguientes.
+  // Fases: 0 centro · 1 psicólogo · 2 paciente (lista ya cargada) · 3/4 paciente (esperar carga).
+  const [seleccionBuscador, setSeleccionBuscador] = useState<{ centroId: string; psicologoId: string; pacienteId: string; fase: 0 | 1 | 2 | 3 | 4 } | null>(null)
   // Relleno del formulario desde un clic en el calendario o desde la URL (?accion=…).
   // Se aplica por fases porque los efectos que encadenan centro → psicólogo → paciente
   // → citas vacían los campos siguientes al cambiar los anteriores.
@@ -659,6 +664,46 @@ export default function PsicologosPage() {
     setPrefill(null)
     setPrefillFase(0)
   }, [prefill, prefillFase, loadingEventos, citasActivas])
+
+  const aplicarSeleccionBuscador = useCallback((s: { centroId: string; psicologoId: string; pacienteId: string }) => {
+    // Ficha sin centro: el primero en el que trabaja el psicólogo.
+    const centroId = s.centroId || (psicologosCentros.find((pc) => pc.psicologo_id === s.psicologoId)?.centro_id ?? '')
+    setSeleccionBuscador({ ...s, centroId, fase: 0 })
+  }, [psicologosCentros])
+
+  useEffect(() => {
+    const s = seleccionBuscador
+    if (!s) return
+    const terminar = (mensaje?: string) => { if (mensaje) setError(mensaje); setSeleccionBuscador(null) }
+    if (s.fase === 0) {
+      setSuccess(false)
+      setError('')
+      setResumenSerie(null)
+      if (!s.centroId) { terminar('Este paciente no tiene centro ni psicólogo: elígelos en el formulario.'); return }
+      setCentroId(s.centroId)
+      setSeleccionBuscador({ ...s, fase: 1 })
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    if (s.fase === 1) {
+      if (centroId !== s.centroId) return
+      if (!s.psicologoId) { terminar('Este paciente no tiene psicólogo asignado: elígelo en el formulario.'); return }
+      const ficha = psicologos.find((p) => p.id === s.psicologoId)
+      const trabajaAhi = psicologosCentros.some((pc) => pc.psicologo_id === s.psicologoId && pc.centro_id === s.centroId)
+      if (!ficha || !trabajaAhi) { terminar('No encontramos a ese psicólogo en ese centro.'); return }
+      if (esCallCenter && !ficha.activo) { terminar('Este psicólogo no recibe citas nuevas.'); return }
+      if (!filteredPsicologos.some((p) => p.id === s.psicologoId)) return
+      if (psicologoId !== s.psicologoId) { setPsicologoId(s.psicologoId); setSeleccionBuscador({ ...s, fase: 3 }); return }
+      setSeleccionBuscador({ ...s, fase: 2 })
+      return
+    }
+    if (s.fase === 3) { if (loadingPacientes) setSeleccionBuscador({ ...s, fase: 4 }); return }
+    if (s.fase === 4 && loadingPacientes) return
+    // Fases 2 y 4: la lista de pacientes de ese psicólogo ya está cargada.
+    if (pacientes.some((p) => p.id === s.pacienteId)) { setPacienteId(s.pacienteId); terminar(); return }
+    terminar('Ese paciente no está en la lista de este psicólogo. Elige el paciente a mano.')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccionBuscador, centroId, psicologoId, filteredPsicologos, loadingPacientes, pacientes])
 
   const rellenarDesdeLibre = useCallback((h: ClickLibre) => {
     // Psicólogo con "Todos" y hueco libre en varios centros: el centro lo elige en el formulario.
@@ -1565,10 +1610,14 @@ export default function PsicologosPage() {
       {/* Form + Calendar wrapper */}
       <div className="layout-wrapper">
 
-      {/* Form card */}
+      {/* Columna del formulario: buscador por teléfono (agentes y call center) + tarjeta del formulario */}
+      <div className="form-card">
+      {!esPsicologo && perfilCargado && (
+        <BuscadorTelefono rol={rol} centros={centros} psicologos={psicologos} onSeleccionar={aplicarSeleccionBuscador} />
+      )}
       <div
         ref={formRef}
-        className="form-card page-pad"
+        className="page-pad"
         style={{
           background: '#ffffff',
           borderRadius: 16,
@@ -2448,6 +2497,7 @@ export default function PsicologosPage() {
           </div>
         </form>
       </div>
+      </div>{/* end columna formulario */}
 
       {/* Calendario propio: huecos libres, citas y bloqueos; un clic rellena el formulario */}
       <div className="calendar-panel">

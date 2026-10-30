@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Estado 30-10-2026:** Tareas 1–7 hechas en la rama  (7 commits sobre  e34d643). Queda la Tarea 8 (cierre).
+> **Estado 30-10-2026:** Tareas 1–7 hechas en la rama `b3-reglas-call-center` (7 commits sobre `main` e34d643). Queda la Tarea 8 (cierre).
 >
 > **Revisar al empezar:** escrito el 26-10-2026 contra `main`. Si B1 o B2 ya están fusionados, `app/dashboard/psicologos/page.tsx` habrá cambiado de líneas: buscar por los nombres de función y constante que se citan, no por número de línea.
 

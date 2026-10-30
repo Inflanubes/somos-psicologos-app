@@ -116,6 +116,12 @@ export type Paciente = {
   origen: string | null
   /** Operador del call center que dio de alta al paciente (migración 017). */
   operador: string | null
+  /** Consentimiento marcado a mano (migración 018): origen, quién y cuándo. Null = llegó por formulario. */
+  consentimiento_origen: 'formulario' | 'manual' | null
+  consentimiento_marcado_por: string | null
+  consentimiento_marcado_en: string | null
+  /** La otra persona de la pareja (migración 018). */
+  pareja_de: string | null
 }
 
 export type AccionCallCenter = {
@@ -235,6 +241,11 @@ export type PacienteInsert = {
   created_by_id?: string | null
   origen?: string | null
   operador?: string | null
+  consentimiento?: boolean | null
+  consentimiento_origen?: 'formulario' | 'manual' | null
+  consentimiento_marcado_por?: string | null
+  consentimiento_marcado_en?: string | null
+  pareja_de?: string | null
 }
 
 export type FormularioCitasPsicologosInsert = {

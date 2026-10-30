@@ -134,3 +134,28 @@ describe('evaluarDuplicado', () => {
     expect(r.tipo).toBe('ninguno')
   })
 })
+
+describe('evaluarDuplicado: menor y tutor con el mismo teléfono (B4, tarea 41)', () => {
+  it('un adulto con el teléfono de un menor existente (su hijo) no es duplicado', () => {
+    const menor = base({ id: 'm', nombre: 'Leo Pérez', telefono: '611', es_menor: true, fecha_nacimiento: '2015-01-01', psicologo_adultos_id: null, psicologo_infantil_id: 'j' })
+    expect(evaluarDuplicado(
+      { nombre: 'Pablo Pérez', telefono: '611', fechaNacimiento: '1980-01-01', esMenor: false, tipoConsulta: 'adulto', psicologoId: 'j' },
+      [menor],
+    )).toEqual({ tipo: 'ninguno' })
+  })
+  it('un menor con el teléfono de un adulto existente (su padre) no es duplicado', () => {
+    const padre = base({ id: 'p', nombre: 'Pablo Pérez', telefono: '611', es_menor: false, fecha_nacimiento: '1980-01-01', psicologo_adultos_id: 'j' })
+    expect(evaluarDuplicado(
+      { nombre: 'Leo Pérez', telefono: '611', fechaNacimiento: '2015-01-01', esMenor: true, tipoConsulta: 'menor', psicologoId: 'j' },
+      [padre],
+    )).toEqual({ tipo: 'ninguno' })
+  })
+  it('un tutor que ya es paciente adulto no bloquea el alta de su hijo aunque el menor lleve su teléfono y su apellido', () => {
+    const padre = base({ id: 'p', nombre: 'Pablo Pérez', telefono: '611', es_menor: false, fecha_nacimiento: '1980-01-01', psicologo_adultos_id: 'j' })
+    const hermano = base({ id: 'h', nombre: 'Leo Pérez', telefono: '611', es_menor: true, fecha_nacimiento: '2012-03-03', psicologo_adultos_id: null, psicologo_infantil_id: 'j' })
+    expect(evaluarDuplicado(
+      { nombre: 'Leo Pérez', telefono: '611', fechaNacimiento: '2015-01-01', esMenor: true, tipoConsulta: 'menor', psicologoId: 'j' },
+      [padre, hermano],
+    )).toEqual({ tipo: 'ninguno' })
+  })
+})

@@ -234,23 +234,7 @@ body {
   }
 }
 
-/* --- Calendario de Google: semana en escritorio, agenda (lista) en móvil --- */
-.cal-desktop {
-  display: block;
-}
-.cal-mobile {
-  display: none;
-}
-@media (max-width: 680px) {
-  .cal-desktop {
-    display: none;
-  }
-  .cal-mobile {
-    display: block;
-  }
-}
-
-/* --- Calendario semanal (pestaña Calendario) --- */
+/* --- Calendario semanal propio (Calendario y Citas) --- */
 .cal-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -264,6 +248,72 @@ body {
   .cal-filtros {
     grid-template-columns: 1fr;
   }
+}
+.cal-bloque-pulsable {
+  cursor: pointer;
+  transition: filter 0.15s, box-shadow 0.15s;
+}
+.cal-bloque-pulsable:hover,
+.cal-bloque-pulsable:focus-visible {
+  filter: brightness(0.96);
+  box-shadow: 0 1px 4px rgba(47, 90, 174, 0.25);
+  outline: none;
+}
+.cal-chip {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid #2f5aae;
+  background: #e3edff;
+  color: #1f3f80;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.cal-chip:hover,
+.cal-chip[aria-expanded="true"] {
+  background: #2f5aae;
+  color: #fff;
+}
+.cal-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 200px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid rgba(47, 90, 174, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(47, 90, 174, 0.18);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.cal-popover-item {
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #1f3f80;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.cal-popover-item:hover,
+.cal-popover-item:focus-visible {
+  background: #e3edff;
+  outline: none;
+}
+.cal-popover-item:disabled {
+  cursor: default;
+  color: #4a5870;
 }
 
 /* --- Esqueleto de carga (global; algunos loading.tsx lo redefinen) --- */

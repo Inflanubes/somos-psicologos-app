@@ -116,3 +116,16 @@ describe('aplicarAccionLocal', () => {
     expect(entrada).toHaveLength(1)
   })
 })
+
+describe('aplicarAccionLocal es idempotente (se vuelve a aplicar tras cada recarga)', () => {
+  it('agendar no duplica si ya hay una cita del mismo psicólogo a esa hora', () => {
+    const nueva = { ...cita, id: 'local:1' }
+    const r = aplicarAccionLocal([cita], { tipo: 'agendar', cita: nueva })
+    expect(r).toHaveLength(1)
+    expect(r[0].id).toBe('c0')
+  })
+  it('anular sobre una cita que ya no está no cambia nada', () => {
+    const r = aplicarAccionLocal([cita], { tipo: 'anular', citaId: 'otra' })
+    expect(r).toEqual([cita])
+  })
+})

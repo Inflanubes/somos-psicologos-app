@@ -8,7 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
 import type { Tramo } from './horarios'
-import type { Bloqueo, CitaOcupada } from './disponibilidad'
+import type { Bloqueo } from './disponibilidad'
 import { sumarDias, type EventoCalendario } from './calendario'
 import type { HistorialAgendar } from './calendario-huecos'
 
@@ -27,7 +27,6 @@ export type SemanaCalendario = {
   anuladas: EventoCalendario[]
   historial: HistorialAgendar[]
   tramosDe: Map<string, Tramo[]>
-  citasDe: Map<string, CitaOcupada[]>
   bloqueosDe: Map<string, Bloqueo[]>
 }
 
@@ -42,7 +41,7 @@ export async function cargarSemanaCalendario(
 ): Promise<SemanaCalendario> {
   const ids = p.psicologos.map((x) => x.id)
   const vacio: SemanaCalendario = {
-    citas: [], bloqueos: [], anuladas: [], historial: [], tramosDe: new Map(), citasDe: new Map(), bloqueosDe: new Map(),
+    citas: [], bloqueos: [], anuladas: [], historial: [], tramosDe: new Map(), bloqueosDe: new Map(),
   }
   if (ids.length === 0) return vacio
 
@@ -111,7 +110,6 @@ export async function cargarSemanaCalendario(
   }
 
   const citas: EventoCalendario[] = []
-  const citasDe = new Map<string, CitaOcupada[]>()
   for (const c of filasCitas) {
     if (!c.fecha_cita || !c.hora_cita || !c.psicologo_id) continue
     citas.push({
@@ -120,7 +118,6 @@ export async function cargarSemanaCalendario(
       centroId: c.centro_id ?? null, fecha: c.fecha_cita, hora: c.hora_cita.slice(0, 5), tipoCita: c.tipo_cita,
       iniciales: c.paciente_id ? (iniciales.get(c.paciente_id) ?? null) : null, pacienteId: c.paciente_id ?? null,
     })
-    citasDe.set(c.psicologo_id, [...(citasDe.get(c.psicologo_id) ?? []), { fecha: c.fecha_cita, hora: c.hora_cita, accionId: c.id }])
   }
 
   const anuladas: EventoCalendario[] = []
@@ -156,5 +153,5 @@ export async function cargarSemanaCalendario(
     ])
   }
 
-  return { citas, bloqueos, anuladas, historial, tramosDe, citasDe, bloqueosDe }
+  return { citas, bloqueos, anuladas, historial, tramosDe, bloqueosDe }
 }

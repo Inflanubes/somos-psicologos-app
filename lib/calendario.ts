@@ -125,13 +125,13 @@ export function tramoCubreCelda(tramos: Tramo[], fecha: string, filaHora: string
 export const FILAS_POR_CITA = 2
 
 /**
- * Reparte en columnas las citas de un mismo día que se solapan en el tiempo
- * (cada cita ocupa FILAS_POR_CITA filas desde `fila`). Devuelve, por id, la
- * columna asignada y el total de columnas de su grupo de solapamiento, para
- * pintarlas lado a lado a ancho `1/total` como hace un calendario.
+ * Reparte en columnas los bloques de un mismo día que se solapan en el tiempo
+ * (cada uno ocupa `filas` filas desde `fila`; por defecto FILAS_POR_CITA).
+ * Devuelve, por id, la columna asignada y el total de columnas de su grupo de
+ * solapamiento, para pintarlos lado a lado a ancho `1/total` como hace un calendario.
  */
 export function distribuirColumnas(
-  citas: { id: string; fila: number }[],
+  citas: { id: string; fila: number; filas?: number }[],
   filasPorCita = FILAS_POR_CITA,
 ): Map<string, { col: number; total: number }> {
   const resultado = new Map<string, { col: number; total: number }>()
@@ -153,8 +153,9 @@ export function distribuirColumnas(
       col = finColumnas.length
       finColumnas.push(0)
     }
-    finColumnas[col] = c.fila + filasPorCita
-    finGrupo = Math.max(finGrupo, c.fila + filasPorCita)
+    const fin = c.fila + (c.filas ?? filasPorCita)
+    finColumnas[col] = fin
+    finGrupo = Math.max(finGrupo, fin)
     grupo.push({ id: c.id, col })
   }
   cerrarGrupo()

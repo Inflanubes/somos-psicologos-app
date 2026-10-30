@@ -175,3 +175,17 @@ describe('filtrarEventos con libres y anuladas', () => {
     expect(r.map((e) => e.id)).toEqual(['l1', 'b1'])
   })
 })
+
+describe('distribuirColumnas con altos distintos', () => {
+  it('un libre de una fila y una cita de dos filas a la misma hora van en dos columnas', () => {
+    const r = distribuirColumnas([{ id: 'libre', fila: 4, filas: 1 }, { id: 'cita', fila: 4 }])
+    expect(r.get('libre')?.total).toBe(2)
+    expect(r.get('cita')?.total).toBe(2)
+    expect(r.get('libre')?.col).not.toBe(r.get('cita')?.col)
+  })
+  it('un libre de una fila deja su columna libre para el siguiente libre media hora después', () => {
+    const r = distribuirColumnas([{ id: 'l1', fila: 4, filas: 1 }, { id: 'l2', fila: 5, filas: 1 }])
+    expect(r.get('l1')).toEqual({ col: 0, total: 1 })
+    expect(r.get('l2')).toEqual({ col: 0, total: 1 })
+  })
+})

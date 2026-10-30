@@ -144,10 +144,16 @@ export type AccionLocal =
 /**
  * Estado optimista de las citas tras un envío correcto. Los libres afectados
  * se recalculan fuera (quien llama vuelve a ejecutar `calcularLibres` con las
- * citas actualizadas). No muta la entrada.
+ * citas actualizadas). No muta la entrada. Es idempotente: se vuelve a aplicar
+ * después de cada recarga hasta que Make haya escrito (agendar no duplica una
+ * cita que ya exista del mismo psicólogo a esa fecha y hora).
  */
 export function aplicarAccionLocal(eventos: EventoCalendario[], a: AccionLocal): EventoCalendario[] {
-  if (a.tipo === 'agendar') return [...eventos, a.cita]
+  if (a.tipo === 'agendar') {
+    const c = a.cita
+    const yaEsta = eventos.some((e) => e.tipo === 'cita' && e.psicologoId === c.psicologoId && e.fecha === c.fecha && e.hora === c.hora)
+    return yaEsta ? eventos : [...eventos, c]
+  }
   return eventos.map((e) => {
     if (e.id !== a.citaId) return e
     if (a.tipo === 'anular') return { ...e, tipo: 'anulada' }

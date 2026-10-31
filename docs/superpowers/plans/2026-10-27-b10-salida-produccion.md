@@ -82,7 +82,7 @@ Se marca al ejecutar B10; cada línea remite a su plan.
   - El texto: hoy el paciente recibe el mensaje en el chat de Telegram de Dante (conexión «Dante Bot SPs» del escenario «SPs envio mensajes») y si contesta ahí le responde Dante, así que «no recibimos respuestas» solo será exacto cuando salgan de un número de WhatsApp que no conteste.
   - Si cambia el texto: actualizar el test `lib/mensajes-pie.test.ts`, el manual (fichas Comunicaciones y Mensajes) y la prueba C de `docs/pruebas-aceptacion-b9.md`.
   - Al cambiar el contacto, los mensajes ya enviados con el pie antiguo no importan (el pie solo se añade al enviar).
-- [ ] Manual republicado con las novedades de todos los bloques. **Reabierto 31-10 tarde:** `index.html` actualizado con las cuatro solicitudes del call center (check OK); falta republicar tras el merge. Antes: Versión 24 del artifact (31-10-2026, con B9); B10 no cambia nada que el cliente vea.
+- [x] Manual republicado con las novedades de todos los bloques. **31-10 tarde:** `main` en acf46c1 subido a GitHub (fast-forward de `b10-salida-produccion`) y manual republicado con las cuatro solicitudes del call center (versión 25 del artifact). Antes: Versión 24 del artifact (31-10-2026, con B9); B10 no cambia nada que el cliente vea.
 - [ ] Memoria de Claude actualizada (estado del tablero).
 
 ### Task 3: Prueba de aceptación con el cliente

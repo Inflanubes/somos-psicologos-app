@@ -28,7 +28,7 @@
 
 ## Decisiones del plan que afinan la especificación
 
-1. **Conteo de cambios por `accion_id`** en `acciones_historial` (la fila `Agendar cita` conserva su `id` en los cambios desde la migración 011), filtrando `origen in (dante,call_center)`. Si el historial no tiene `origen` en filas antiguas (null), no cuentan.
+1. **(Corregido en la revisión final, 31-10-2026:** el `origen` del historial es el de quien creó la cita; se cuenta por `realizado_por = 'Dante'` o `realizado_por_id` de un perfil `call_center`.) **Conteo de cambios por `accion_id`** en `acciones_historial` (la fila `Agendar cita` conserva su `id` en los cambios desde la migración 011), filtrando `origen in (dante,call_center)`. Si el historial no tiene `origen` en filas antiguas (null), no cuentan.
 2. **Aviso del segundo cambio sin derivación:** `avisarAgente` (Telegram al primer agente disponible de la cadena `general`) para no crear un recordatorio cada 15 min por algo que ya está hecho.
 3. **`ConsultarPaciente` con `or=`** para que las personas registradas desde este chat aparezcan en la identificación; se reutiliza el flujo de "2 o más resultados".
 4. **Tercero con otro psicólogo del mismo tipo:** no se cambia nada; aviso "Paciente duplicado" a Make y `necesita_equipo` con texto neutro. Sonia puede cambiarlo por "se agenda con el psicólogo que ya tiene".

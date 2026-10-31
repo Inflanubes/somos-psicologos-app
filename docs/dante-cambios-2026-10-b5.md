@@ -2,6 +2,8 @@
 
 Fecha: 31-10-2026. Rama `b5-dante-terceros`. Plan: `docs/superpowers/plans/2026-10-27-b5-dante-citas-terceros.md`.
 
+> **⚠️ NO importar este Dante antes de aplicar la migración 019.** Sin ella Dante no reconoce a nadie, no da altas y no gestiona citas: todas sus consultas piden las columnas nuevas y Supabase las rechaza.
+
 ## Qué cambia para el paciente
 
 - **Cita para otra persona adulta** (un hijo mayor de edad, un padre, un amigo): Dante pide sus datos y su móvil y agenda a su nombre. La ficha queda con el teléfono real de esa persona y apunta a quién la pidió ("a petición de …" en Pacientes). Si esa persona ya era paciente, Dante no lo dice.
@@ -42,11 +44,12 @@ Nada nuevo que construir.
 
 Importar `n8n/workflows/somos-main-agent.json` en un workflow **nuevo** (no en el de producción), con el Telegram de prueba. Una casilla por prueba:
 
+- [ ] **1b. Cita para alguien que ya es paciente con su propio teléfono** (dado de alta en la app): Dante no la agenda ni dice que ya era paciente; responde «El equipo revisará la solicitud…» y hay fila en `derivaciones` con el detalle.
 - [ ] **1. Cita para otra persona.** "Quiero una cita para mi padre" → Dante pide nombre, móvil, fecha de nacimiento, email, tipo, centro y psicólogo; agenda a nombre del padre.
   Supabase: la ficha nueva tiene `telefono` = móvil del padre, `solicitante_chat` = chat de prueba y `solicitante_id` = ficha de quien escribe. Make recibe «Añadir nuevo paciente» con ese teléfono. En Pacientes, "Añadido por Dante (a petición de …)".
   Repetir con el mismo nombre y móvil → no se crea otra ficha y Dante **no** dice que ya existía.
 - [ ] **2. Pareja.** Alta de pareja dando los datos de una pareja que ya es paciente de adultos → esa ficha gana `psicologo_pareja_id` y las dos fichas tienen `pareja_de` apuntando a la otra; Dante solo dice "Hecho: le enviaremos el consentimiento a …". Con una pareja que no existe → ficha mínima nueva y Make recibe «Añadir nuevo paciente» con su móvil.
-- [ ] **3. Dos cambios.** Con una cita ya movida una vez por Dante: el segundo cambio se hace y Marta (o el siguiente de la cadena) recibe "⚠️ Segundo cambio de cita". Tercer intento: la cita no cambia, hay fila nueva en `derivaciones` y Dante responde "Esta cita ya se ha cambiado dos veces…".
+- [ ] **3. Dos cambios.** (Cuentan los cambios hechos por Dante o por una cuenta de call center, según quién hizo el cambio en el historial; los de agentes y psicólogos no cuentan.) Con una cita ya movida una vez por Dante: el segundo cambio se hace y Marta (o el siguiente de la cadena) recibe "⚠️ Segundo cambio de cita". Tercer intento: la cita no cambia, hay fila nueva en `derivaciones` y Dante responde "Esta cita ya se ha cambiado dos veces…".
 - [ ] **4. Consentimiento.** "No me ha llegado el consentimiento" → Make recibe «Reenviar consentimiento» (adulto: su teléfono; con un menor: los tutores). Si la ficha tiene `consentimiento = true`, Dante dice que ya consta firmado y lo reenvía igual.
 - [ ] **5. Cita del psicólogo.** Con una cita con `origen = psicologo`: "cámbiala al jueves" → la cita no cambia, hay fila en `derivaciones` con la fecha pedida y Dante responde "Esa cita la gestiona directamente tu psicólogo/a…".
 - [ ] **6. Psicólogo desactivado.** Paciente con psicólogo desactivado pide cita → hay fila en `derivaciones` y Dante responde "Ahora mismo no puedo gestionar esa cita…" **sin** llamar a ContactarAgente (en la ejecución de n8n no aparece ContactarAgente).

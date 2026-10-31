@@ -69,7 +69,11 @@ Se marca al ejecutar B10; cada línea remite a su plan.
 - [ ] Dante: workflows importados en producción: B1 (disponibilidad por centro), B5 (terceros), B7 (comandos y cron a 30 min); chats de Marta, Jaime y Bea en `agentes`.
 - [ ] Horarios: todos los psicólogos activos con horario por centro cargado y revisado (B1 deja la lista de "revísalo").
 - [ ] Accesos: usuario de cada agente, psicólogo y call center creado; perfil Inspección si lo piden.
-- [ ] `CONTACTO_DANTE` (B9) apunta al canal real (Telegram hoy; WhatsApp cuando Meta apruebe).
+- [ ] **Pie de los mensajes (B9, tarea 37b del tablero).** Decisión de Sonia del 31-10-2026: mientras los mensajes salgan por Telegram se queda como está (`Mensaje solo informativo, no recibimos respuestas. Para cualquier cosa, contacta con Dante: 91 166 50 47`). Al pasar a WhatsApp, revisar con Sonia:
+  - El contacto: cambiar `CONTACTO_DANTE` en `lib/mensajes-pie.ts` por el número de WhatsApp de Dante (o el que se decida).
+  - El texto: hoy el paciente recibe el mensaje en el chat de Telegram de Dante (conexión «Dante Bot SPs» del escenario «SPs envio mensajes») y si contesta ahí le responde Dante, así que «no recibimos respuestas» solo será exacto cuando salgan de un número de WhatsApp que no conteste.
+  - Si cambia el texto: actualizar el test `lib/mensajes-pie.test.ts`, el manual (fichas Comunicaciones y Mensajes) y la prueba C de `docs/pruebas-aceptacion-b9.md`.
+  - Al cambiar el contacto, los mensajes ya enviados con el pie antiguo no importan (el pie solo se añade al enviar).
 - [ ] Manual republicado con las novedades de todos los bloques.
 - [ ] Memoria de Claude actualizada (estado del tablero).
 

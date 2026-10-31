@@ -28,9 +28,9 @@ En el workflow principal: `IF Atendido` deja pasar `atendido` y `derivar a <nomb
 
 ## 1. Migración 021 (de madrugada)
 
-- [ ] SQL Editor → pegar `Supabase/migrations/021_derivaciones_grupo.sql` entero → Run. Es idempotente.
-- [ ] Opcional: ejecutar el bloque de comprobación del final del archivo (quitando los `--`): debe dar 0, 0 filas, 0 filas, 2, y el `DELETE` deja la tabla como estaba. (Ya probado en un PostgreSQL 15 local el 31-10.)
-- [ ] Anotar la fecha en la cabecera del archivo (`Aplicada el:`) y en el plan.
+- [x] (31-10-2026) SQL Editor → pegar `Supabase/migrations/021_derivaciones_grupo.sql` entero → Run. Es idempotente.
+- [x] (31-10-2026, dio 2) Opcional: ejecutar el bloque de comprobación del final del archivo (quitando los `--`): debe dar 0, 0 filas, 0 filas, 2, y el `DELETE` deja la tabla como estaba. (Ya probado en un PostgreSQL 15 local el 31-10.)
+- [x] Anotar la fecha en la cabecera del archivo (`Aplicada el:`) y en el plan.
 
 ## 2. Chats de Telegram del equipo (tarea 3)
 

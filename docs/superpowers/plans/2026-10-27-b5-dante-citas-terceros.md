@@ -74,7 +74,7 @@
 **Interfaces:**
 - Produces: columnas `pacientes.solicitante_id uuid | null`, `pacientes.solicitante_chat text | null`; `textoSolicitante(p: { solicitante_id: string | null }, nombrePorId: Map<string, string>): string` → `' (a petición de {nombre})'` o `''` (si el id no está en el mapa: `' (a petición de otra persona)'`).
 
-- [x] **Step 1: Migración.** (escrita el 31-10-2026; **sin aplicar**: Aplicada el: ______) Cabecera de contexto como las anteriores; `ALTER TABLE public.pacientes ADD COLUMN IF NOT EXISTS solicitante_id uuid REFERENCES public.pacientes(id), ADD COLUMN IF NOT EXISTS solicitante_chat text;` + `COMMENT ON COLUMN` para las dos. Idempotente. Anotar `Aplicada el: ______`.
+- [x] **Step 1: Migración.** (escrita y aplicada por Sonia el 31-10-2026) Cabecera de contexto como las anteriores; `ALTER TABLE public.pacientes ADD COLUMN IF NOT EXISTS solicitante_id uuid REFERENCES public.pacientes(id), ADD COLUMN IF NOT EXISTS solicitante_chat text;` + `COMMENT ON COLUMN` para las dos. Idempotente. Anotar `Aplicada el: ______`.
 - [x] **Step 2: Tipos.** Añadir las dos columnas (opcionales en Insert/Update) a la fila de `pacientes` en `types/database.ts`.
 - [x] **Step 3: Test que falla.** En `lib/pacientes-tipos.test.ts`:
 

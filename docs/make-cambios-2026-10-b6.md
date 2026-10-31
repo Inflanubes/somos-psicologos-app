@@ -11,8 +11,8 @@ Escenario: **Formulario Citas Psicologos**. Blueprint de referencia: `Make bluep
   llegan con el mismo texto que siempre.
 - **Supabase: migración `020_baja_medica.sql`** (renombra la etiqueta en cualquier enum que la tenga y actualiza las
   filas antiguas de `acciones_psicologos.motivo_bloqueo`, `acciones_historial` y `formulario_citas_psicologos`).
-  `Aplicada el: ______`
-- **Make:** `Hecho el: ______`
+  `Aplicada el: 31-10-2026 (Sonia)`
+- **Make:** `Hecho el: 31-10-2026 (Sonia)`
 
 ## Qué hay que tocar en Make (tres módulos, en la ruta de la baja)
 
@@ -41,9 +41,9 @@ tocarlos. Tras la migración, *Refresh* en cualquiera de ellos actualiza la list
 
 ## Orden de la madrugada (4–5 h)
 
-- [ ] 1. SQL Editor: ejecutar `Supabase/migrations/020_baja_medica.sql` tal cual. La consulta final debe dar **0** en
+- [x] 1. SQL Editor: ejecutar `Supabase/migrations/020_baja_medica.sql` tal cual. La consulta final debe dar **0** en
       todas las filas. Anotar la fecha arriba y en la cabecera de la migración.
-- [ ] 2. Make, **justo después del paso 1** (entre los dos, una baja de la app de ahora crearía el evento y fallaría
+- [x] 2. Make, **justo después del paso 1** (entre los dos, una baja de la app de ahora crearía el evento y fallaría
       al guardar): módulos 106, 107 y 113 como en la tabla. Guardar el escenario.
 - [ ] 3. Merge de `b6-bloqueos` a `main` y despliegue de la app. No desplegar antes de la migración: la app nueva
       busca los bloqueos con «Baja médica» y, sin la migración, «Modificar un bloqueo» saldría vacío. Al revés pasa lo

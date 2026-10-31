@@ -11,7 +11,7 @@
 <style>
 :root{
   --amarillo:#f5c800; --amarillo-texto:#8a7000;
-  --r-agente:#f5c800; --r-psicologo:#2dd4bf; --r-callcenter:#4a7dd4; --r-dante:#8b6fd6;
+  --r-agente:#f5c800; --r-psicologo:#2dd4bf; --r-callcenter:#4a7dd4; --r-dante:#8b6fd6; --r-inspeccion:#e07a5f;
   --ok:#0f8a7a; --pend:#a86a12; --decision:#6f52bd; --obsoleto:#7a7a7a;
   --radio:16px;
 }
@@ -87,7 +87,7 @@ a{color:inherit; text-decoration-color:var(--acento-texto); text-underline-offse
 @media (max-width:520px){ .ficha dl{grid-template-columns:1fr; gap:2px} .ficha dd{margin-bottom:8px} .ficha{padding:16px} }
 .chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; border-radius:999px; padding:2px 10px; border:1px solid var(--borde); color:var(--texto); white-space:nowrap; background:var(--superficie)}
 .chip::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--c)}
-.chip.r-agente{--c:var(--r-agente)} .chip.r-psicologo{--c:var(--r-psicologo)} .chip.r-callcenter{--c:var(--r-callcenter)} .chip.r-dante{--c:var(--r-dante)}
+.chip.r-agente{--c:var(--r-agente)} .chip.r-psicologo{--c:var(--r-psicologo)} .chip.r-callcenter{--c:var(--r-callcenter)} .chip.r-dante{--c:var(--r-dante)} .chip.r-inspeccion{--c:var(--r-inspeccion)}
 .badge{display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.03em; border-radius:6px; padding:2px 8px; color:#fff; white-space:nowrap; vertical-align:1px}
 .b-prod{background:var(--ok)} .b-pend{background:var(--pend)} .b-decision{background:var(--decision)} .b-obsoleto{background:var(--obsoleto)}
 code.ui{font:400 .88em/1.45 "DM Mono",monospace; background:var(--ui-fondo); border-radius:5px; padding:1px 6px; box-decoration-break:clone; -webkit-box-decoration-break:clone}
@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-10-31">31-10-2026</time><span><b>Resumen de pacientes</b> y <b>Actividad de citas</b> (antes Panel General y Estadísticas) con fechas libres, filtro por centro y los indicadores nuevos; ocupación y horas bloqueadas se calculan a partir del horario de cada psicólogo. Nuevo perfil <b>Inspección</b>. <a href="#p-panel">Ver Resumen de pacientes</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Avisos de Dante al equipo: las emergencias llegan a la vez a Jaime y a Bea, y el primero que responde «atendido» la cierra para los dos; cualquiera puede pasar una derivación a otra persona respondiendo «derivar a <var>Marta</var>»; los recordatorios pasan a ser cada 30 minutos. Además queda escrito que los cambios en la app se suben solo de madrugada. <a href="#dante">Ver Dante</a> · <a href="#madrugada">Ver cuándo se sube</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Bloqueos más sencillos en Citas: el desplegable de acción queda en <code class="ui">Agendar cita</code>, <code class="ui">Añadir nuevo paciente</code>, <code class="ui">Cambiar cita</code>, <code class="ui">Cancelar cita</code> y <code class="ui">Bloquear / Desbloquear agenda</code>; al elegir esta última aparece <code class="ui">Tipo de bloqueo</code> con vacaciones, asuntos propios, baja médica, modificar un bloqueo, bloqueo general y desbloquear. Los psicólogos sin permiso de bloqueo ya no ven ningún bloqueo (se los pone un agente). «Baja laboral» pasa a llamarse <b>Baja médica</b> en toda la app, también en Estadísticas y en las bajas antiguas. <a href="#p-citas">Ver Citas</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Dante: pide citas para otra persona adulta (un hijo mayor de edad, un padre, un amigo) con su móvil, y en Pacientes se ve «Añadido por Dante (a petición de <var>Ana López</var>)»; ofrece registrar a la pareja en las citas de pareja; reenvía el consentimiento cuando se lo piden; no cambia ni anula las citas que creó un psicólogo; una cita se puede cambiar dos veces (al segundo cambio Marta recibe un aviso; al tercero, Dante pasa la conversación al equipo); y cuando no puede seguir avisa él mismo al equipo, así nadie se queda esperando una llamada que no va a llegar. <a href="#dante">Ver Dante</a>.</span></li>
@@ -276,7 +277,7 @@ footer img{width:28px; height:28px}
   <div class="flujo" aria-label="Recorrido de una acción">
     <span>App o Dante</span><b>→</b><span>Make</span><b>→</b><span>Google Calendar</span><b>+</b><span>estado del paciente</span><b>+</b><span>aviso por Telegram</span>
   </div>
-  <p class="nota">Cada acción queda además apuntada en un historial. De ahí salen las Estadísticas, y así se sabe siempre quién hizo qué y cuándo: un psicólogo, un agente, alguien del call center o Dante.</p>
+  <p class="nota">Cada acción queda además apuntada en un historial. De ahí sale la Actividad de citas, y así se sabe siempre quién hizo qué y cuándo: un psicólogo, un agente, alguien del call center o Dante.</p>
   <p class="nota" id="madrugada"><b>Cambios en la app solo de madrugada (4–5 h).</b> Las versiones nuevas de la app, de Dante y de los cambios en la base de datos se suben de madrugada, o con Dante y Make parados, para no cortar a nadie que esté trabajando o hablando con Dante.</p>
 </div></section>
 <!-- SECCION-ROLES -->
@@ -288,7 +289,7 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Agente</h3><span class="chip r-agente">Agente</span></div>
       <dl>
         <dt>Quién es</dt><dd>El equipo interno de Somos.</dd>
-        <dt>Empieza en</dt><dd>Panel General.</dd>
+        <dt>Empieza en</dt><dd>Resumen de pacientes.</dd>
         <dt>Puede</dt><dd>Todo. Es el único rol que da de alta usuarios, los activa o desactiva y restablece contraseñas. En Citas elige cualquier centro y psicólogo, también los desactivados, y usa todas las acciones, bloqueos incluidos.</dd>
         <dt>Detalle</dt><dd>Al agendar, la app le avisa si se sale del horario del psicólogo, pero le deja seguir. Ver <a href="#disponibilidad">Horarios y disponibilidad</a>.</dd>
       </dl>
@@ -311,22 +312,31 @@ footer img{width:28px; height:28px}
         <dt>No puede</dt><dd>Cambiar ni anular las citas que creó un psicólogo (solo avisar a los agentes), vincular a un psicólogo nuevo a un paciente que ya tiene otro, crear ni cambiar bloqueos (sí los ve en el Calendario), ver el estado del consentimiento, ver datos globales ni gestionar usuarios.</dd>
       </dl>
     </article>
+    <article class="ficha">
+      <div class="ficha-cab"><h3>Inspección</h3><span class="chip r-inspeccion">Inspección</span></div>
+      <dl>
+        <dt>Quién es</dt><dd>Un perfil aparte, con su propio usuario, para quien tenga que trabajar como un agente sin ver los números de la clínica.</dd>
+        <dt>Empieza en</dt><dd>Calendario.</dd>
+        <dt>Puede</dt><dd>Lo mismo que un agente: citas, pacientes, comunicaciones, psicólogos, agentes y usuarios. No es de solo lectura.</dd>
+        <dt>No puede</dt><dd>Ver <a href="#p-panel">Resumen de pacientes</a> ni <a href="#p-estadisticas">Actividad de citas</a>: no salen en su menú y, si escribe la dirección, la app le devuelve al Calendario.</dd>
+      </dl>
+    </article>
   </div>
 
   <p class="subtitulo">Qué pantalla ve cada uno</p>
   <div class="tabla"><table>
-    <thead><tr><th>Pantalla</th><th>Agente</th><th>Psicólogo</th><th>Call center</th></tr></thead>
+    <thead><tr><th>Pantalla</th><th>Agente</th><th>Psicólogo</th><th>Call center</th><th>Inspección</th></tr></thead>
     <tbody>
-      <tr><td><a href="#p-citas">Citas</a></td><td class="si">Sí, cualquier centro y psicólogo</td><td class="si">Sí, su agenda (página de inicio)</td><td class="si">Sí: citas, altas y avisos al equipo</td></tr>
-      <tr><td><a href="#p-calendario">Calendario</a></td><td class="si">Sí</td><td class="no">No</td><td class="si">Sí (página de inicio)</td></tr>
-      <tr><td><a href="#p-pacientes">Pacientes</a></td><td class="si">Todos, y cambia sus psicólogos</td><td class="si">Solo los suyos</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-comunicaciones">Comunicaciones</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-mensajes">Mensajes</a></td><td class="no">No</td><td class="si">Sí</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-panel">Panel General</a></td><td class="si">Sí, datos globales (página de inicio)</td><td class="no">No</td><td class="si">Solo su actividad</td></tr>
-      <tr><td><a href="#p-estadisticas">Estadísticas</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-usuarios">Usuarios</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-psicologos">Psicólogos</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-agentes">Agentes</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td><a href="#p-citas">Citas</a></td><td class="si">Sí, cualquier centro y psicólogo</td><td class="si">Sí, su agenda (página de inicio)</td><td class="si">Sí: citas, altas y avisos al equipo</td><td class="si">Como agente</td></tr>
+      <tr><td><a href="#p-calendario">Calendario</a></td><td class="si">Sí</td><td class="no">No</td><td class="si">Sí (página de inicio)</td><td class="si">Sí (página de inicio)</td></tr>
+      <tr><td><a href="#p-pacientes">Pacientes</a></td><td class="si">Todos, y cambia sus psicólogos</td><td class="si">Solo los suyos</td><td class="no">No</td><td class="si">Como agente</td></tr>
+      <tr><td><a href="#p-comunicaciones">Comunicaciones</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
+      <tr><td><a href="#p-mensajes">Mensajes</a></td><td class="no">No</td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td><a href="#p-panel">Resumen de pacientes</a></td><td class="si">Sí, datos globales (página de inicio)</td><td class="no">No</td><td class="si">Solo su actividad</td><td class="no">No</td></tr>
+      <tr><td><a href="#p-estadisticas">Actividad de citas</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td><a href="#p-usuarios">Usuarios</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
+      <tr><td><a href="#p-psicologos">Psicólogos</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
+      <tr><td><a href="#p-agentes">Agentes</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
     </tbody>
   </table></div>
 
@@ -334,7 +344,7 @@ footer img{width:28px; height:28px}
   <div class="dos">
     <article class="ficha">
       <h3>Dar de alta a alguien</h3>
-      <p>Lo hace un agente desde <a href="#p-usuarios">Usuarios</a>: elige Psicólogo, Agente o Call center, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
+      <p>Lo hace un agente desde <a href="#p-usuarios">Usuarios</a>: elige Psicólogo, Agente, Call center o Inspección, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
       <p>Cada psicólogo es <b>una sola ficha</b>, aunque trabaje en varios centros. Al darlo de alta hay que indicar su calendario de Google, al menos un centro y al menos un tipo de consulta: adultos, pareja o infantil. Centros, tipos, horario y permisos se cambian después en <a href="#p-psicologos">Psicólogos</a>.</p>
       <p class="nota">Desactivar a alguien no borra su cuenta ni le impide entrar. Un psicólogo desactivado sigue gestionando sus citas y su agenda, pero no puede añadir pacientes nuevos; los agentes lo ven en Citas como <code class="ui"><var>Marta</var> (inactivo)</code> y pueden hacer de todo con él; el call center y Dante no lo ven. En call center conviene una cuenta por persona, porque todo lo que hace queda firmado con su nombre.</p>
     </article>
@@ -523,18 +533,22 @@ footer img{width:28px; height:28px}
     </article>
 
     <article class="ficha" id="p-panel">
-      <div class="ficha-cab"><h3>Panel General</h3><span class="chip r-agente">Agente</span><span class="chip r-callcenter">Call center</span></div>
+      <div class="ficha-cab"><h3>Resumen de pacientes</h3><span class="chip r-agente">Agente</span><span class="chip r-callcenter">Call center</span></div>
       <dl>
-        <dt>Agente</dt><dd>Vista global: total de pacientes, agendados, nuevos esta semana, tasa de anulación, menores y psicólogos activos. Gráficos por estado y por psicólogo, y la tabla de pacientes.</dd>
-        <dt>Call center</dt><dd>Se llama <code class="ui">Mi actividad</code> y solo muestra lo suyo, con el filtro <code class="ui">Hoy</code>, <code class="ui">Esta semana</code> o <code class="ui">Este mes</code>: citas agendadas, cambiadas y canceladas, pacientes añadidos, gráficos por psicólogo, centro y día, y sus últimas acciones.</dd>
+        <dt>Periodo y centro</dt><dd>Arriba se eligen las fechas (<code class="ui">Desde</code> y <code class="ui">Hasta</code>) o un atajo: <code class="ui">Hoy</code>, <code class="ui">Esta semana</code>, <code class="ui">Este mes</code>, <code class="ui">Mes pasado</code>, <code class="ui">Últimos 90 días</code> o <code class="ui">Desde siempre</code>. Debajo, <code class="ui">Todos los centros</code> o un centro. Todo lo de la página se recalcula con esa elección, y el enlace se puede compartir tal cual.</dd>
+        <dt>Cuadros</dt><dd><code class="ui">Pacientes citados</code> (personas distintas con cita), <code class="ui">Citas agendadas</code> (citas no anuladas), <code class="ui">Pacientes nuevos</code>, <code class="ui">Tasa de anulación</code>, <code class="ui">Menores nuevos</code>, <code class="ui">Psicólogos activos</code> (los que tienen alguna cita; quien tuvo la agenda bloqueada todo el periodo no cuenta), <code class="ui">Parejas nuevas</code> (las dos fichas de una pareja cuentan como una) y <code class="ui">Ocupación</code> (citas entre huecos libres del horario). Las citas cuentan por el día de la sesión, no por cuándo se agendaron.</dd>
+        <dt>Gráficas</dt><dd>Dos, cada una con un desplegable. El quesito: <code class="ui">Citas por tipo de terapia</code>, <code class="ui">Nuevos pacientes por centro</code>, <code class="ui">Nuevos pacientes por canal de entrada</code> (Dante, agentes, call center, psicólogos) y <code class="ui">Distribución por estado</code>. Las barras, con todos los psicólogos activos de mayor a menor: nuevos pacientes, citas, ocupación y anulación, por psicólogo o por centro. Debajo sigue la tabla de pacientes recientes.</dd>
+        <dt>Ojo con la ocupación</dt><dd>Un hueco es una hora del horario del psicólogo, sin los días bloqueados. Solo es fiable desde que cada psicólogo tiene su horario cargado; para fechas anteriores sale <code class="ui">Sin horario cargado: la ocupación no se puede calcular.</code> Puede pasar del 100 % porque también cuentan las citas puestas fuera de horario.</dd>
+        <dt>Call center</dt><dd>Se llama <code class="ui">Mi actividad</code> y solo muestra lo suyo, con el mismo selector de fechas: citas agendadas, cambiadas y canceladas, pacientes añadidos, gráficos por psicólogo, centro y día, y sus últimas acciones.</dd>
       </dl>
     </article>
 
     <article class="ficha" id="p-estadisticas">
-      <div class="ficha-cab"><h3>Estadísticas</h3><span class="chip r-agente">Agente</span></div>
+      <div class="ficha-cab"><h3>Actividad de citas</h3><span class="chip r-agente">Agente</span></div>
       <dl>
         <dt>Para qué</dt><dd>Ver cómo se mueve la agenda de los psicólogos: bloqueos, vacaciones, asuntos propios, bajas, y citas agendadas, cambiadas y anuladas.</dd>
-        <dt>Qué se hace</dt><dd>Elegir periodo (este mes, últimos 30 o 90 días, desde siempre), centro y psicólogo. Hay un detalle por psicólogo y las últimas diez acciones.</dd>
+        <dt>Qué se hace</dt><dd>Elegir fechas o atajo y centro (igual que en Resumen de pacientes) y, si se quiere, un psicólogo. Aquí cuenta el día en que se hizo cada acción. Hay un detalle por psicólogo y las últimas diez acciones.</dd>
+        <dt>En horas</dt><dd><code class="ui">Bloqueos en agenda</code>, <code class="ui">Vacaciones</code>, <code class="ui">Asuntos propios</code> y <code class="ui">Baja médica</code> se miden en horas del horario del psicólogo: una semana bloqueada de alguien que trabaja 15 horas a la semana son 15 h. Sin horario cargado salen 0 h. Las barras tienen un desplegable para ver bloqueos, vacaciones, asuntos propios, baja médica, citas agendadas o citas anuladas por psicólogo, con todos los psicólogos activos.</dd>
         <dt>De dónde sale</dt><dd>Del historial de acciones: todo lo que se hace en Citas o con Dante queda ahí.</dd>
       </dl>
     </article>
@@ -542,9 +556,9 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-usuarios">
       <div class="ficha-cab"><h3>Usuarios</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>Solo las cuentas para entrar en la app: dar de alta a psicólogos, agentes y call center, y enviarles el acceso o una contraseña nueva. Cómo trabaja cada psicólogo se gestiona en <a href="#p-psicologos">Psicólogos</a>.</dd>
-        <dt>Pestañas</dt><dd><code class="ui">Psicólogos</code>, <code class="ui">Agentes</code> y <code class="ui">Call center</code>, cada una con su número de personas. Se ven el nombre, el email, los centros y el estado.</dd>
-        <dt>Botones</dt><dd><code class="ui">+ Nuevo usuario</code> abre el formulario de alta. En cada fila, <code class="ui">Enviar acceso</code> y <code class="ui">Generar contraseña</code>. En Agentes y Call center hay además un interruptor para activar o desactivar. El estado de un psicólogo se ve aquí, pero se cambia en Psicólogos.</dd>
+        <dt>Para qué</dt><dd>Solo las cuentas para entrar en la app: dar de alta a psicólogos, agentes, call center e inspección, y enviarles el acceso o una contraseña nueva. Cómo trabaja cada psicólogo se gestiona en <a href="#p-psicologos">Psicólogos</a>.</dd>
+        <dt>Pestañas</dt><dd><code class="ui">Psicólogos</code>, <code class="ui">Agentes</code>, <code class="ui">Call center</code> e <code class="ui">Inspección</code>, cada una con su número de personas. Se ven el nombre, el email, los centros y el estado.</dd>
+        <dt>Botones</dt><dd><code class="ui">+ Nuevo usuario</code> abre el formulario de alta. En cada fila, <code class="ui">Enviar acceso</code> y <code class="ui">Generar contraseña</code>. En Agentes, Call center e Inspección hay además un interruptor para activar o desactivar. El estado de un psicólogo se ve aquí, pero se cambia en Psicólogos.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">

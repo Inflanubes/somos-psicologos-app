@@ -69,7 +69,7 @@ export function KpiCard({
 }
 
 // ─── Section card wrapper ─────────────────────────────────────────────────────
-export function Card({ title, children }: { title: string; children: React.ReactNode }) {
+export function Card({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div
       style={{
@@ -80,18 +80,21 @@ export function Card({ title, children }: { title: string; children: React.React
         boxShadow: '0 2px 8px rgba(47,90,174,0.06)',
       }}
     >
-      <h3
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#3a4a6b',
-          marginBottom: 20,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {title}
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        <h3
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: '#3a4a6b',
+            margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+          }}
+        >
+          {title}
+        </h3>
+        {right}
+      </div>
       {children}
     </div>
   )

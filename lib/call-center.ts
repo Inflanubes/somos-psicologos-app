@@ -22,8 +22,8 @@ export function puedeGestionarCita(rol: Rol, origenCita: string | null): boolean
 export const ACCIONES_SOLICITUD = ['Otro', 'Sin disponibilidad', 'hablar con psicologo', 'Cambio solicitado'] as const
 export type AccionSolicitud = (typeof ACCIONES_SOLICITUD)[number]
 
-/** Las que se ofrecen hoy en pantalla. Añadir aquí las que apruebe Jaime (tarea 51 del tablero). */
-export const ACCIONES_SOLICITUD_ACTIVAS: readonly AccionSolicitud[] = ['Otro']
+/** Las que se ofrecen en pantalla, en este orden. Jaime aprobó las cuatro el 31-10-2026 (tarea 51 del tablero). */
+export const ACCIONES_SOLICITUD_ACTIVAS: readonly AccionSolicitud[] = ['Sin disponibilidad', 'hablar con psicologo', 'Cambio solicitado', 'Otro']
 
 /** Etiquetas de pantalla; a Make viaja siempre el texto de ACCIONES_SOLICITUD. */
 export const ETIQUETA_SOLICITUD: Record<AccionSolicitud, string> = {

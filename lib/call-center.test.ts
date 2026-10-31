@@ -33,9 +33,9 @@ describe('puedeGestionarCita', () => {
 })
 
 describe('acciones de solicitud', () => {
-  it('lista exacta de Make, solo Otro activa, etiquetas de pantalla', () => {
+  it('lista exacta de Make, las cuatro activas (Jaime, 31-10-2026), etiquetas de pantalla', () => {
     expect([...ACCIONES_SOLICITUD]).toEqual(['Otro', 'Sin disponibilidad', 'hablar con psicologo', 'Cambio solicitado'])
-    expect([...ACCIONES_SOLICITUD_ACTIVAS]).toEqual(['Otro'])
+    expect([...ACCIONES_SOLICITUD_ACTIVAS]).toEqual(['Sin disponibilidad', 'hablar con psicologo', 'Cambio solicitado', 'Otro'])
     expect(ETIQUETA_SOLICITUD).toEqual({
       Otro: 'Otros (aviso al equipo)',
       'Sin disponibilidad': 'Sin cita disponible',

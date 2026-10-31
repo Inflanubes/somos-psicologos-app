@@ -71,10 +71,10 @@ Se marca al ejecutar B10; cada línea remite a su plan.
 - [x] Migraciones aplicadas en orden y con fecha en su plan: 016 (B1) · 017 (B3) · 018 (B4) · 019 (B5) · 020 (B6) · 021 (B7) · 022 (B8). Comprobado 31-10-2026: las siete constan como aplicadas en su plan y en el tablero (016 el 29-10, 017 el 30-10, 018–022 el 31-10).
 - [ ] Variables de entorno en producción: las de B1–B9 que cada plan liste (al menos `DANTE_API_TOKEN` de B1 y `MAKE_MENSAJES_WEBHOOK`).
   **Quedó así (31-10):** el código lee siete variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DANTE_API_TOKEN`, `MAKE_CALL_CENTER_WEBHOOK`, `MAKE_PSYCHOLOGIST_WEBHOOK`, `MAKE_MENSAJES_WEBHOOK`. `DANTE_API_TOKEN` verificado en producción el 29-10; las demás las confirma Sonia en el panel del hosting (desde aquí no se ve).
-- [ ] Make: apartados hechos por Sonia: operador (B3, `docs/make-cambios-2026-10-b3.md`), reenvío de consentimiento (B4, `docs/make-cambios-2026-10-b4.md`), Baja médica (B6, `docs/make-cambios-2026-10-b6.md`), rutas 6–9 del call center si el cliente las aprobó (`docs/make-cambios-2026-10-22.md`).
+- [x] Make: apartados hechos por Sonia: operador (B3, `docs/make-cambios-2026-10-b3.md`), reenvío de consentimiento (B4, `docs/make-cambios-2026-10-b4.md`), Baja médica (B6, `docs/make-cambios-2026-10-b6.md`), rutas 6–9 del call center si el cliente las aprobó (`docs/make-cambios-2026-10-22.md`).
   **Quedó así (31-10):** operador (B3), reenvío de consentimiento (B4) y Baja médica (B6) hechos por Sonia el 31-10. Rutas 6–9: Make listo desde el 22-10; en la app solo «Otro» activa hasta que Jaime diga cuáles encender (tarea 51; una línea en `ACCIONES_SOLICITUD_ACTIVAS` de `lib/call-center.ts`). No bloquea la activación.
-- [ ] Dante: workflows importados en producción: B1 (disponibilidad por centro), B5 (terceros), B7 (comandos y cron a 30 min); chats de Marta, Jaime y Bea en `agentes`.
-  **Quedó así (31-10):** B1 importado el 29-10, B5 importado el 31-10, chats de los cuatro agentes en `agentes` (021). **Falta:** importar los dos JSON de B7 (comandos + cron a 30 min) y sus pruebas P1–P6 (`docs/dante-cambios-2026-10-b7.md`).
+- [x] Dante: workflows importados en producción: B1 (disponibilidad por centro), B5 (terceros), B7 (comandos y cron a 30 min); chats de Marta, Jaime y Bea en `agentes`.
+  **Quedó así (31-10):** B1 importado el 29-10, B5 importado el 31-10, chats de los cuatro agentes en `agentes` (021). B7 importado por Sonia el 31-10 por la tarde; sus pruebas P1–P7 van en el documento de Jaime.
 - [ ] Horarios: todos los psicólogos activos con horario por centro cargado y revisado (B1 deja la lista de "revísalo").
 - [ ] Accesos: usuario de cada agente, psicólogo y call center creado; perfil Inspección si lo piden.
 - [x] **Pie de los mensajes (B9, tarea 37b del tablero).** Decisión de Sonia del 31-10-2026: mientras los mensajes salgan por Telegram se queda como está (`Mensaje solo informativo, no recibimos respuestas. Para cualquier cosa, contacta con Dante: 91 166 50 47`). Al pasar a WhatsApp, revisar con Sonia:
@@ -82,7 +82,7 @@ Se marca al ejecutar B10; cada línea remite a su plan.
   - El texto: hoy el paciente recibe el mensaje en el chat de Telegram de Dante (conexión «Dante Bot SPs» del escenario «SPs envio mensajes») y si contesta ahí le responde Dante, así que «no recibimos respuestas» solo será exacto cuando salgan de un número de WhatsApp que no conteste.
   - Si cambia el texto: actualizar el test `lib/mensajes-pie.test.ts`, el manual (fichas Comunicaciones y Mensajes) y la prueba C de `docs/pruebas-aceptacion-b9.md`.
   - Al cambiar el contacto, los mensajes ya enviados con el pie antiguo no importan (el pie solo se añade al enviar).
-- [x] Manual republicado con las novedades de todos los bloques. Versión 24 del artifact (31-10-2026, con B9); B10 no cambia nada que el cliente vea.
+- [ ] Manual republicado con las novedades de todos los bloques. **Reabierto 31-10 tarde:** `index.html` actualizado con las cuatro solicitudes del call center (check OK); falta republicar tras el merge. Antes: Versión 24 del artifact (31-10-2026, con B9); B10 no cambia nada que el cliente vea.
 - [ ] Memoria de Claude actualizada (estado del tablero).
 
 ### Task 3: Prueba de aceptación con el cliente

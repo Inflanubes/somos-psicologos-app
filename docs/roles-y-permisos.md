@@ -83,7 +83,7 @@ que crea se guarda como `inspeccion` y se muestra como "Inspección".
 
 Al entrar aterriza en **Calendario**. En Citas puede elegir **cualquier centro y cualquier psicólogo** y usar las
 acciones **Agendar cita, Cambiar cita, Cancelar cita y Añadir nuevo paciente**, más las **solicitudes al
-equipo** activas (hoy "Otros (aviso al equipo)"). No ve las acciones de bloqueo de agenda (bloquear,
+equipo** (las cuatro, ver abajo). No ve las acciones de bloqueo de agenda (bloquear,
 desbloquear, vacaciones, asuntos propios, baja, modificar bloqueo).
 
 Reglas propias del call center en Citas (bloque B3, 30-10-2026):
@@ -119,12 +119,12 @@ texto exacto que esperan las rutas 6 a 9 (`docs/make-cambios-2026-10-22.md`, fue
 
 | En pantalla | Texto a Make | Qué hace Make | Activa hoy |
 |---|---|---|---|
+| Sin cita disponible | `Sin disponibilidad` | Paciente a `Sin disponibilidad` + Telegram | Sí |
+| Pendiente de psicólogo | `hablar con psicologo` | Paciente a `Psicólogo` + Telegram | Sí |
+| Cambio de psicólogo | `Cambio solicitado` | Paciente a `Cambio solicitado` + Telegram | Sí |
 | Otros (aviso al equipo) | `Otro` | Telegram a los agentes con el comentario (obligatorio) | Sí |
-| Sin cita disponible | `Sin disponibilidad` | Paciente a `Sin disponibilidad` + Telegram | No |
-| Pendiente de psicólogo | `hablar con psicologo` | Paciente a `Psicólogo` + Telegram | No |
-| Cambio de psicólogo | `Cambio solicitado` | Paciente a `Cambio solicitado` + Telegram | No |
 
-Para activar las tres pendientes (cuando Jaime decida, tarea 51 del tablero) basta añadirlas a
+Jaime aprobó las cuatro el 31-10-2026 (tarea 51 del tablero). Se ofrecen en el orden de
 `ACCIONES_SOLICITUD_ACTIVAS` en `lib/call-center.ts`; las pestañas de Comunicaciones se llenan solas.
 En el Panel General ve **solo su propia actividad** ("Mi actividad", componente `PanelCallCenter`): citas agendadas, cambiadas y canceladas y pacientes añadidos por él, con filtro hoy / esta semana / este mes, gráfico de citas por día, reparto por centro y psicólogo y sus últimas acciones. Nunca ve los datos globales de la clínica ni la tabla de pacientes. No ve pacientes, equipo, usuarios ni comunicaciones.
 

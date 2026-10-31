@@ -36,6 +36,7 @@ import {
   type FrecuenciaRepeticion,
 } from '@/lib/citas-recurrentes'
 import { esGestor } from '@/lib/roles'
+import { MOSTRAR_RECOMENDACION } from '@/lib/flags'
 import {
   accionesMenu, tiposBloqueoDisponibles, accionReal, ACCION_BLOQUEOS, type AccionPsicologo,
 } from '@/lib/acciones-menu'
@@ -2202,35 +2203,37 @@ export default function PsicologosPage() {
                 </div>
               )}
 
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '12px 14px',
-                  border: `1.5px solid ${npEsRecomendado ? BRAND_BLUE : '#dde1ea'}`,
-                  background: npEsRecomendado ? '#eef2fb' : '#fafbfc',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  transition: 'background 0.12s, border 0.12s',
-                  fontSize: 14,
-                  color: '#272626',
-                  fontWeight: 500,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={npEsRecomendado}
-                  onChange={(e) => setNpEsRecomendado(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: BRAND_BLUE, cursor: 'pointer' }}
-                />
-                <span>
-                  Nueva recomendación{' '}
-                  <span style={{ fontWeight: 400, color: '#888', fontSize: 13 }}>
-                    — el paciente queda recomendado por este psicólogo, en estado &quot;Revisar recomendado&quot; hasta que el equipo lo valide
+              {MOSTRAR_RECOMENDACION && (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '12px 14px',
+                    border: `1.5px solid ${npEsRecomendado ? BRAND_BLUE : '#dde1ea'}`,
+                    background: npEsRecomendado ? '#eef2fb' : '#fafbfc',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    transition: 'background 0.12s, border 0.12s',
+                    fontSize: 14,
+                    color: '#272626',
+                    fontWeight: 500,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={npEsRecomendado}
+                    onChange={(e) => setNpEsRecomendado(e.target.checked)}
+                    style={{ width: 18, height: 18, accentColor: BRAND_BLUE, cursor: 'pointer' }}
+                  />
+                  <span>
+                    Nueva recomendación{' '}
+                    <span style={{ fontWeight: 400, color: '#888', fontSize: 13 }}>
+                      — el paciente queda recomendado por este psicólogo, en estado &quot;Revisar recomendado&quot; hasta que el equipo lo valide
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              )}
 
               {!npEsMenor && npTipoConsulta === 'pareja' && (
                 <div>

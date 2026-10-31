@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { conPie, llevaPie } from '@/lib/mensajes-pie'
 
 export async function POST(req: NextRequest) {
   const url = process.env.MAKE_MENSAJES_WEBHOOK
@@ -7,6 +8,8 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
+  // Todo mensaje a pacientes lleva el pie informativo; un cuerpo sin texto o el aviso al psicólogo van tal cual.
+  if (typeof body?.mensaje === 'string' && llevaPie(body.tipo)) body.mensaje = conPie(body.mensaje)
 
   const makeRes = await fetch(url, {
     method: 'POST',

@@ -7,6 +7,8 @@ import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO } from '@/lib/paciente
 import { getPerfilActual } from '@/lib/perfil'
 import type { Actor } from '@/lib/consentimiento'
 import ConsentimientoAcciones from '../_components/ConsentimientoAcciones'
+import VistaPreviaMensaje from '../_components/VistaPreviaMensaje'
+import { conPie } from '@/lib/mensajes-pie'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PacienteBase = {
@@ -515,6 +517,7 @@ export default function MensajesPage() {
                               fontFamily: 'inherit',
                             }}
                           />
+                          {mensajesDudoso[p.id]?.trim() && <VistaPreviaMensaje texto={mensajesDudoso[p.id]} />}
                           <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
                             {enviados[p.id] ? (
                               <Badge text="✓ Enviado" color="blue" />
@@ -622,8 +625,9 @@ export default function MensajesPage() {
                               fontSize: 12.5,
                               color: '#4a5870',
                               fontStyle: 'italic',
+                              whiteSpace: 'pre-wrap',
                             }}>
-                              {mensaje}
+                              {conPie(mensaje)}
                             </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -694,8 +698,9 @@ export default function MensajesPage() {
                       color: '#4a5870',
                       marginBottom: 12,
                       fontStyle: 'italic',
+                      whiteSpace: 'pre-wrap',
                     }}>
-                      {MENSAJES_ESPERA[estado]}
+                      {conPie(MENSAJES_ESPERA[estado] ?? '')}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {lista.map(p => (

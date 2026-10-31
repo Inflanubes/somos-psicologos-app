@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getPerfilActual } from '@/lib/perfil'
 import { filtroPacientesDePsicologo } from '@/lib/pacientes-tipos'
+import { conPie } from '@/lib/mensajes-pie'
+import VistaPreviaMensaje from '../_components/VistaPreviaMensaje'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Ficha única del psicólogo (migración 014); sus centros vienen de
@@ -327,7 +329,7 @@ export default function MensajesPsicologoPage() {
                       whiteSpace: 'pre-wrap',
                       marginBottom: 14,
                     }}>
-                      {mensajeResena}
+                      {conPie(mensajeResena)}
                     </div>
                   ) : (
                     <div style={{
@@ -373,9 +375,10 @@ export default function MensajesPsicologoPage() {
                       outline: 'none',
                       boxSizing: 'border-box',
                       fontFamily: 'inherit',
-                      marginBottom: 14,
+                      marginBottom: mensajeLibre.trim() ? 0 : 14,
                     }}
                   />
+                  {mensajeLibre.trim() && <div style={{ marginBottom: 14 }}><VistaPreviaMensaje texto={mensajeLibre} /></div>}
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     {enviados[keyActual] ? (
                       <Badge text="✓ Enviado" color="blue" />

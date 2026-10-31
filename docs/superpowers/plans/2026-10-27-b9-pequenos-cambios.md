@@ -106,3 +106,12 @@ describe('conPie', () => {
 - [x] **Step 3: Resto de textos** del manual (Accesos, Agentes, pie de mensajes con el texto exacto, recomendación oculta) y entrada en Novedades: `Usuarios se llama ahora Accesos. En Agentes solo se edita el teléfono. Los mensajes a pacientes llevan un pie que indica que no se reciben respuestas y cómo contactar con Dante. La casilla "Nueva recomendación" ya no se muestra.`
 - [ ] **Step 4: Republicar el manual** (artifact de la memoria "Manual Somos para dueños"); tablero: 30, 33, 37, 27 → hecha; merge a `main` tras `npm run build`.
 - [x] **Step 5: Commit** `git commit -m "B9: manual (estados de paciente, Accesos, pie de mensajes)"`
+
+## Cierre (31-10-2026)
+
+tsc limpio, 241 tests y `npm run build` OK. Revisión independiente: 0 críticos. Pendiente antes o durante las pruebas de aceptación:
+
+- **Contacto del pie:** hoy `91 166 50 47` (teléfono de la clínica) tras «contacta con Dante:». Sonia decide: enlace del bot o cambiar el texto a «contacta con la clínica». Una constante en `lib/mensajes-pie.ts`.
+- **Make (escenario de envío de mensajes):** el export de marzo solo confirma que `mensaje_dudoso` y `mensaje_espera` mandan `{{1.mensaje}}`. Comprobar en el escenario vivo que `mensaje_sin_disponibilidad`, `solicitar_resena` y `mensaje_libre` también envían el campo `mensaje` (si montan su propio texto, el pie no llega). Prueba de aceptación 4: enviar uno de cada tipo.
+- **Posible fallo anterior a B9:** en el export viejo, la ruta `notificar_psicólogo` filtra con tilde y envía a `{{1.paciente.telefono}}`. Comprobar en Make que el aviso al psicólogo va al teléfono del psicólogo.
+- Menores diferidos: Agentes no muestra el error concreto del servidor al guardar el teléfono; `conPie` no reconoce un pie antiguo si cambia el contacto.

@@ -1,45 +1,16 @@
-import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Centro, Psicologo } from '@/types/database'
 import { KpiCard, Card } from './Cards'
 import CitasPorDiaChart from './CitasPorDiaChart'
+import FiltroPeriodo from './FiltroPeriodo'
+import { diasDelRango, enRango, etiquetaRango, fechaMadrid, sumarDias, type Rango } from '@/lib/periodo'
 
 // ─── Panel personal del call center ──────────────────────────────────────────
 // Sustituye al Panel General para el rol call_center: solo muestra la actividad
 // del usuario logueado (citas y pacientes que ha registrado él), nunca los datos
 // globales de la clínica.
 
-export type Periodo = 'hoy' | 'semana' | 'mes'
-
-const PERIODOS: { key: Periodo; label: string }[] = [
-  { key: 'hoy', label: 'Hoy' },
-  { key: 'semana', label: 'Esta semana' },
-  { key: 'mes', label: 'Este mes' },
-]
-
 const TZ = 'Europe/Madrid'
-
-/** 'YYYY-MM-DD' de un instante en hora de Madrid. */
-function fechaMadrid(d: Date | string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(
-    new Date(d)
-  )
-}
-
-/** Suma días a una fecha 'YYYY-MM-DD' (aritmética en UTC, sin efectos de zona). */
-function sumarDias(fecha: string, dias: number): string {
-  const d = new Date(fecha + 'T00:00:00Z')
-  d.setUTCDate(d.getUTCDate() + dias)
-  return d.toISOString().slice(0, 10)
-}
-
-function inicioPeriodo(hoy: string, periodo: Periodo): string {
-  if (periodo === 'hoy') return hoy
-  if (periodo === 'mes') return hoy.slice(0, 7) + '-01'
-  // Semana: desde el lunes.
-  const dia = new Date(hoy + 'T00:00:00Z').getUTCDay() // 0 = domingo
-  return sumarDias(hoy, -((dia + 6) % 7))
-}
 
 function etiquetaDia(fecha: string): string {
   return new Date(fecha + 'T00:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' })
@@ -130,37 +101,35 @@ function accionBadge(accion: string): React.CSSProperties {
 export default async function PanelCallCenter({
   userId,
   nombre,
-  periodo,
+  rango,
+  hoy,
 }: {
   userId: string
   nombre: string
-  periodo: Periodo
+  rango: Rango
+  hoy: string
 }) {
   const supabase = await createSupabaseServerClient()
 
-  const hoy = fechaMadrid(new Date())
-  const inicio = inicioPeriodo(hoy, periodo)
   // Margen de un día para no perder filas por la diferencia UTC/Madrid; luego se
   // filtra por la fecha real en hora de Madrid.
-  const desdeIso = sumarDias(inicio, -1) + 'T00:00:00Z'
+  let consultaAcciones = supabase
+    .from('acciones_historial')
+    .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id, creado_en')
+    .eq('realizado_por_id', userId)
+  if (rango.desde) consultaAcciones = consultaAcciones.gte('creado_en', sumarDias(rango.desde, -1) + 'T00:00:00Z')
+  if (rango.hasta) consultaAcciones = consultaAcciones.lt('creado_en', sumarDias(rango.hasta, 2) + 'T00:00:00Z')
 
   const [accionesRes, psicologosRes, centrosRes] = await Promise.all([
     // Historial (migración 011): una fila por acción, atribuida a quien la hizo
     // y con la fecha real, aunque la cita se haya anulado o cambiado después.
-    supabase
-      .from('acciones_historial')
-      .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id, creado_en')
-      .eq('realizado_por_id', userId)
-      .gte('creado_en', desdeIso)
-      .order('creado_en', { ascending: false }),
+    consultaAcciones.order('creado_en', { ascending: false }),
     supabase.from('psicologos').select('id, nombre'),
     supabase.from('centros').select('id, nombre'),
   ])
 
   const acciones = ((accionesRes.data ?? []) as AccionRow[]).filter((a) => {
-    if (!a.creado_en) return false
-    const f = fechaMadrid(a.creado_en)
-    return f >= inicio && f <= hoy
+    return !!a.creado_en && enRango(fechaMadrid(a.creado_en), rango)
   })
   const psicologos = (psicologosRes.data ?? []) as Pick<Psicologo, 'id' | 'nombre'>[]
   const centros = (centrosRes.data ?? []) as Pick<Centro, 'id' | 'nombre'>[]
@@ -174,8 +143,7 @@ export default async function PanelCallCenter({
     .from('pacientes')
     .select('id, fecha_incorporacion')
     .eq('created_by_id', userId)
-    .gte('fecha_incorporacion', inicio)
-  if (!pacRes.error) pacientesAnadidos = (pacRes.data ?? []).length
+  if (!pacRes.error) pacientesAnadidos = (pacRes.data ?? []).filter((p) => enRango(p.fecha_incorporacion, rango)).length
 
   // Nombres de los pacientes de las últimas acciones.
   const ultimas = acciones.slice(0, 15)
@@ -198,7 +166,10 @@ export default async function PanelCallCenter({
     porDia[f] = (porDia[f] ?? 0) + 1
   }
   const dias: { label: string; count: number }[] = []
-  for (let f = inicio; f <= hoy; f = sumarDias(f, 1)) dias.push({ label: etiquetaDia(f), count: porDia[f] ?? 0 })
+  // "Desde siempre" empieza en la primera acción; sin acciones, solo hoy.
+  const diasPorDefecto = Object.keys(porDia).sort()
+  for (const f of diasDelRango(rango, { primero: diasPorDefecto[0] ?? hoy, ultimo: hoy }))
+    dias.push({ label: etiquetaDia(f), count: porDia[f] ?? 0 })
 
   // ── Reparto por psicólogo y por centro (citas agendadas) ──
   const porPsicologo: Record<string, number> = {}
@@ -214,7 +185,6 @@ export default async function PanelCallCenter({
   const listaPsicologos = Object.entries(porPsicologo).sort((a, b) => b[1] - a[1]).slice(0, 8)
   const listaCentros = Object.entries(porCentro).sort((a, b) => b[1] - a[1])
 
-  const tituloPeriodo = PERIODOS.find((p) => p.key === periodo)?.label.toLowerCase() ?? ''
 
   return (
     <div className="page-pad" style={{ maxWidth: 1400 }}>
@@ -233,32 +203,10 @@ export default async function PanelCallCenter({
           Mi actividad
         </h1>
         <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
-          {nombre} · citas y pacientes que has registrado {tituloPeriodo}
+          {nombre} · citas y pacientes que has registrado · {etiquetaRango(rango)}
         </p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          {PERIODOS.map((p) => {
-            const activo = p.key === periodo
-            return (
-              <Link
-                key={p.key}
-                href={`/dashboard?periodo=${p.key}`}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 20,
-                  border: '1.5px solid',
-                  borderColor: activo ? '#2f5aae' : 'rgba(47,90,174,0.2)',
-                  background: activo ? '#eef2fb' : '#fff',
-                  color: activo ? '#254d99' : '#4a5870',
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  transition: 'background 0.15s, border-color 0.15s',
-                }}
-              >
-                {p.label}
-              </Link>
-            )
-          })}
+        <div style={{ marginTop: 14 }}>
+          <FiltroPeriodo rango={rango} hoy={hoy} />
         </div>
       </div>
 

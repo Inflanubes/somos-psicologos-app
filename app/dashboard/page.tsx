@@ -5,7 +5,8 @@ import PsicologosChart from './_components/PsicologosChart'
 import PacientesTable from './_components/PacientesTable'
 import type { PacienteRow } from './_components/PacientesTable'
 import { KpiCard, Card } from './_components/Cards'
-import PanelCallCenter, { type Periodo } from './_components/PanelCallCenter'
+import PanelCallCenter from './_components/PanelCallCenter'
+import { fechaMadrid, rangoDeParams } from '@/lib/periodo'
 import { redirect } from 'next/navigation'
 
 
@@ -75,7 +76,7 @@ function formatDateES(date: Date) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string }>
+  searchParams: Promise<{ desde?: string; hasta?: string; periodo?: string; centro?: string }>
 }) {
   const supabase = await createSupabaseServerClient()
 
@@ -89,9 +90,9 @@ export default async function DashboardPage({
   // Inspección no ve los paneles de estadísticas: se le manda al Calendario antes de consultar nada.
   if (perfil?.rol === 'inspeccion') redirect('/dashboard/calendario')
   if (user && perfil?.rol === 'call_center') {
-    const { periodo } = await searchParams
-    const p: Periodo = periodo === 'hoy' || periodo === 'semana' ? periodo : 'mes'
-    return <PanelCallCenter userId={user.id} nombre={perfil.nombre} periodo={p} />
+    const hoy = fechaMadrid(new Date())
+    const rango = rangoDeParams(await searchParams, hoy)
+    return <PanelCallCenter userId={user.id} nombre={perfil.nombre} rango={rango} hoy={hoy} />
   }
 
   const [{ data: pacientes }, { data: psicologos }, { data: centros }] =

@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { ESTADOS_PACIENTE, type EstadoPaciente, type TipoCita, type Rol } from '@/types/database'
 import { supabase } from '@/lib/supabase'
 import { etiquetaOrigen } from '@/lib/call-center'
-import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, type ColumnaPsicologo } from '@/lib/pacientes-tipos'
+import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, textoSolicitante, type ColumnaPsicologo } from '@/lib/pacientes-tipos'
 import type { Actor } from '@/lib/consentimiento'
 import ConsentimientoAcciones from '../_components/ConsentimientoAcciones'
 
@@ -21,6 +21,8 @@ export interface PacienteTableRow {
   psicologo_pareja_id: string | null
   psicologo_infantil_id: string | null
   anadido_por: string | null
+  /** Ficha de quien pidió la cita por esta persona (Dante, migración 019). */
+  solicitante_id: string | null
   origen: string | null
   /** Operador del call center que dio el alta (migración 017); solo lo ve el agente. */
   operador: string | null
@@ -80,6 +82,8 @@ export default function PacientesClient({
   actor: Actor
 }) {
   const [pacientes, setPacientes] = useState(pacientesIniciales)
+  // Nombres de la lista ya cargada, para "a petición de …" sin otra consulta.
+  const nombrePorId = useMemo(() => new Map(pacientes.map((p) => [p.id, p.nombre])), [pacientes])
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<EstadoPaciente | ''>('')
   // Panel inline para cambiar (o quitar) el psicólogo de cada tipo de un paciente. Solo agentes.
@@ -354,6 +358,7 @@ export default function PacientesClient({
                   </td>
                   <td data-label="Añadido por" style={{ padding: '13px 14px', color: '#4a5870', whiteSpace: 'nowrap' }}>
                     {p.anadido_por ?? '—'}
+                    {textoSolicitante(p, nombrePorId)}
                     {etiquetaOrigen(p.origen, p.operador, rol) && (
                       <span style={{ marginLeft: 6, color: '#8899bb', fontSize: 11.5 }}>
                         {etiquetaOrigen(p.origen, p.operador, rol)}

@@ -67,6 +67,7 @@ export default async function PacientesPage() {
       .map(([t, id]) => `${ETIQUETA_TIPO[t]}: ${psicologoMap[id] ?? '—'}`)
       .join(' · ') || 'Sin asignar',
     anadido_por: p.created_by ?? null,
+    solicitante_id: p.solicitante_id ?? null,
     origen: p.origen ?? null,
     operador: p.operador ?? null,
     estado: p.estado,

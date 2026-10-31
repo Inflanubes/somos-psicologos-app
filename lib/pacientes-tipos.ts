@@ -118,3 +118,9 @@ export function evaluarDuplicado(nuevo: NuevoPaciente, existentes: PacienteExist
     columnaOcupadaPor: ocupadaPor ?? null,
   }
 }
+
+/** Etiqueta "a petición de …" para fichas que Dante creó a petición de otra persona (B5). */
+export function textoSolicitante(p: { solicitante_id: string | null }, nombrePorId: Map<string, string>): string {
+  if (!p.solicitante_id) return ''
+  return ` (a petición de ${nombrePorId.get(p.solicitante_id) ?? 'otra persona'})`
+}

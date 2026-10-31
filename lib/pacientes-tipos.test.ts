@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   COLUMNA_PSICOLOGO, normalizarNombre, filtroPacientesDePsicologo, tiposDePaciente,
-  tiposDisponibles, evaluarDuplicado, type PacienteExistente,
+  tiposDisponibles, evaluarDuplicado, textoSolicitante, type PacienteExistente,
 } from './pacientes-tipos'
 
 const base = (over: Partial<PacienteExistente> = {}): PacienteExistente => ({
@@ -159,3 +159,10 @@ describe('evaluarDuplicado: menor y tutor con el mismo teléfono (B4, tarea 41)'
     )).toEqual({ tipo: 'ninguno' })
   })
 })
+
+describe('textoSolicitante', () => {
+  const mapa = new Map([['p1', 'Ana López']]);
+  it('sin solicitante → vacío', () => expect(textoSolicitante({ solicitante_id: null }, mapa)).toBe(''));
+  it('con solicitante conocido', () => expect(textoSolicitante({ solicitante_id: 'p1' }, mapa)).toBe(' (a petición de Ana López)'));
+  it('con solicitante desconocido', () => expect(textoSolicitante({ solicitante_id: 'zz' }, mapa)).toBe(' (a petición de otra persona)'));
+});

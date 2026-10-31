@@ -122,6 +122,9 @@ export type Paciente = {
   consentimiento_marcado_en: string | null
   /** La otra persona de la pareja (migración 018). */
   pareja_de: string | null
+  /** Quién pidió la cita por esta persona (migración 019, Dante): su ficha si era paciente y el chat. */
+  solicitante_id: string | null
+  solicitante_chat: string | null
 }
 
 export type AccionCallCenter = {
@@ -246,6 +249,8 @@ export type PacienteInsert = {
   consentimiento_marcado_por?: string | null
   consentimiento_marcado_en?: string | null
   pareja_de?: string | null
+  solicitante_id?: string | null
+  solicitante_chat?: string | null
 }
 
 export type FormularioCitasPsicologosInsert = {

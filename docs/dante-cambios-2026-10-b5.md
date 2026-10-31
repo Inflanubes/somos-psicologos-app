@@ -41,7 +41,7 @@ Nada nuevo que construir.
 Revisado en el blueprint exportado el 31-10-2026 (`Make blueprints/Formulario Citas Psicologos.blueprint.json`): en la ruta 14 los envíos del consentimiento son los **últimos** módulos (250 y 251 a los tutores, 254 al paciente) y en la ruta 16 «Reenviar consentimiento», los 271, 272 y 273. **Ninguno de los seis tiene gestor de errores**; el resto de envíos a pacientes del escenario sí lo tienen (avisan al chat de Be Banana). Hoy ya les llega un teléfono real en cada alta hecha desde la app, así que esto no es nuevo de B5.
 
 - [ ] **Comprobar sin enviar nada:** en el historial del escenario, abrir la ejecución de un alta reciente hecha desde la app (paciente con su móvil real). Si el módulo 254 sale en rojo con "chat not found" y el escenario sigue activo, Make aguanta el error; solo queda la ejecución marcada como fallida.
-- [ ] **Recomendado igualmente (5 minutos):** en los módulos 250, 251, 254, 271, 272 y 273, botón derecho → «Add error handler» → **Ignore**. Así un móvil que Telegram no conoce no deja ejecuciones en error ni hay riesgo de que Make desactive el escenario por errores seguidos. Se quita cuando estos envíos pasen a WhatsApp.
+- [x] **Hecho por Sonia el 31-10-2026.** En los módulos 250, 251, 254, 271, 272 y 273, botón derecho → «Add error handler» → **Ignore**. Así un móvil que Telegram no conoce no deja ejecuciones en error ni hay riesgo de que Make desactive el escenario por errores seguidos. Se quita cuando estos envíos pasen a WhatsApp.
 - [ ] Comprobar que la ruta «Reenviar consentimiento» (B4) está activa. Dante manda el mismo sobre que la app, con `psicologo_id` del psicólogo de referencia y `origen: dante`.
 
 ## 3. Importar el Dante nuevo y probarlo

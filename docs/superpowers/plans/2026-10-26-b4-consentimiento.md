@@ -165,7 +165,7 @@ it('un menor con el teléfono de un adulto existente (su padre) no es duplicado'
 - Create: `docs/make-cambios-2026-10-b4.md` (ruta `Reenviar consentimiento`: filtro por `datosProcesados.accion`, mensaje a `telefono` o a `tutor1_telefono`/`tutor2_telefono` con `datosProcesados.enlace`, Telegram ahora / WhatsApp después), `docs/arranque-consentimientos.md` (tarea 57: el día de la entrega, listado de pacientes con consentimiento pendiente, aviso a psicólogos, uso de "Marcar firmado" para los que firmaron en papel y "Reenviar" para el resto).
 
 - [x] **Step 1: Escribir los dos documentos.** (30-10-2026)
-- [ ] **Step 2: Migración 018** aplicada por Sonia (de madrugada): `Aplicada el: ______`. Ruta de Make creada: `Hecha el: ______`.
+- [x] **Step 2: Migración 018** aplicada por Sonia (de madrugada): `Aplicada el: 31-10-2026`. Ruta de Make creada: `Hecha el: 31-10-2026`.
 - [ ] **Step 3: Pruebas de aceptación** 1–5: [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5
 - [x] **Step 4: Manual** (Pacientes: botones; Citas: segunda persona) + `check-manual.mjs` *(hecho en la rama; **republicar al fusionar**)*. Memoria "Seguridad pendiente": RLS no impide desmarcar desde el cliente *(anotado)*.
 - [ ] **Step 5: Tablero** — 38, 39, 41 → `hecha`; 40 → `hecha (segunda persona opcional; si Jaime dice "siempre 2", hacerla obligatoria)`; 57 → documento listo, se ejecuta en B10; B4 → `hecha`.

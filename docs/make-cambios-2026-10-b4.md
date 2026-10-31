@@ -9,11 +9,11 @@ Escenario: **Formulario Citas Psicologos** (el mismo de `make-cambios-2026-10-22
 - **App: hecho** en la rama `b4-consentimiento` (30-10-2026).
 - **Supabase: migración `018_consentimiento_manual.sql`** (`pacientes`: `consentimiento_origen`,
   `consentimiento_marcado_por`, `consentimiento_marcado_en`, `pareja_de`). La aplica Sonia de madrugada.
-  `Aplicada el: ______`
+  `Aplicada el: 31-10-2026`
   **Aplicar la migración antes de desplegar la app.** Si la app sale antes, las pantallas cargan igual (leen con
   `select('*')`), pero «Marcar firmado», «Desmarcar» y el alta de pareja con segunda persona fallan al guardar
   con un error visible hasta que esté la migración.
-- **Make: pendiente de Sonia.** `Hecha el: ______`
+- **Make: hecho.** `Hecha el: 31-10-2026`
 
 ## Qué manda la app
 

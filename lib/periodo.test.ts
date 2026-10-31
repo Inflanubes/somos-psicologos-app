@@ -42,4 +42,9 @@ describe('periodo', () => {
     expect(etiquetaRango({ desde: '', hasta: '' })).toBe('Desde siempre')
     expect(sumarDias('2026-10-31', 1)).toBe('2026-11-01')
   })
+  it('años absurdos (al teclear el año en el input) no valen y "Desde siempre" no baja de 2000', () => {
+    expect(rangoDeParams({ desde: '0002-10-01', hasta: '2026-10-31' }, HOY)).toEqual({ desde: '', hasta: '2026-10-31' })
+    expect(rangoDeParams({ desde: '0202-10-01' }, HOY)).toEqual(rangoDeAtajo('mes', HOY))
+    expect(diasDelRango({ desde: '', hasta: '2000-01-02' }, { primero: '1900-01-01', ultimo: '2000-01-02' })).toEqual(['2000-01-01', '2000-01-02'])
+  })
 })

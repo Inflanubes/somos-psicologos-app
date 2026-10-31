@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   citasDelPeriodo, tasa, horasTramos, horasBloqueo, horasAbiertas, kpisResumen, parejasNuevas, serieBarras,
-  contarPor, ocupacionPor, anulacionPor, horasBloqueoPor,
+  contarPor, ocupacionPor, anulacionPor, horasBloqueoPor, esAnulada,
   type CitaKpi, type PacienteKpi, type BloqueoKpi, type TramoKpi,
 } from './kpis'
 
@@ -166,5 +166,14 @@ describe('kpis', () => {
     expect(horasBloqueoPor([bloqueoA], tramosA, OCT, LIM, 'motivo').get('Vacaciones')).toBe(25)
     expect(horasBloqueoPor([bloqueoA], tramosA, OCT, LIM, 'psicologo').get('A')).toBe(25)
     expect(horasBloqueoPor([{ ...bloqueoA, motivo_bloqueo: null }], tramosA, OCT, LIM, 'motivo').get('Otros')).toBe(25)
+  })
+
+  it('esAnulada: Cancelar cita sí; activo=false solo si el historial tiene su anulación', () => {
+    const canceladas = new Set(['c2'])
+    expect(esAnulada({ id: 'c1', accion: 'Cancelar cita', activo: true }, canceladas)).toBe(true)
+    // activo=false de la migración 003 (cita pasada, atendida): no es anulación.
+    expect(esAnulada({ id: 'c3', accion: 'Agendar cita', activo: false }, canceladas)).toBe(false)
+    expect(esAnulada({ id: 'c2', accion: 'Agendar cita', activo: false }, canceladas)).toBe(true)
+    expect(esAnulada({ id: 'c4', accion: 'Agendar cita', activo: true }, canceladas)).toBe(false)
   })
 })

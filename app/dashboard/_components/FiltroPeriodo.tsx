@@ -7,7 +7,9 @@ import { ATAJOS, atajoDeRango, type AtajoKey, type Rango } from '@/lib/periodo'
 // Selector de periodo compartido (B8): fechas libres Desde / Hasta, atajos y,
 // opcionalmente, pastillas de centro. Todo viaja en la URL (?desde&hasta o
 // ?periodo, y ?centro) para que la página servidor recalcule y el enlace se
-// pueda compartir. Conserva el resto de parámetros de la URL.
+// pueda compartir. Conserva el resto de parámetros de la URL. Las fechas se
+// aplican al salir del campo o con Intro: al teclear el año, cada tecla daría
+// un año intermedio (0002, 0020…) y una recarga.
 
 type Props = {
   rango: Rango
@@ -101,20 +103,24 @@ export default function FiltroPeriodo({ rango, hoy, centros, centroId, limpiarAl
         <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={etiqueta}>Desde</span>
           <input
+            key={'desde-' + rango.desde}
             type="date"
-            value={rango.desde}
+            defaultValue={rango.desde}
             max={rango.hasta || undefined}
-            onChange={(e) => elegirFecha('desde', e.target.value)}
+            onBlur={(e) => e.target.value !== rango.desde && elegirFecha('desde', e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
             style={inputFecha}
           />
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={etiqueta}>Hasta</span>
           <input
+            key={'hasta-' + rango.hasta}
             type="date"
-            value={rango.hasta}
+            defaultValue={rango.hasta}
             min={rango.desde || undefined}
-            onChange={(e) => elegirFecha('hasta', e.target.value)}
+            onBlur={(e) => e.target.value !== rango.hasta && elegirFecha('hasta', e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
             style={inputFecha}
           />
         </label>

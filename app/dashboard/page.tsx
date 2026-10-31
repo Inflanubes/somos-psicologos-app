@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import type { Centro, EstadoPaciente, Paciente, Psicologo } from '@/types/database'
+import type { Centro, EstadoPaciente, Paciente, Psicologo, Rol } from '@/types/database'
+import { HOME_POR_ROL, rutaPermitida } from '@/lib/roles'
 import type { PacienteRow } from './_components/PacientesTable'
 import PanelCallCenter from './_components/PanelCallCenter'
 import ResumenDashboard, { type BarraKey, type QuesitoKey } from './_components/ResumenDashboard'
@@ -8,7 +9,7 @@ import type { DatoQuesito } from './_components/GraficaQuesito'
 import { diasDelRango, enRango, etiquetaRango, fechaMadrid, rangoDeParams } from '@/lib/periodo'
 import { leerTodas } from '@/lib/leer-todas'
 import {
-  anulacionPor, citasDelPeriodo, contarPor, ETIQUETA_ORIGEN, ETIQUETA_TIPO, kpisResumen, ocupacionPor, serieBarras,
+  anulacionPor, citasDelPeriodo, contarPor, esAnulada, ETIQUETA_ORIGEN, ETIQUETA_TIPO, kpisResumen, ocupacionPor, serieBarras,
   type BloqueoKpi, type CitaKpi, type DatoBarra, type PacienteKpi, type TramoKpi,
 } from '@/lib/kpis'
 
@@ -66,14 +67,16 @@ export default async function DashboardPage({
     ? await supabase.from('perfiles').select('nombre, rol').eq('id', user.id).maybeSingle()
     : { data: null }
   // Inspección no ve los paneles de estadísticas: se le manda al Calendario antes de consultar nada.
-  if (perfil?.rol === 'inspeccion') redirect('/dashboard/calendario')
   if (user && perfil?.rol === 'call_center') {
     return <PanelCallCenter userId={user.id} nombre={perfil.nombre} rango={rango} hoy={hoy} />
   }
+  // Psicólogo e inspección no ven los datos globales: a su página de inicio antes de consultar nada
+  // (RoleGate también lo hace, pero en el cliente, después de que llegue la página).
+  if (perfil && !rutaPermitida(perfil.rol as Rol, '/dashboard')) redirect(HOME_POR_ROL[perfil.rol as Rol] ?? '/dashboard/calendario')
 
   const centroId = params.centro && params.centro !== 'all' ? params.centro : null
 
-  const [centrosRes, psicologosRes, pcRes, citasRes, pacientesRes, horariosRes, bloqueosRes] = await Promise.all([
+  const [centrosRes, psicologosRes, pcRes, citasRes, pacientesRes, horariosRes, bloqueosRes, anulacionesRes] = await Promise.all([
     supabase.from('centros').select('id, nombre').order('nombre'),
     supabase.from('psicologos').select('id, nombre, activo'),
     supabase.from('psicologos_centros').select('psicologo_id, centro_id'),
@@ -107,7 +110,17 @@ export default async function DashboardPage({
       if (rango.desde) q = q.or(`fecha_bloqueo_fin.gte.${rango.desde},fecha_bloqueo_fin.is.null`)
       return q
     })(),
+    // Anulaciones del historial: distinguen una cita anulada de una cita pasada que la
+    // migración 003 dejó en activo = false.
+    leerTodas<{ id: string; accion_id: string | null }>((a, b) => {
+      let q = supabase.from('acciones_historial').select('id, accion_id').eq('accion', 'Cancelar cita')
+      if (rango.desde) q = q.gte('fecha_cita', rango.desde)
+      if (rango.hasta) q = q.lte('fecha_cita', rango.hasta)
+      if (centroId) q = q.eq('centro_id', centroId)
+      return q.order('id').range(a, b)
+    }),
   ])
+  const idsConAnulacion = new Set(anulacionesRes.data.map((h) => h.accion_id).filter((x): x is string => !!x))
 
   const centros = (centrosRes.data ?? []) as Pick<Centro, 'id' | 'nombre'>[]
   const psicologos = (psicologosRes.data ?? []) as Pick<Psicologo, 'id' | 'nombre' | 'activo'>[]
@@ -121,7 +134,7 @@ export default async function DashboardPage({
     centro_id: c.centro_id,
     fecha_cita: c.fecha_cita,
     tipo_cita: c.tipo_cita,
-    anulada: c.accion === 'Cancelar cita' || c.activo === false,
+    anulada: esAnulada(c, idsConAnulacion),
   }))
   const pacientesKpi: PacienteKpi[] = pacientes.map((p) => ({
     id: p.id,

@@ -65,6 +65,20 @@ export const ETIQUETA_TIPO: Record<string, string> = {
 /** Motivo de un bloqueo sin motivo guardado. */
 export const MOTIVO_SIN_DATO = 'Otros'
 
+/**
+ * Una fila de acciones_psicologos es una cita anulada si su acción es 'Cancelar
+ * cita', o si tiene activo = false Y el historial guarda su anulación. Sin esto
+ * último, las citas pasadas que la migración 003 dejó en activo = false (sesiones
+ * atendidas) contarían como anuladas.
+ */
+export function esAnulada(
+  c: { id: string; accion: string; activo: boolean | null },
+  idsConAnulacion: Set<string>,
+): boolean {
+  if (c.accion === 'Cancelar cita') return true
+  return c.activo === false && idsConAnulacion.has(c.id)
+}
+
 export function citasDelPeriodo(citas: CitaKpi[], rango: Rango): { activas: CitaKpi[]; anuladas: CitaKpi[] } {
   const activas: CitaKpi[] = []
   const anuladas: CitaKpi[] = []

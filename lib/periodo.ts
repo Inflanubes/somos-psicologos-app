@@ -20,6 +20,9 @@ export const ATAJOS: { key: AtajoKey; label: string }[] = [
 
 const TZ = 'Europe/Madrid'
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/
+/** Nada antes de esto: protege de años a medio teclear (0002…) y de datos basura. */
+const PRIMER_DIA = '2000-01-01'
+const ULTIMO_DIA = '2100-12-31'
 
 /** 'YYYY-MM-DD' de un instante en hora de Madrid. */
 export function fechaMadrid(d: Date | string): string {
@@ -38,7 +41,7 @@ export function sumarDias(fecha: string, n: number): string {
 function esFecha(f: string | undefined): f is string {
   if (!f || !FECHA_RE.test(f)) return false
   const d = new Date(f + 'T00:00:00Z')
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === f
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === f && f >= PRIMER_DIA && f <= ULTIMO_DIA
 }
 
 /** Último día del mes de 'YYYY-MM-DD'. */
@@ -111,7 +114,7 @@ export function enRango(fecha: string | null | undefined, rango: Rango): boolean
  * desde el año 0. Sin límites utilizables → lista vacía.
  */
 export function diasDelRango(rango: Rango, limites: { primero: string; ultimo: string }): string[] {
-  const desde = rango.desde || limites.primero
+  const desde = rango.desde || (limites.primero && limites.primero < PRIMER_DIA ? PRIMER_DIA : limites.primero)
   const hasta = rango.hasta || limites.ultimo
   if (!esFecha(desde) || !esFecha(hasta) || desde > hasta) return []
   const dias: string[] = []

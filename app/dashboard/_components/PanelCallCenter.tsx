@@ -3,6 +3,7 @@ import type { Centro, Psicologo } from '@/types/database'
 import { KpiCard, Card } from './Cards'
 import CitasPorDiaChart from './CitasPorDiaChart'
 import FiltroPeriodo from './FiltroPeriodo'
+import { leerTodas } from '@/lib/leer-todas'
 import { diasDelRango, enRango, etiquetaRango, fechaMadrid, sumarDias, type Rango } from '@/lib/periodo'
 
 // ─── Panel personal del call center ──────────────────────────────────────────
@@ -113,22 +114,24 @@ export default async function PanelCallCenter({
 
   // Margen de un día para no perder filas por la diferencia UTC/Madrid; luego se
   // filtra por la fecha real en hora de Madrid.
-  let consultaAcciones = supabase
-    .from('acciones_historial')
-    .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id, creado_en')
-    .eq('realizado_por_id', userId)
-  if (rango.desde) consultaAcciones = consultaAcciones.gte('creado_en', sumarDias(rango.desde, -1) + 'T00:00:00Z')
-  if (rango.hasta) consultaAcciones = consultaAcciones.lt('creado_en', sumarDias(rango.hasta, 2) + 'T00:00:00Z')
-
   const [accionesRes, psicologosRes, centrosRes] = await Promise.all([
     // Historial (migración 011): una fila por acción, atribuida a quien la hizo
     // y con la fecha real, aunque la cita se haya anulado o cambiado después.
-    consultaAcciones.order('creado_en', { ascending: false }),
+    // Paginado: "Desde siempre" puede pasar de las 1000 filas que da PostgREST.
+    leerTodas<AccionRow>((a, b) => {
+      let q = supabase
+        .from('acciones_historial')
+        .select('id, accion, psicologo_id, paciente_id, fecha_cita, hora_cita, tipo_cita, centro_id, creado_en')
+        .eq('realizado_por_id', userId)
+      if (rango.desde) q = q.gte('creado_en', sumarDias(rango.desde, -1) + 'T00:00:00Z')
+      if (rango.hasta) q = q.lt('creado_en', sumarDias(rango.hasta, 2) + 'T00:00:00Z')
+      return q.order('creado_en', { ascending: false }).order('id').range(a, b)
+    }),
     supabase.from('psicologos').select('id, nombre'),
     supabase.from('centros').select('id, nombre'),
   ])
 
-  const acciones = ((accionesRes.data ?? []) as AccionRow[]).filter((a) => {
+  const acciones = accionesRes.data.filter((a) => {
     return !!a.creado_en && enRango(fechaMadrid(a.creado_en), rango)
   })
   const psicologos = (psicologosRes.data ?? []) as Pick<Psicologo, 'id' | 'nombre'>[]
@@ -139,10 +142,9 @@ export default async function PanelCallCenter({
   // Pacientes añadidos por este usuario (columnas de la migración 011). Si la
   // migración no se ha ejecutado todavía la consulta falla: se muestra "—".
   let pacientesAnadidos: number | null = null
-  const pacRes = await supabase
-    .from('pacientes')
-    .select('id, fecha_incorporacion')
-    .eq('created_by_id', userId)
+  const pacRes = await leerTodas<{ id: string; fecha_incorporacion: string | null }>((a, b) =>
+    supabase.from('pacientes').select('id, fecha_incorporacion').eq('created_by_id', userId).order('id').range(a, b),
+  )
   if (!pacRes.error) pacientesAnadidos = (pacRes.data ?? []).filter((p) => enRango(p.fecha_incorporacion, rango)).length
 
   // Nombres de los pacientes de las últimas acciones.

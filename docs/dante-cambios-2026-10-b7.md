@@ -39,7 +39,6 @@ En el workflow principal: `IF Atendido` deja pasar `atendido` y `derivar a <nomb
 - [ ] Cada uno abre el bot de Dante y escribe cualquier cosa (por ejemplo `hola`).
 - [ ] En n8n, en la ejecución del `Telegram Trigger`, copiar `message.from.id` de cada uno.
 - [ ] Table Editor → `agentes` → en la fila de cada uno, `telefono` = ese número y `activo` = true.
-- [ ] **Jaime como psicólogo (tarea 54):** en Make, abrir el módulo de Telegram que avisa al psicólogo y mirar de dónde saca el chat (la app no guarda el chat de Telegram de los psicólogos: lo tiene Make). Comprobar que el de Jaime está ahí y que Jaime ha abierto el bot.
 
 ## 3. Pruebas en copias (antes de producción)
 
@@ -54,10 +53,10 @@ Importar `somos-main-agent.json` y `somos-escalation-cron.json` como workflows *
 - [ ] **P6 · Recordatorio a los 30 min.** Dejar la derivación de P5 sin atender: a los 15 min no llega nada; entre los 30 y los 60 min llega el recordatorio a Marta, con los dos comandos al final. Luego `atendido`.
 - [ ] Borrar las filas de prueba: `DELETE FROM derivaciones WHERE motivo ILIKE '%prueba B7%';`
 
-## 4. Comprobaciones sin código (tareas 5 y 54)
+## 4. Comprobaciones sin código (tarea 5)
 
 - [ ] **Tarea 5 · Cambio de psicólogo desde Dante.** Con un paciente de prueba, pedir a Dante cambiar de psicólogo. Dante confirma y no deriva. En Make, historial del escenario de Dante: entra una ejecución con `accion = Cambio solicitado` y sale el Telegram a Marta. En la app, el paciente pasa a «Cambio solicitado».
-- [ ] **Tarea 54 · Avisos al psicólogo.** Con Jaime como psicólogo (y su chat dado de alta), hacer desde la app y desde Dante: un alta con cita, un cambio y una anulación. Por cada una, en Make sale el módulo de Telegram al psicólogo sin error y Jaime recibe el mensaje. Si falla con «chat not found», Jaime no ha abierto el bot o el chat no está bien en su ficha.
+- **Tarea 54 · Avisos al psicólogo: no se prueba.** Comprobado el 31-10-2026 en el blueprint: Make solo avisa al psicólogo al bloquear la agenda (módulo 212, chat de `psicologos.telefono`); en altas, cambios y anulaciones no hay aviso. Queda como posible, por decidir con el cliente (tablero, tarea 54). Opcional: un bloqueo de agenda de Jaime y ver a quién llega (hoy su ficha de psicólogo tiene el chat de Sonia).
 
 ## 5. Producción (de madrugada, 4–5 h)
 

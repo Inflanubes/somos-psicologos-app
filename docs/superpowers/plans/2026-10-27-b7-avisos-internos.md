@@ -98,9 +98,9 @@
 - Modify: `docs/manual-somos/index.html` (apartado "Cómo se trabaja": `Cambios en la app solo de madrugada (4–5 h)`; Dante: emergencias a dos personas, "derivar a", recordatorio cada 30 min; nota de que los avisos pasarán a WhatsApp), `docs/backlog-2026-10-21.md` (1, 2, 3, 5, 54, 11, B7), este plan
 
 - [x] **Step 1:** Guion según la especificación (migración 021, chats en `agentes`, pruebas 1–6 de aceptación, comprobaciones 5 y 54 con qué mirar en Make y en Telegram, importación en producción). Casillas y fechas.
-- [ ] **Step 2:** Manual: `node docs/manual-somos/check-manual.mjs` OK; republicar al artifact `FWj2hP27NkTXLFMUQvBuqi`.
+- [x] **Step 2:** Manual: `node docs/manual-somos/check-manual.mjs` OK; republicar al artifact `FWj2hP27NkTXLFMUQvBuqi`.
 - [x] **Step 3:** Tablero: 1, 3, 11 → `hecha` / `verificar`; 5 y 54 → `verificar (guion B7)`; 2 → `espera WhatsApp`. Memoria de Claude: la nota de Dante dice "cron 15 min": cambiar a 30 min cuando se importe.
-- [ ] **Step 4: Commit y merge** — `git add docs && git commit -m "B7 cerrado: guion de Dante, manual y tablero"`; merge a `main` de madrugada.
+- [x] **Step 4: Commit y merge** — `git add docs && git commit -m "B7 cerrado: guion de Dante, manual y tablero"`; merge a `main` de madrugada.
 
 ---
 
@@ -112,3 +112,4 @@
 - Migración 021: escrita, probada en un PostgreSQL 15 local (idempotente y casos de Review Focus 2 y 4). **Aplicada el:** 31-10-2026 (Sonia; comprobación del final del archivo OK).
 - Decisiones tomadas al ejecutar: `derivar()` devuelve también `agente` (nombres unidos con « y ») además de `agentes`, para no romper `failDerivado`; el nodo `IF Atendido` conserva su nombre; copias en `_backups/` con el prefijo `2026-10-31-pre-b7-` (las de `2026-10-31-` ya eran de B5); `derivar_a` lleva `#variable_conflict use_column`; `comando-agente.js` responde con texto de error (no excepción) si el RPC falla, y avisa si la persona a la que se pasa no recibe el Telegram; banco de pruebas `n8n/tools/_pruebas/harness-b7.cjs`.
 - **Revisión independiente (31-10-2026):** 0 críticos. Corregido: las respuestas a `atendido` / `derivar a` dicen cuántas derivaciones y de qué pacientes cuando son varias (los comandos cierran o pasan todo lo pendiente del agente, como pide el diseño: así nadie cierra una sin enterarse); el filtro `IF Atendido` junta espacios dobles y `derivar a marta.` ya funciona; `derivar_a` no duplica la fila si quien recibe ya tenía ese grupo pendiente; el aviso de fallo cuenta envíos fallidos y no promete un recordatorio que iría al mismo chat; esquema de ContactarAgente sin «emergencia (Bea)». Banco de pruebas 16 PASS. Diferidos (menores): carrera entre `atendido` y `derivar a` simultáneos en el mismo grupo (improbable; `FOR UPDATE` si pasara); las funciones RPC se pueden llamar con la clave publishable (dentro de «Seguridad pendiente Supabase»); si quien recibe ya tenía todas las derivaciones, quien la pasa ve «No he podido pasarla…» aunque su fila se cierra.
+- **Cierre (31-10-2026):** merge a `main` de día a petición de Sonia (no hay producción); manual republicado. Tarea 54: no hay aviso al psicólogo en altas/cambios/anulaciones en Make (solo en bloqueos); queda como «posible» en el tablero. Queda de Sonia: importar `somos-main-agent.json` y `somos-escalation-cron.json` y hacer P1–P6 y la tarea 5.

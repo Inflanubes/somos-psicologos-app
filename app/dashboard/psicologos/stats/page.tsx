@@ -10,7 +10,7 @@ import type {
   AccionRecent,
 } from './_components/StatsDashboard'
 
-const MOTIVOS = ['Asuntos propios', 'Vacaciones', 'Baja laboral', 'Otros'] as const
+const MOTIVOS = ['Asuntos propios', 'Vacaciones', 'Baja médica', 'Otros'] as const
 type Motivo = (typeof MOTIVOS)[number]
 
 const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
@@ -171,7 +171,7 @@ export default async function PsicologosStatsPage({
   const citasTotal = cit.filter((r) => r.accion === 'Agendar cita').length
   const citasCambiadas = cit.filter((r) => r.accion === 'Cambiar cita').length
   const citasCanceladas = cit.filter((r) => r.accion === 'Cancelar cita').length
-  const motivoCounts: MotivoCounts = { 'Asuntos propios': 0, Vacaciones: 0, 'Baja laboral': 0, Otros: 0 }
+  const motivoCounts: MotivoCounts = { 'Asuntos propios': 0, Vacaciones: 0, 'Baja médica': 0, Otros: 0 }
   for (const r of bloq) {
     if (r.motivo_bloqueo && r.motivo_bloqueo in motivoCounts) {
       motivoCounts[r.motivo_bloqueo as Motivo] += 1
@@ -192,7 +192,7 @@ export default async function PsicologosStatsPage({
       bloqueos: 0,
       vacaciones: 0,
       asuntos_propios: 0,
-      baja_laboral: 0,
+      baja_medica: 0,
     }
   }
   for (const r of bloq) {
@@ -202,7 +202,7 @@ export default async function PsicologosStatsPage({
     row.bloqueos += 1
     if (r.motivo_bloqueo === 'Vacaciones') row.vacaciones += 1
     if (r.motivo_bloqueo === 'Asuntos propios') row.asuntos_propios += 1
-    if (r.motivo_bloqueo === 'Baja laboral') row.baja_laboral += 1
+    if (r.motivo_bloqueo === 'Baja médica') row.baja_medica += 1
   }
   for (const r of cit) {
     const key = r.psicologo_id ?? undefined
@@ -255,7 +255,7 @@ export default async function PsicologosStatsPage({
         bloqueosTotal,
         vacaciones: motivoCounts['Vacaciones'],
         asuntosPropios: motivoCounts['Asuntos propios'],
-        bajaLaboral: motivoCounts['Baja laboral'],
+        bajaMedica: motivoCounts['Baja médica'],
         citasTotal,
         citasCambiadas,
         citasCanceladas,

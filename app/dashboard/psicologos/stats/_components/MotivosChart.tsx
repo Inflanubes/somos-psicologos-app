@@ -8,7 +8,7 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 const MOTIVO_COLORS: Record<string, string> = {
   'Asuntos propios': '#6366f1',
   Vacaciones: '#10b981',
-  'Baja laboral': '#ef4444',
+  'Baja médica': '#ef4444',
   Otros: '#9ca3af',
 }
 
@@ -16,7 +16,7 @@ interface Props {
   data: {
     'Asuntos propios': number
     Vacaciones: number
-    'Baja laboral': number
+    'Baja médica': number
     Otros: number
   }
 }

@@ -14,7 +14,7 @@ export type CentroLite = { id: string; nombre: string }
 export type MotivoCounts = {
   'Asuntos propios': number
   Vacaciones: number
-  'Baja laboral': number
+  'Baja médica': number
   Otros: number
 }
 
@@ -28,7 +28,7 @@ export type PerPsicologoRow = {
   bloqueos: number
   vacaciones: number
   asuntos_propios: number
-  baja_laboral: number
+  baja_medica: number
 }
 
 export type AccionRecent = {
@@ -49,7 +49,7 @@ type Kpis = {
   bloqueosTotal: number
   vacaciones: number
   asuntosPropios: number
-  bajaLaboral: number
+  bajaMedica: number
   citasTotal: number
   citasCambiadas: number
   citasCanceladas: number
@@ -524,8 +524,8 @@ export default function StatsDashboard({
           accentBg="#e0e7ff"
         />
         <KpiCard
-          label="Baja laboral"
-          value={kpis.bajaLaboral}
+          label="Baja médica"
+          value={kpis.bajaMedica}
           sub="Bloqueos por baja"
           icon={icons.health}
           accent="#ef4444"
@@ -590,7 +590,7 @@ export default function StatsDashboard({
             <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid rgba(47,90,174,0.12)' }}>
-                  {['Psicólogo', 'Centro', 'Citas', 'Cambiadas', 'Anuladas', 'Bloqueos', 'Vacaciones', 'Asuntos propios', 'Baja laboral'].map(
+                  {['Psicólogo', 'Centro', 'Citas', 'Cambiadas', 'Anuladas', 'Bloqueos', 'Vacaciones', 'Asuntos propios', 'Baja médica'].map(
                     (h, i) => (
                       <th
                         key={h}
@@ -754,7 +754,7 @@ export default function StatsDashboard({
                           {r.asuntos_propios}
                         </td>
                         <td
-                          data-label="Baja laboral"
+                          data-label="Baja médica"
                           style={{
                             padding: '12px',
                             fontSize: 13,
@@ -763,7 +763,7 @@ export default function StatsDashboard({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          {r.baja_laboral}
+                          {r.baja_medica}
                         </td>
                       </tr>
                     )

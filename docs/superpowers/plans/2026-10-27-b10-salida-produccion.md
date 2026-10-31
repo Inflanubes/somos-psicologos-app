@@ -25,33 +25,38 @@
 
 ### Task 1: Estimación de plazos para Jaime (58)
 
-- [ ] **Step 1: Actualizar la tabla** de abajo con lo que ya esté hecho en el momento de ejecutar este bloque (columna Estado) y las fechas que Sonia tenga.
-- [ ] **Step 2: Enviar el texto** (está listo para pegar en un email; Sonia rellena las semanas según su agenda).
+- [x] **Step 1: Actualizar la tabla** de abajo con lo que ya esté hecho en el momento de ejecutar este bloque (columna Estado) y las fechas que Sonia tenga. Hecho 31-10-2026: el borrador del 27-10 hablaba de bloques por hacer y cuatro madrugadas; a 31-10 los nueve bloques están en `main` y sus migraciones (016–022) aplicadas, así que el texto pasa a ser «desarrollo terminado, queda probar y activar». El borrador antiguo queda en el historial de git.
+- [ ] **Step 2: Enviar el texto** (está listo para pegar en un email; Sonia pone la fecha de la prueba conjunta y la de activación).
 
-**Texto para Jaime (borrador, 27-10-2026):**
+**Texto para Jaime (actualizado, 31-10-2026):**
 
 > Hola Jaime,
 >
-> Te paso el plan de trabajo con todo lo que salió de la reunión del 21 de octubre. Lo hemos ordenado en bloques; cada bloque se desarrolla, se prueba y se sube en una madrugada para no interferir con Dante ni con el equipo.
+> Te cuento cómo va todo lo que salió de la reunión del 21 de octubre: **el desarrollo está terminado**. Los nueve bloques están hechos y subidos, con los cambios de base de datos, Make y Dante aplicados.
 >
-> | Bloque | Qué incluye | Trabajo | Subida |
-> |---|---|---|---|
-> | 1. Horarios por centro | Horario de cada psicólogo por clínica, interruptor "recibe citas nuevas" por clínica, sin horario no se agenda, reglas de antelación | 2–3 sesiones | madrugada 1 |
-> | 2. Calendario propio | Calendario con huecos libres, colores por estado, clic para agendar, sin Google embebido | 3–4 sesiones | madrugada 4 |
-> | 3. Reglas del call center | Qué puede y qué no puede hacer el call center, solicitudes al equipo, operador | 2 sesiones | madrugada 2 |
-> | 4. Consentimiento informado | Firma, reenvío, marcar firmado en papel, menores y parejas | 2 sesiones | madrugada 2 |
-> | 5. Dante: citas para terceros | Cita para otra persona, pareja desde Dante, máximo dos cambios por cita, reenviar consentimiento, sin "limbo" | 2–3 sesiones | madrugada 3 |
-> | 6. Bloqueos | Menú de cinco opciones, "Baja médica" | 1 sesión | madrugada 1 |
-> | 7. Avisos internos | Emergencias a Jaime y Bea a la vez, pasar una derivación a otra persona, recordatorio cada 30 min | 1–2 sesiones | madrugada 3 |
-> | 8. Resumen y Actividad | Tus indicadores, fechas libres, filtro por clínica, gráficas con selector, perfil Inspección | 3 sesiones | madrugada 4 |
-> | 9. Pequeños cambios | Accesos, Agentes, pie en los mensajes, estados documentados | 1 sesión | madrugada 4 |
-> | 10. Salida | Prueba completa contigo, arranque de consentimientos, activación | 1 sesión + prueba | — |
+> | Bloque | Qué incluye | Estado |
+> |---|---|---|
+> | 1. Horarios por centro | Horario de cada psicólogo por clínica, interruptor "recibe citas nuevas" por clínica, sin horario no se agenda, reglas de antelación | hecho |
+> | 2. Calendario propio | Calendario con huecos libres, colores por estado, clic para agendar, sin Google embebido | hecho |
+> | 3. Reglas del call center | Qué puede y qué no puede hacer el call center, solicitudes al equipo, operador | hecho |
+> | 4. Consentimiento informado | Firma, reenvío, marcar firmado en papel, menores y parejas | hecho |
+> | 5. Dante: citas para terceros | Cita para otra persona, pareja desde Dante, máximo dos cambios por cita, reenviar consentimiento | hecho |
+> | 6. Bloqueos | Menú de cinco opciones, "Baja médica" | hecho |
+> | 7. Avisos internos | Emergencias a ti y a Bea a la vez, pasar una derivación a otra persona, recordatorio cada 30 min | hecho |
+> | 8. Resumen y Actividad | Tus indicadores, fechas libres, filtro por clínica, gráficas con selector, perfil Inspección | hecho |
+> | 9. Pequeños cambios | Accesos, Agentes, pie en los mensajes, estados documentados | hecho |
+> | 10. Salida | Prueba completa contigo, arranque de consentimientos, activación | pendiente |
 >
-> En total son unas 18–22 sesiones de trabajo y cuatro madrugadas de subida. A mi ritmo actual eso son [X] semanas: la activación podría ser la semana del [fecha]. Si algún bloque se retrasa, se mueve solo su madrugada.
+> Lo que queda antes de activar la app en las clínicas:
 >
-> Dos avisos sobre los indicadores: la ocupación y las horas bloqueadas se calculan a partir del horario de cada psicólogo, así que solo serán fiables desde que todos tengan el horario cargado (bloque 1); y los pacientes anteriores a septiembre no tienen "canal de entrada", saldrán como "sin dato".
+> 1. **Pruebas internas** de cada bloque en la app real (las hacemos nosotras esta semana).
+> 2. **Una prueba completa contigo (o con Bea)**, de una hora más o menos: agendar, cambiar y cancelar citas, altas de adulto, menor y pareja, bloqueos, Dante y los paneles. ¿Te viene bien el [fecha]?
+> 3. **Que cada psicólogo tenga su horario cargado por clínica**: sin horario la app no deja agendarle. Los indicadores de ocupación y horas bloqueadas salen de ese horario, así que serán fiables desde que esté completo. Los pacientes anteriores a septiembre no tienen "canal de entrada" y saldrán como "sin dato".
+> 4. **Arranque de consentimientos**: los pacientes actuales saldrán con el consentimiento pendiente. Avisaremos a los psicólogos; los que lo firmaron en papel se marcan con un botón y al resto se les reenvía.
 >
-> Para seguir necesito de vosotros: los textos de las clínicas y las respuestas a preguntas frecuentes para Dante (8, 10), si una pareja son siempre una o dos personas en la ficha (40), qué estados del call center activamos (51), la decisión de Bea sobre nombre + iniciales (52), y qué era "algo de bloqueo en el calendario del psicólogo" que comentaste en la reunión (55). Lo que no llegue a tiempo se deja para después de la activación, sin bloquearla.
+> Con eso, la activación podría ser el [fecha].
+>
+> Sigo necesitando de vosotros: los textos de las clínicas y las respuestas a preguntas frecuentes para Dante (8, 10), si una pareja son siempre una o dos personas en la ficha (40), qué estados del call center activamos (51), la decisión de Bea sobre nombre + iniciales (52), y qué era "algo de bloqueo en el calendario del psicólogo" que comentaste en la reunión (55). Nada de esto bloquea la activación: lo que no llegue se hace después.
 >
 > Un saludo,
 > Sonia
@@ -62,22 +67,41 @@
 
 Se marca al ejecutar B10; cada línea remite a su plan.
 
-- [ ] Todos los bloques B1–B9 en `main` con `npm run build` limpio.
-- [ ] Migraciones aplicadas en orden y con fecha en su plan: 016 (B1) · 017 (B3) · 018 (B4) · 019 (B5) · 020 (B6) · 021 (B7) · 022 (B8).
+- [x] Todos los bloques B1–B9 en `main` con `npm run build` limpio. Comprobado 31-10-2026 en la rama `b10-salida-produccion` (sale de `main` f31a8b3): tsc limpio, 241/241 tests, build OK.
+- [x] Migraciones aplicadas en orden y con fecha en su plan: 016 (B1) · 017 (B3) · 018 (B4) · 019 (B5) · 020 (B6) · 021 (B7) · 022 (B8). Comprobado 31-10-2026: las siete constan como aplicadas en su plan y en el tablero (016 el 29-10, 017 el 30-10, 018–022 el 31-10).
 - [ ] Variables de entorno en producción: las de B1–B9 que cada plan liste (al menos `DANTE_API_TOKEN` de B1 y `MAKE_MENSAJES_WEBHOOK`).
+  **Quedó así (31-10):** el código lee siete variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DANTE_API_TOKEN`, `MAKE_CALL_CENTER_WEBHOOK`, `MAKE_PSYCHOLOGIST_WEBHOOK`, `MAKE_MENSAJES_WEBHOOK`. `DANTE_API_TOKEN` verificado en producción el 29-10; las demás las confirma Sonia en el panel del hosting (desde aquí no se ve).
 - [ ] Make: apartados hechos por Sonia: operador (B3, `docs/make-cambios-2026-10-b3.md`), reenvío de consentimiento (B4, `docs/make-cambios-2026-10-b4.md`), Baja médica (B6, `docs/make-cambios-2026-10-b6.md`), rutas 6–9 del call center si el cliente las aprobó (`docs/make-cambios-2026-10-22.md`).
+  **Quedó así (31-10):** operador (B3), reenvío de consentimiento (B4) y Baja médica (B6) hechos por Sonia el 31-10. Rutas 6–9: Make listo desde el 22-10; en la app solo «Otro» activa hasta que Jaime diga cuáles encender (tarea 51; una línea en `ACCIONES_SOLICITUD_ACTIVAS` de `lib/call-center.ts`). No bloquea la activación.
 - [ ] Dante: workflows importados en producción: B1 (disponibilidad por centro), B5 (terceros), B7 (comandos y cron a 30 min); chats de Marta, Jaime y Bea en `agentes`.
+  **Quedó así (31-10):** B1 importado el 29-10, B5 importado el 31-10, chats de los cuatro agentes en `agentes` (021). **Falta:** importar los dos JSON de B7 (comandos + cron a 30 min) y sus pruebas P1–P6 (`docs/dante-cambios-2026-10-b7.md`).
 - [ ] Horarios: todos los psicólogos activos con horario por centro cargado y revisado (B1 deja la lista de "revísalo").
 - [ ] Accesos: usuario de cada agente, psicólogo y call center creado; perfil Inspección si lo piden.
-- [ ] **Pie de los mensajes (B9, tarea 37b del tablero).** Decisión de Sonia del 31-10-2026: mientras los mensajes salgan por Telegram se queda como está (`Mensaje solo informativo, no recibimos respuestas. Para cualquier cosa, contacta con Dante: 91 166 50 47`). Al pasar a WhatsApp, revisar con Sonia:
+- [x] **Pie de los mensajes (B9, tarea 37b del tablero).** Decisión de Sonia del 31-10-2026: mientras los mensajes salgan por Telegram se queda como está (`Mensaje solo informativo, no recibimos respuestas. Para cualquier cosa, contacta con Dante: 91 166 50 47`). Al pasar a WhatsApp, revisar con Sonia:
   - El contacto: cambiar `CONTACTO_DANTE` en `lib/mensajes-pie.ts` por el número de WhatsApp de Dante (o el que se decida).
   - El texto: hoy el paciente recibe el mensaje en el chat de Telegram de Dante (conexión «Dante Bot SPs» del escenario «SPs envio mensajes») y si contesta ahí le responde Dante, así que «no recibimos respuestas» solo será exacto cuando salgan de un número de WhatsApp que no conteste.
   - Si cambia el texto: actualizar el test `lib/mensajes-pie.test.ts`, el manual (fichas Comunicaciones y Mensajes) y la prueba C de `docs/pruebas-aceptacion-b9.md`.
   - Al cambiar el contacto, los mensajes ya enviados con el pie antiguo no importan (el pie solo se añade al enviar).
-- [ ] Manual republicado con las novedades de todos los bloques.
+- [x] Manual republicado con las novedades de todos los bloques. Versión 24 del artifact (31-10-2026, con B9); B10 no cambia nada que el cliente vea.
 - [ ] Memoria de Claude actualizada (estado del tablero).
 
 ### Task 3: Prueba de aceptación con el cliente
+
+**Antes, las pruebas internas pendientes** (Sonia decidió el 30-10 hacerlas todas juntas al final; cada bloque pasa de `verificar` a `hecha` en el tablero cuando pasan):
+
+| Bloque | Dónde está el guion | Pruebas | Resultado |
+|---|---|---|---|
+| B1 Horarios | plan B1 (`superpowers/plans/2026-10-26-b1-horarios-por-centro.md`) | 6 pruebas de aceptación | |
+| B2 Calendario | plan B2 (`superpowers/plans/2026-10-26-b2-calendario-propio.md`) | 1–7 | |
+| B3 Call center | plan B3 (`superpowers/plans/2026-10-26-b3-reglas-call-center.md`) | 1–7 | |
+| B4 Consentimiento | `docs/pruebas-aceptacion-b4.md` | 1–5 | |
+| B5 Dante terceros | `docs/dante-cambios-2026-10-b5.md` §3 | guion §3 | |
+| B6 Bloqueos | `docs/pruebas-aceptacion-b6.md` | todas (falta la 4) + avisar a Elias | |
+| B7 Avisos internos | `docs/dante-cambios-2026-10-b7.md` | P1–P6 + tarea 5 (tras importar los JSON) | |
+| B8 Paneles | `docs/pruebas-aceptacion-b8.md` | A–F | |
+| B9 Pequeños cambios | `docs/pruebas-aceptacion-b9.md` | 1–5 | |
+
+Después, el recorrido con Jaime o Bea:
 
 - [ ] Agente: agendar, cambiar y cancelar una cita en cada centro; bloquear y desbloquear; dar de alta un paciente adulto, un menor y una pareja; ver el consentimiento llegar.
 - [ ] Psicólogo (Jaime): entrar, ver solo su agenda, agendar dentro de horario, intentar fuera de horario (la app no deja), pedir vacaciones, recibir los Telegram de alta / cambio / anulación (tarea 54).

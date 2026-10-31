@@ -5,12 +5,12 @@ Escenario: **Formulario Citas Psicologos** (webhook `bfgrht…`). Mismo escenari
 
 ## Estado
 
-- **App: hecho** en la rama `b3-reglas-call-center` (30-10-2026).
+- **App: hecho**, en `main` desde el 30-10-2026 (ed13c26).
 - **Supabase: migración `017_operador.sql`** (columna `operador text` en `pacientes`, `acciones_psicologos`
-  y `acciones_historial`; el trigger de historial la copia). La aplica Sonia de madrugada. `Aplicada el: ______`
+  y `acciones_historial`; el trigger de historial la copia). `Aplicada el: 30-10-2026` (comprobada: columna `operador` en las tres tablas).
   **Bloqueante: aplicar la migración ANTES de desplegar la app.** Si la app nueva sale sin la columna, el buscador
   por teléfono da error y las altas del call center con operador fallan (las de agentes y psicólogos siguen).
-- **Make: pendiente de Sonia.** `Hecho el: ______`
+- **Make: hecho.** `Hecho el: 31-10-2026` (módulos 14, 42 y 52, por Sonia).
 
 ## Qué manda la app
 

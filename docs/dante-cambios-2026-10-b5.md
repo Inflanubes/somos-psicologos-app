@@ -70,7 +70,7 @@ Una casilla por prueba:
 ## 4. Cierre
 
 - [x] Anotar en el plan la fecha en que se importó Dante (31-10-2026).
-- [ ] Merge de la rama `b5-dante-terceros` a `main` y despliegue de la app (etiqueta "a petición de").
+- [x] Merge de la rama `b5-dante-terceros` a `main` y despliegue de la app (etiqueta "a petición de"). Hecho el 31-10-2026 a petición de Sonia, antes de las pruebas: si alguna falla, se depura después.
 
 ## 5. Cuando llegue WhatsApp
 

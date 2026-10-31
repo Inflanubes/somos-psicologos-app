@@ -35,6 +35,7 @@ import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
   type FrecuenciaRepeticion,
 } from '@/lib/citas-recurrentes'
+import { esGestor } from '@/lib/roles'
 import {
   accionesMenu, tiposBloqueoDisponibles, accionReal, ACCION_BLOQUEOS, type AccionPsicologo,
 } from '@/lib/acciones-menu'
@@ -451,7 +452,7 @@ export default function PsicologosPage() {
   // ── Disponibilidad (horario + huecos ocupados) ─────────────────────────────
   // Agente (o sin perfil): modo aviso, todo seleccionable con aviso antes de enviar.
   // Psicólogo y call center: modo restringido, solo huecos libres.
-  const modoDisponibilidad: 'aviso' | 'restringido' = !perfil || perfil.rol === 'agente' ? 'aviso' : 'restringido'
+  const modoDisponibilidad: 'aviso' | 'restringido' = esGestor(perfil?.rol) ? 'aviso' : 'restringido'
   const psicologoDisp = pideTipoCita ? (psicologos.find((p) => p.id === effPsicologoId) ?? null) : null
   const { datos: disp, cargando: cargandoDisp, error: errorDisp, añadirCitaLocal } = useDisponibilidad(psicologoDisp, effCentroId || null)
   const excluirAccionId = isCambiarCita ? eventoActual?.id : undefined

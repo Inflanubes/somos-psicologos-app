@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getPerfilActual } from '@/lib/perfil'
 import type { Perfil, Rol } from '@/types/database'
+import { ETIQUETA_ROL } from '@/lib/roles'
 
 function GridIcon() {
   return (
@@ -61,16 +62,16 @@ type NavItem = {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard/calendario', label: 'Calendario', Icon: CalendarIcon, roles: ['agente', 'call_center'] },
-  { href: '/dashboard', label: 'Panel General', Icon: GridIcon, exact: true, roles: ['agente', 'call_center'] },
-  { href: '/dashboard/psicologos/stats', label: 'Estadísticas', Icon: GridIcon, roles: ['agente'] },
-  { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente', 'psicologo'] },
-  { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon, roles: ['agente'] },
-  { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente'] },
-  { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente'] },
-  { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo', 'call_center'] },
+  { href: '/dashboard/calendario', label: 'Calendario', Icon: CalendarIcon, roles: ['agente', 'call_center', 'inspeccion'] },
+  { href: '/dashboard', label: 'Resumen de pacientes', Icon: GridIcon, exact: true, roles: ['agente', 'call_center'] },
+  { href: '/dashboard/psicologos/stats', label: 'Actividad de citas', Icon: GridIcon, roles: ['agente'] },
+  { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente', 'psicologo', 'inspeccion'] },
+  { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon, roles: ['agente', 'inspeccion'] },
+  { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente', 'inspeccion'] },
+  { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente', 'inspeccion'] },
+  { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo', 'call_center', 'inspeccion'] },
   // exact: '/dashboard/mensajes-psicologo' también empieza por '/dashboard/mensajes'
-  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, exact: true, roles: ['agente'] },
+  { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, exact: true, roles: ['agente', 'inspeccion'] },
   { href: '/dashboard/mensajes-psicologo', label: 'Mensajes', Icon: ChatIcon, roles: ['psicologo'] },
 ]
 
@@ -146,7 +147,7 @@ export default function SidebarNav() {
           <div style={{ padding: '0 10px 8px', fontSize: 12, color: '#4a5870' }}>
             <div style={{ fontWeight: 700 }}>{perfil.nombre}</div>
             <div style={{ fontSize: 10.5, color: '#a0b0cc', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {perfil.rol === 'call_center' ? 'Call center' : perfil.rol}
+              {perfil.rol === 'call_center' || perfil.rol === 'inspeccion' ? ETIQUETA_ROL[perfil.rol] : perfil.rol}
             </div>
           </div>
         )}

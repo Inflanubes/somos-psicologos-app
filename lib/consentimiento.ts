@@ -120,7 +120,7 @@ export function textoEstadoConsentimiento(
 
 /** Solo los agentes pueden quitar la marca de firmado. */
 export function puedeDesmarcar(rol: string): boolean {
-  return rol === 'agente'
+  return rol === 'agente' || rol === 'inspeccion'
 }
 
 export type CualTutor = 'T1' | 'T2' | 'ambos'

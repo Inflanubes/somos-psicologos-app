@@ -6,6 +6,7 @@ import PacientesTable from './_components/PacientesTable'
 import type { PacienteRow } from './_components/PacientesTable'
 import { KpiCard, Card } from './_components/Cards'
 import PanelCallCenter, { type Periodo } from './_components/PanelCallCenter'
+import { redirect } from 'next/navigation'
 
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -85,6 +86,8 @@ export default async function DashboardPage({
   const { data: perfil } = user
     ? await supabase.from('perfiles').select('nombre, rol').eq('id', user.id).maybeSingle()
     : { data: null }
+  // Inspección no ve los paneles de estadísticas: se le manda al Calendario antes de consultar nada.
+  if (perfil?.rol === 'inspeccion') redirect('/dashboard/calendario')
   if (user && perfil?.rol === 'call_center') {
     const { periodo } = await searchParams
     const p: Periodo = periodo === 'hoy' || periodo === 'semana' ? periodo : 'mes'

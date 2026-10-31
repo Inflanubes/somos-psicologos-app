@@ -27,12 +27,13 @@ export type AgenteGestion = {
   centro_id: string | null; activo: boolean; auth_user_id: string | null
 }
 export type CentroGestion = { id: string; nombre: string; es_online: boolean }
-export type TipoUsuario = 'psicologo' | 'agente' | 'call_center'
+export type TipoUsuario = 'psicologo' | 'agente' | 'call_center' | 'inspeccion'
 
 export type DatosGestion = {
   psicologos: PsicologoGestion[]
   agentes: AgenteGestion[]
   call_center: AgenteGestion[]
+  inspeccion: AgenteGestion[]
   centros: CentroGestion[]
   aviso_horarios: string | null
 }
@@ -47,6 +48,7 @@ export async function cargarGestion(): Promise<{ datos?: DatosGestion; error?: s
         psicologos: data.psicologos ?? [],
         agentes: data.agentes ?? [],
         call_center: data.call_center ?? [],
+        inspeccion: data.inspeccion ?? [],
         centros: data.centros ?? [],
         aviso_horarios: data.aviso_horarios ?? null,
       },

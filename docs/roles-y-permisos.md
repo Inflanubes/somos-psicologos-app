@@ -13,27 +13,27 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 
 - Tabla `perfiles` en Supabase (migración `Supabase/migrations/004_perfiles_y_atribucion.sql`):
   una fila por usuario de Auth con `nombre`, `rol`, `psicologo_id` y `centro_id`.
-- `rol` admite tres valores: `agente`, `psicologo`, `call_center`.
+- `rol` admite cuatro valores: `agente`, `psicologo`, `call_center`, `inspeccion` (migración 022, B8).
 - Un usuario **sin fila en `perfiles` se trata como `agente`** (acceso total). Es así para que los
   logins antiguos sigan funcionando; conviene que todo usuario tenga su fila.
-- Los usuarios se crean desde `/dashboard/usuarios` (solo agentes), eligiendo Psicólogo, Agente o
-  Call center. Agentes y call center comparten ficha en la tabla `agentes`; lo que los distingue es
+- Los usuarios se crean desde `/dashboard/usuarios` (solo agentes), eligiendo Psicólogo, Agente,
+  Call center o Inspección. Agentes, call center e inspección comparten ficha en la tabla `agentes`; lo que los distingue es
   el `rol` del perfil.
 
 ## Qué ve y qué puede hacer cada rol
 
-| Pantalla | Ruta | Agente | Psicólogo | Call center |
-|---|---|:-:|:-:|:-:|
-| Calendario (agenda semanal de todos) | `/dashboard/calendario` | Sí | No | Sí (página de entrada) |
-| Panel General | `/dashboard` | Sí (datos globales) | No | Sí, pero solo **su actividad** ("Mi actividad") |
-| Estadísticas | `/dashboard/psicologos/stats` | Sí | No | No |
-| Pacientes | `/dashboard/pacientes` | Todos los pacientes | Solo los suyos (todas sus filas de psicólogo, por email) | No |
-| Psicólogos (centros, tipos, horario, permisos de agenda, activo) | `/dashboard/equipo` | Sí | No | No |
-| Agentes | `/dashboard/agentes` | Sí | No | No |
-| Usuarios (cuentas: altas, accesos y contraseñas) | `/dashboard/usuarios` | Sí | No | No |
-| Citas (formulario de agenda) | `/dashboard/psicologos` | Cualquier centro y psicólogo, todas las acciones y las solicitudes al equipo; buscador por teléfono | Fijado a su propia agenda | Cualquier centro y psicólogo activo; citas, altas de paciente y solicitudes al equipo; buscador por teléfono; campo Operador; no toca citas creadas por el psicólogo |
-| Comunicaciones (call center / avisos) | `/dashboard/mensajes` | Sí | No | No |
-| Mensajes a pacientes (reseña Google, libre) | `/dashboard/mensajes-psicologo` | No | Sí | No |
+| Pantalla | Ruta | Agente | Psicólogo | Call center | Inspección |
+|---|---|:-:|:-:|:-:|:-:|
+| Calendario (agenda semanal de todos) | `/dashboard/calendario` | Sí | No | Sí (página de entrada) | Sí (página de entrada) |
+| Resumen de pacientes | `/dashboard` | Sí (datos globales) | No | Sí, pero solo **su actividad** ("Mi actividad") | No |
+| Actividad de citas | `/dashboard/psicologos/stats` | Sí | No | No | No |
+| Pacientes | `/dashboard/pacientes` | Todos los pacientes | Solo los suyos (todas sus filas de psicólogo, por email) | No | Como agente |
+| Psicólogos (centros, tipos, horario, permisos de agenda, activo) | `/dashboard/equipo` | Sí | No | No | Como agente |
+| Agentes | `/dashboard/agentes` | Sí | No | No | Como agente |
+| Usuarios (cuentas: altas, accesos y contraseñas) | `/dashboard/usuarios` | Sí | No | No | Como agente |
+| Citas (formulario de agenda) | `/dashboard/psicologos` | Cualquier centro y psicólogo, todas las acciones y las solicitudes al equipo; buscador por teléfono | Fijado a su propia agenda | Cualquier centro y psicólogo activo; citas, altas de paciente y solicitudes al equipo; buscador por teléfono; campo Operador; no toca citas creadas por el psicólogo | Como agente |
+| Comunicaciones (call center / avisos) | `/dashboard/mensajes` | Sí | No | No | Como agente |
+| Mensajes a pacientes (reseña Google, libre) | `/dashboard/mensajes-psicologo` | No | Sí | No | No |
 
 ### Agente
 
@@ -73,6 +73,14 @@ Matiz (B6, 31-10-2026): la opción **Bloquear / Desbloquear agenda** (y con ella
 asuntos propios, baja médica, modificar un bloqueo, bloqueo general y desbloquear) solo aparece si su ficha en
 `psicologos` tiene `puede_bloquear = true` (se activa en la ficha del psicólogo, en Psicólogos). Sin ese permiso
 no ve ningún bloqueo: se los pone un agente.
+
+### Inspección
+
+Copia del rol agente (bloque B8, tarea 56): ve y hace lo mismo que un agente, también gestionar usuarios,
+**salvo Resumen de pacientes y Actividad de citas**, que no salen en el menú y por URL le devuelven al
+Calendario (su página de entrada). No es de solo lectura (decisión confirmada el 29-10-2026). En el código,
+las comprobaciones de "puede lo que un agente" usan `esGestor(rol)` de `lib/roles.ts`; el `origen` de lo
+que crea se guarda como `inspeccion` y se muestra como "Inspección".
 
 ### Call center
 

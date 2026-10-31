@@ -1,11 +1,12 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { esGestor } from '@/lib/roles'
 
 export type GuardResult =
   | { ok: true; userId: string }
   | { ok: false; status: number; error: string }
 
 /**
- * Permite la operación solo si hay sesión y el perfil es 'agente'. Si no hay
+ * Permite la operación solo si hay sesión y el perfil es gestor (agente o inspección). Si no hay
  * fila en `perfiles` se trata como agente (coherente con SidebarNav/RoleGate,
  * mantiene logins heredados). Un psicólogo o call_center recibe 403.
  */
@@ -22,7 +23,7 @@ export async function requireAgente(): Promise<GuardResult> {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (perfil && perfil.rol !== 'agente') {
+  if (perfil && !esGestor(perfil.rol)) {
     return { ok: false, status: 403, error: 'Solo agentes pueden gestionar usuarios' }
   }
   return { ok: true, userId: user.id }

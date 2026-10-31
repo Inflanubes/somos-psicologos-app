@@ -17,12 +17,14 @@ const PESTANAS: { tipo: TipoUsuario; etiqueta: string; singular: string }[] = [
   { tipo: 'psicologo', etiqueta: 'Psicólogos', singular: 'Psicólogo' },
   { tipo: 'agente', etiqueta: 'Agentes', singular: 'Agente' },
   { tipo: 'call_center', etiqueta: 'Call center', singular: 'Call center' },
+  { tipo: 'inspeccion', etiqueta: 'Inspección', singular: 'Inspección' },
 ]
 
 export default function UsuariosPage() {
   const [psicologos, setPsicologos] = useState<PsicologoGestion[]>([])
   const [agentes, setAgentes] = useState<AgenteGestion[]>([])
   const [callCenter, setCallCenter] = useState<AgenteGestion[]>([])
+  const [inspeccion, setInspeccion] = useState<AgenteGestion[]>([])
   const [centros, setCentros] = useState<CentroGestion[]>([])
   const [pestana, setPestana] = useState<TipoUsuario>('psicologo')
   const [loading, setLoading] = useState(true)
@@ -63,6 +65,7 @@ export default function UsuariosPage() {
       setPsicologos(datos.psicologos)
       setAgentes(datos.agentes)
       setCallCenter(datos.call_center)
+      setInspeccion(datos.inspeccion)
       setCentros(datos.centros)
     }
     if (error) setError(error)
@@ -107,7 +110,7 @@ export default function UsuariosPage() {
     }
   }
 
-  async function toggleActivoAgente(t: 'agente' | 'call_center', a: AgenteGestion) {
+  async function toggleActivoAgente(t: 'agente' | 'call_center' | 'inspeccion', a: AgenteGestion) {
     if (a.activo && !window.confirm(`¿Desactivar a ${a.nombre}? Quedará marcado como inactivo, pero podrá seguir entrando en la app.`)) return
     marcar(a.id, true); setError(null)
     const err = await patchUsuario(a.id, { tipo: t, activo: !a.activo })
@@ -115,6 +118,7 @@ export default function UsuariosPage() {
     if (err) { setError(err); return }
     const actualizar = (lista: AgenteGestion[]) => lista.map((x) => (x.id === a.id ? { ...x, activo: !a.activo } : x))
     if (t === 'agente') setAgentes(actualizar)
+    else if (t === 'inspeccion') setInspeccion(actualizar)
     else setCallCenter(actualizar)
   }
 
@@ -151,8 +155,8 @@ export default function UsuariosPage() {
   }
 
   const nombreCentro = new Map(centros.map((c) => [c.id, c.nombre]))
-  const cuenta: Record<TipoUsuario, number> = { psicologo: psicologos.length, agente: agentes.length, call_center: callCenter.length }
-  const listaAgentes = pestana === 'agente' ? agentes : callCenter
+  const cuenta: Record<TipoUsuario, number> = { psicologo: psicologos.length, agente: agentes.length, call_center: callCenter.length, inspeccion: inspeccion.length }
+  const listaAgentes = pestana === 'agente' ? agentes : pestana === 'inspeccion' ? inspeccion : callCenter
 
   return (
     <div className="page-pad" style={{ maxWidth: 1000 }}>
@@ -227,6 +231,12 @@ export default function UsuariosPage() {
               </label>
             ))}
           </div>
+          {tipo === 'inspeccion' && (
+            <div style={{ fontSize: 12, color: '#667799', background: '#eef2fb', borderRadius: 8, padding: '8px 12px' }}>
+              Un usuario de inspección ve y hace lo mismo que un agente, salvo Resumen de pacientes y
+              Actividad de citas. Entra por el Calendario.
+            </div>
+          )}
           {tipo === 'call_center' && (
             <div style={{ fontSize: 12, color: '#667799', background: '#eef2fb', borderRadius: 8, padding: '8px 12px' }}>
               Un usuario de call center solo ve el formulario de Citas y puede agendar, cambiar o cancelar
@@ -319,7 +329,7 @@ export default function UsuariosPage() {
             <tbody>
               {loading ? <FilasEsqueleto columnas={5} /> : listaAgentes.length === 0 ? (
                 <tr><td colSpan={5} data-label="" style={{ ...td, textAlign: 'center', color: '#8899bb', padding: 40 }}>
-                  {pestana === 'agente' ? 'No hay agentes' : 'Todavía no hay usuarios de call center'}
+                  {pestana === 'agente' ? 'No hay agentes' : pestana === 'inspeccion' ? 'Todavía no hay usuarios de inspección' : 'Todavía no hay usuarios de call center'}
                 </td></tr>
               ) : listaAgentes.map((a) => (
                 <tr key={a.id} style={{ borderTop: '1px solid rgba(47,90,174,0.07)' }}>
@@ -331,7 +341,7 @@ export default function UsuariosPage() {
                       activo={a.activo}
                       disabled={ocupados.has(a.id)}
                       etiqueta={`${a.activo ? 'Desactivar' : 'Activar'} a ${a.nombre}`}
-                      onChange={() => toggleActivoAgente(pestana as 'agente' | 'call_center', a)}
+                      onChange={() => toggleActivoAgente(pestana as 'agente' | 'call_center' | 'inspeccion', a)}
                     />
                   </td>
                   <td data-label="" style={td}>{botonesAcceso(pestana, a.id)}</td>

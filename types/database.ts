@@ -15,7 +15,7 @@ export const ESTADOS_PACIENTE = [
 
 export type EstadoPaciente = typeof ESTADOS_PACIENTE[number]
 
-export type Rol = 'agente' | 'psicologo' | 'call_center'
+export type Rol = 'agente' | 'psicologo' | 'call_center' | 'inspeccion'
 
 export type Perfil = {
   id: string

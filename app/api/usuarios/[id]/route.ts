@@ -7,7 +7,7 @@ import { TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
 import type { TipoCita } from '@/types/database'
 
 type EditarBody = {
-  tipo: 'psicologo' | 'agente' | 'call_center'
+  tipo: 'psicologo' | 'agente' | 'call_center' | 'inspeccion'
   nombre?: string
   telefono?: string | null
   email?: string | null     // email de contacto del registro, NO el de login
@@ -153,7 +153,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     return NextResponse.json({ ok: true })
   }
 
-  if (body.tipo === 'agente' || body.tipo === 'call_center') {
+  if (body.tipo === 'agente' || body.tipo === 'call_center' || body.tipo === 'inspeccion') {
     const campos: Record<string, unknown> = {}
     if (body.nombre !== undefined) campos.nombre = body.nombre.trim()
     if (body.telefono !== undefined) campos.telefono = body.telefono
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status })
 
   const { id } = await ctx.params
-  const body = (await req.json()) as { tipo: 'psicologo' | 'agente' | 'call_center'; metodo?: 'email' | 'generar' }
+  const body = (await req.json()) as { tipo: 'psicologo' | 'agente' | 'call_center' | 'inspeccion'; metodo?: 'email' | 'generar' }
   const metodo = body.metodo ?? 'email'
   const admin = createSupabaseAdmin()
 

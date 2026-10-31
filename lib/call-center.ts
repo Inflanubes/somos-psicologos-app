@@ -5,7 +5,7 @@
  * Diseño: docs/superpowers/specs/2026-10-26-b3-reglas-call-center-design.md
  */
 
-export type Rol = 'agente' | 'psicologo' | 'call_center'
+export type Rol = 'agente' | 'psicologo' | 'call_center' | 'inspeccion'
 
 /**
  * El call center no puede cambiar ni anular citas creadas por un psicólogo.
@@ -172,7 +172,7 @@ export function etiquetaOrigen(origen: string | null, operador: string | null, r
   switch (origen) {
     case 'call_center': {
       const op = operador?.trim()
-      return rolQueMira === 'agente' && op ? `Call center (${op})` : 'Call center'
+      return (rolQueMira === 'agente' || rolQueMira === 'inspeccion') && op ? `Call center (${op})` : 'Call center'
     }
     case 'dante':
       return 'Dante'
@@ -180,6 +180,8 @@ export function etiquetaOrigen(origen: string | null, operador: string | null, r
       return 'Psicólogo'
     case 'agente':
       return 'Agente'
+    case 'inspeccion':
+      return 'Inspección'
     default:
       return ''
   }

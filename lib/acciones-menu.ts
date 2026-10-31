@@ -4,6 +4,7 @@
 // acción de siempre, que es la que viaja a Make y se guarda.
 
 import { ACCIONES_SOLICITUD_ACTIVAS, esAccionSolicitud, type AccionSolicitud, type Rol } from './call-center'
+import { esGestor } from './roles'
 
 export type AccionPsicologo =
   | 'Agendar cita'
@@ -38,7 +39,7 @@ export const TIPOS_BLOQUEO: { etiqueta: string; accion: AccionPsicologo; requier
  * center tampoco. Una ficha antigua con puede_bloquear = null cuenta como false.
  */
 export function tiposBloqueoDisponibles(rol: Rol, puedeBloquear: boolean | null): typeof TIPOS_BLOQUEO {
-  if (rol === 'agente') return TIPOS_BLOQUEO
+  if (esGestor(rol)) return TIPOS_BLOQUEO
   if (rol === 'psicologo' && (puedeBloquear ?? false)) return TIPOS_BLOQUEO
   return []
 }

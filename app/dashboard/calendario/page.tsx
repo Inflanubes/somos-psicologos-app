@@ -8,6 +8,7 @@ import type { Centro, Psicologo, PsicologoCentro, Rol } from '@/types/database'
 import { TIPOS_CITA_FILTRO, type EventoCalendario, type FiltrosCalendario } from '@/lib/calendario'
 import CalendarioAgenda from '../_components/CalendarioAgenda'
 import type { ClickLibre } from '../_components/AgendaSemanal'
+import { esGestor } from '@/lib/roles'
 
 const card: React.CSSProperties = {
   background: '#fff', borderRadius: 12, border: '1px solid rgba(47,90,174,0.13)',
@@ -58,7 +59,7 @@ export default function CalendarioPage() {
     for (const pc of psicologosCentros) m.set(pc.psicologo_id, [...(m.get(pc.psicologo_id) ?? []), pc.centro_id])
     return m
   }, [psicologosCentros])
-  const esAgente = rol === 'agente'
+  const esAgente = esGestor(rol)
 
   // Psicólogos cuya agenda se enseña: los del centro filtrado (o todos). El call center ve
   // las citas de los inactivos pero no sus huecos (lo decide CalendarioAgenda por rol).

@@ -1,5 +1,8 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Psicologo, PsicologoCentro, Centro, AccionPsicologo, AccionHistorial, Paciente } from '@/types/database'
+import { redirect } from 'next/navigation'
+import { HOME_POR_ROL } from '@/lib/roles'
+import type { Rol } from '@/types/database'
 import StatsDashboard from './_components/StatsDashboard'
 import type {
   PeriodKey,
@@ -46,6 +49,16 @@ export default async function PsicologosStatsPage({
   const selectedPsicologoId = params.psi && params.psi !== 'all' ? params.psi : null
 
   const supabase = await createSupabaseServerClient()
+
+  // Solo agentes: el resto de roles no ve la actividad de citas (RoleGate lo hace en
+  // el cliente; aquí se corta antes de consultar).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: perfil } = user
+    ? await supabase.from('perfiles').select('rol').eq('id', user.id).maybeSingle()
+    : { data: null }
+  if (perfil && perfil.rol !== 'agente') redirect(HOME_POR_ROL[perfil.rol as Rol] ?? '/dashboard/calendario')
 
   const now = new Date()
   const periodStart = getPeriodStart(period, now)

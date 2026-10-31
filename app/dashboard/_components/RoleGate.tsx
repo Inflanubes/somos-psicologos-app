@@ -4,29 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getPerfilActual } from '@/lib/perfil'
 import type { Rol } from '@/types/database'
-
-const HOME: Record<Rol, string> = {
-  agente: '/dashboard',
-  psicologo: '/dashboard/psicologos',
-  // El call center entra por el calendario (disponibilidad de todos los psicólogos).
-  call_center: '/dashboard/calendario',
-}
-
-function isAllowed(rol: Rol, path: string): boolean {
-  if (rol === 'agente') return true
-  // Psicólogo: su formulario de citas, la lista de sus pacientes y su página
-  // de mensajes (ambas filtran ya por el psicólogo logueado).
-  if (rol === 'psicologo')
-    return (
-      path === '/dashboard/psicologos' ||
-      path === '/dashboard/pacientes' ||
-      path === '/dashboard/mensajes-psicologo'
-    )
-  // Call center: calendario, panel personal y formulario de citas.
-  if (rol === 'call_center')
-    return path === '/dashboard/calendario' || path === '/dashboard' || path === '/dashboard/psicologos'
-  return false
-}
+import { HOME_POR_ROL, rutaPermitida } from '@/lib/roles'
 
 /**
  * Keeps each role inside its allowed area. Users with no profile row default to
@@ -52,10 +30,10 @@ export default function RoleGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready || !rol) return
-    if (!isAllowed(rol, pathname)) router.replace(HOME[rol])
+    if (!rutaPermitida(rol, pathname)) router.replace(HOME_POR_ROL[rol])
   }, [ready, rol, pathname, router])
 
   if (!ready) return null
-  if (rol && !isAllowed(rol, pathname)) return null
+  if (rol && !rutaPermitida(rol, pathname)) return null
   return <>{children}</>
 }

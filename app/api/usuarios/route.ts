@@ -69,8 +69,7 @@ export async function GET() {
     if (perfiles.error) return NextResponse.json({ error: perfiles.error.message }, { status: 500 })
     for (const p of perfiles.data ?? []) rolPorAuthId.set(p.id, p.rol)
   }
-  const esCallCenter = (a: { auth_user_id: string | null }) =>
-    !!a.auth_user_id && rolPorAuthId.get(a.auth_user_id) === 'call_center'
+  const rolDe = (a: { auth_user_id: string | null }) => (a.auth_user_id ? rolPorAuthId.get(a.auth_user_id) : undefined)
 
   return NextResponse.json({
     psicologos: (psies.data ?? []).map((p) => ({
@@ -82,15 +81,16 @@ export async function GET() {
       centros_inactivos: centrosInactivosDe.get(p.id) ?? [],
       horario_revisar: horarioRevisar.has(p.id),
     })),
-    agentes: staff.filter((a) => !esCallCenter(a)),
-    call_center: staff.filter(esCallCenter),
+    agentes: staff.filter((a) => rolDe(a) !== 'call_center' && rolDe(a) !== 'inspeccion'),
+    call_center: staff.filter((a) => rolDe(a) === 'call_center'),
+    inspeccion: staff.filter((a) => rolDe(a) === 'inspeccion'),
     centros: centros.data ?? [],
     aviso_horarios: avisoHorarios,
   })
 }
 
 type CrearBody = {
-  tipo: 'psicologo' | 'agente' | 'call_center'
+  tipo: 'psicologo' | 'agente' | 'call_center' | 'inspeccion'
   nombre: string
   email: string
   telefono?: string | null
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
   const email = body.email?.trim().toLowerCase()
 
   // Validación de servidor
-  if (body.tipo !== 'psicologo' && body.tipo !== 'agente' && body.tipo !== 'call_center')
+  if (body.tipo !== 'psicologo' && body.tipo !== 'agente' && body.tipo !== 'call_center' && body.tipo !== 'inspeccion')
     return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
   if (!nombre) return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 })
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, id: psicologoId, email, password, emailSent }, { status: 201 })
   }
 
-  // tipo === 'agente' | 'call_center': ambos son personal interno con ficha en
+  // tipo === 'agente' | 'call_center' | 'inspeccion': personal interno con ficha en
   // `agentes`; solo cambia el rol del perfil, que es lo que limita el acceso.
   const ag = await admin
     .from('agentes')

@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-10-31">31-10-2026</time><span><b>Usuarios se llama ahora Accesos.</b> En <a href="#p-agentes">Agentes</a> solo se edita el teléfono y se activa o desactiva; las contraseñas, en Accesos. Los mensajes a pacientes llevan un pie que indica que no se reciben respuestas y cómo contactar con Dante; cada pantalla enseña antes de enviar cómo llegará el mensaje. La casilla «Nueva recomendación» ya no se muestra en el alta. Y la tabla de <a href="#estados">estados del paciente</a> explica ahora quién pone cada uno, cuándo y qué pasa después. <a href="#p-usuarios">Ver Accesos</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span><b>Resumen de pacientes</b> y <b>Actividad de citas</b> (antes Panel General y Estadísticas) con fechas libres, filtro por centro y los indicadores nuevos; ocupación y horas bloqueadas se calculan a partir del horario de cada psicólogo. Nuevo perfil <b>Inspección</b>. <a href="#p-panel">Ver Resumen de pacientes</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Avisos de Dante al equipo: las emergencias llegan a la vez a Jaime y a Bea, y el primero que responde «atendido» la cierra para los dos; cualquiera puede pasar una derivación a otra persona respondiendo «derivar a <var>Marta</var>»; los recordatorios pasan a ser cada 30 minutos. Además queda escrito que los cambios en la app se suben solo de madrugada. <a href="#dante">Ver Dante</a> · <a href="#madrugada">Ver cuándo se sube</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Bloqueos más sencillos en Citas: el desplegable de acción queda en <code class="ui">Agendar cita</code>, <code class="ui">Añadir nuevo paciente</code>, <code class="ui">Cambiar cita</code>, <code class="ui">Cancelar cita</code> y <code class="ui">Bloquear / Desbloquear agenda</code>; al elegir esta última aparece <code class="ui">Tipo de bloqueo</code> con vacaciones, asuntos propios, baja médica, modificar un bloqueo, bloqueo general y desbloquear. Los psicólogos sin permiso de bloqueo ya no ven ningún bloqueo (se los pone un agente). «Baja laboral» pasa a llamarse <b>Baja médica</b> en toda la app, también en Estadísticas y en las bajas antiguas. <a href="#p-citas">Ver Citas</a>.</span></li>
@@ -334,7 +335,7 @@ footer img{width:28px; height:28px}
       <tr><td><a href="#p-mensajes">Mensajes</a></td><td class="no">No</td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td></tr>
       <tr><td><a href="#p-panel">Resumen de pacientes</a></td><td class="si">Sí, datos globales (página de inicio)</td><td class="no">No</td><td class="si">Solo su actividad</td><td class="no">No</td></tr>
       <tr><td><a href="#p-estadisticas">Actividad de citas</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
-      <tr><td><a href="#p-usuarios">Usuarios</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
+      <tr><td><a href="#p-usuarios">Accesos</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
       <tr><td><a href="#p-psicologos">Psicólogos</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
       <tr><td><a href="#p-agentes">Agentes</a></td><td class="si">Sí</td><td class="no">No</td><td class="no">No</td><td class="si">Sí</td></tr>
     </tbody>
@@ -344,13 +345,13 @@ footer img{width:28px; height:28px}
   <div class="dos">
     <article class="ficha">
       <h3>Dar de alta a alguien</h3>
-      <p>Lo hace un agente desde <a href="#p-usuarios">Usuarios</a>: elige Psicólogo, Agente, Call center o Inspección, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
+      <p>Lo hace un agente desde <a href="#p-usuarios">Accesos</a>: elige Psicólogo, Agente, Call center o Inspección, rellena los datos y pulsa <code class="ui">Crear y enviar acceso</code>. La persona recibe un correo para crear su contraseña.</p>
       <p>Cada psicólogo es <b>una sola ficha</b>, aunque trabaje en varios centros. Al darlo de alta hay que indicar su calendario de Google, al menos un centro y al menos un tipo de consulta: adultos, pareja o infantil. Centros, tipos, horario y permisos se cambian después en <a href="#p-psicologos">Psicólogos</a>.</p>
       <p class="nota">Desactivar a alguien no borra su cuenta ni le impide entrar. Un psicólogo desactivado sigue gestionando sus citas y su agenda, pero no puede añadir pacientes nuevos; los agentes lo ven en Citas como <code class="ui"><var>Marta</var> (inactivo)</code> y pueden hacer de todo con él; el call center y Dante no lo ven. En call center conviene una cuenta por persona, porque todo lo que hace queda firmado con su nombre.</p>
     </article>
     <article class="ficha">
       <h3>Cuando alguien olvida su contraseña</h3>
-      <p>Un agente tiene dos botones, en Usuarios y en Agentes:</p>
+      <p>Un agente tiene dos botones en <a href="#p-usuarios">Accesos</a>, en la fila de cada persona:</p>
       <div class="tabla"><table>
         <thead><tr><th>Botón</th><th>Qué hace</th><th>Cuándo</th></tr></thead>
         <tbody>
@@ -497,11 +498,11 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-comunicaciones">
       <div class="ficha-cab"><h3>Comunicaciones</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd><code class="ui">Envía mensajes a pacientes y psicólogos según su estado</code>. Los mensajes salen por WhatsApp a través de Make. En todas las pestañas, cada paciente tiene además el estado de su consentimiento (<code class="ui">Firmado</code> o <code class="ui">Pendiente</code>) y el botón <code class="ui">Reenviar consentimiento</code>, que manda otra vez el enlace del consentimiento (adulto o menores) a su teléfono o a los de sus tutores; confirma antes (y avisa si ya consta firmado) y termina con <code class="ui">Consentimiento reenviado.</code></dd>
+        <dt>Para qué</dt><dd><code class="ui">Envía mensajes a pacientes y psicólogos según su estado</code>. Los mensajes salen por WhatsApp a través de Make. Los que van a pacientes llevan siempre al final, separado por una línea en blanco, el pie <code class="ui">Mensaje solo informativo, no recibimos respuestas. Para cualquier cosa, contacta con Dante: <var>91 166 50 47</var></code> (el aviso al psicólogo no lo lleva); debajo de cada mensaje se ve <code class="ui">Así llegará el mensaje:</code> con el texto completo. En todas las pestañas, cada paciente tiene además el estado de su consentimiento (<code class="ui">Firmado</code> o <code class="ui">Pendiente</code>) y el botón <code class="ui">Reenviar consentimiento</code>, que manda otra vez el enlace del consentimiento (adulto o menores) a su teléfono o a los de sus tutores; confirma antes (y avisa si ya consta firmado) y termina con <code class="ui">Consentimiento reenviado.</code></dd>
         <dt>Pestañas</dt><dd>
           <ul>
             <li><b><code class="ui">Hablar con Psicólogo</code></b>: <code class="ui">Pacientes que llevan más de 1 día esperando que un psicólogo les llame.</code> El botón <code class="ui">Notificar psicólogo</code> le avisa con los datos del paciente; si el paciente tiene varios psicólogos, hay un botón por cada uno, como <code class="ui">Notificar a <var>Marta</var> (<var>adultos</var>)</code>. Si tras hablar el paciente no quiere continuar, <code class="ui">Marcar inactivo</code> lo pasa a «Inactivo».</li>
-            <li><b><code class="ui">Recomendaciones</code></b>: pacientes dados de alta con «Nueva recomendación», con quién los recomendó. <code class="ui">Recomendación correcta</code> la confirma; <code class="ui">Quitar recomendación</code> la descarta y el paciente deja de constar como recomendado. En los dos casos pasa a «Nuevo paciente» y queda apuntado en el historial.</li>
+            <li><b><code class="ui">Recomendaciones</code></b>: pacientes dados de alta con «Nueva recomendación» (la casilla ya no se muestra en el alta; aquí siguen los que quedaban), con quién los recomendó. <code class="ui">Recomendación correcta</code> la confirma; <code class="ui">Quitar recomendación</code> la descarta y el paciente deja de constar como recomendado. En los dos casos pasa a «Nuevo paciente» y queda apuntado en el historial.</li>
             <li><b><code class="ui">Dudosos</code></b>: pacientes indecisos. Se escribe un mensaje a cada uno con <code class="ui">Enviar mensaje</code> y pasan a «Dudoso contactado».</li>
             <li><b><code class="ui">En Espera</code></b>: pacientes en espera, con cambio solicitado o con psicólogo sin disponibilidad. Cada estado tiene su mensaje estándar; se envía uno a uno o con <code class="ui">Enviar a todos (<var>5</var>)</code>.</li>
             <li><b><code class="ui">Sin disponibilidad</code></b>: al pulsar <code class="ui">Mover a En espera</code>, el paciente recibe <code class="ui">Hola <var>Ana</var>, sigues en lista de espera para una cita en <var>San Blas</var>. Te avisaremos en cuanto haya disponibilidad.</code> y pasa a «En espera».</li>
@@ -521,7 +522,7 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Mensajes</h3><span class="chip r-psicologo">Psicólogo</span></div>
       <dl>
         <dt>Para qué</dt><dd><code class="ui">Envía mensajes de WhatsApp a tus pacientes</code>.</dd>
-        <dt>Qué se hace</dt><dd>Elegir un paciente y enviar <code class="ui">Solicitar reseña</code>, una plantilla con el enlace de reseñas de Google de su centro, o un <code class="ui">Mensaje libre</code>.</dd>
+        <dt>Qué se hace</dt><dd>Elegir un paciente y enviar <code class="ui">Solicitar reseña</code>, una plantilla con el enlace de reseñas de Google de su centro, o un <code class="ui">Mensaje libre</code>. Los dos llevan al final el pie <code class="ui">Mensaje solo informativo, no recibimos respuestas. Para cualquier cosa, contacta con Dante: <var>91 166 50 47</var></code>; la pantalla lo enseña antes de enviar.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
@@ -554,9 +555,9 @@ footer img{width:28px; height:28px}
     </article>
 
     <article class="ficha" id="p-usuarios">
-      <div class="ficha-cab"><h3>Usuarios</h3><span class="chip r-agente">Agente</span></div>
+      <div class="ficha-cab"><h3>Accesos</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>Solo las cuentas para entrar en la app: dar de alta a psicólogos, agentes, call center e inspección, y enviarles el acceso o una contraseña nueva. Cómo trabaja cada psicólogo se gestiona en <a href="#p-psicologos">Psicólogos</a>.</dd>
+        <dt>Para qué</dt><dd>Antes se llamaba Usuarios. Solo las cuentas para entrar en la app: dar de alta a psicólogos, agentes, call center e inspección, y enviarles el acceso o una contraseña nueva. Cómo trabaja cada psicólogo se gestiona en <a href="#p-psicologos">Psicólogos</a>.</dd>
         <dt>Pestañas</dt><dd><code class="ui">Psicólogos</code>, <code class="ui">Agentes</code>, <code class="ui">Call center</code> e <code class="ui">Inspección</code>, cada una con su número de personas. Se ven el nombre, el email, los centros y el estado.</dd>
         <dt>Botones</dt><dd><code class="ui">+ Nuevo usuario</code> abre el formulario de alta. En cada fila, <code class="ui">Enviar acceso</code> y <code class="ui">Generar contraseña</code>. En Agentes, Call center e Inspección hay además un interruptor para activar o desactivar. El estado de un psicólogo se ve aquí, pero se cambia en Psicólogos.</dd>
       </dl>
@@ -611,11 +612,12 @@ footer img{width:28px; height:28px}
     <article class="ficha" id="p-agentes">
       <div class="ficha-cab"><h3>Agentes</h3><span class="chip r-agente">Agente</span></div>
       <dl>
-        <dt>Para qué</dt><dd>La lista de agentes: activar o desactivar y restablecer su acceso con <code class="ui">Enviar acceso</code> o <code class="ui">Generar contraseña</code>.</dd>
+        <dt>Para qué</dt><dd>La lista de agentes: editar su teléfono con <code class="ui">Editar teléfono</code> (se escribe y se pulsa <code class="ui">Guardar</code> o <code class="ui">Cancelar</code>; si se deja vacío, se borra) y activarlos o desactivarlos. Sus contraseñas se gestionan en <a href="#p-usuarios">Accesos</a>.</dd>
       </dl>
       <details><summary>Ver mensajes</summary>
         <ul class="lista-msg">
-          <li><code class="ui">Este agente no tiene cuenta de acceso; créala desde Usuarios</code><span class="donde">Al pasar el ratón por los botones desactivados</span></li>
+          <li><code class="ui">Teléfono guardado.</code><span class="donde">Al guardar el teléfono</span></li>
+          <li><code class="ui">No se pudo guardar el teléfono.</code><span class="donde">Si falla al guardar</span></li>
         </ul>
       </details>
     </article>
@@ -634,7 +636,7 @@ footer img{width:28px; height:28px}
       <p>En <a href="#p-citas">Citas</a>, acción <code class="ui">Añadir nuevo paciente</code>. Se pide nombre completo, email (opcional) y <code class="ui">Fecha de nacimiento</code>, que es obligatoria: con ella la app calcula la edad y si es menor.</p>
       <ul>
         <li>La app crea sus <b>iniciales</b> sola, por ejemplo «MGL (María)». Son lo que se ve en el calendario, nunca el nombre completo.</li>
-        <li>La casilla <code class="ui">Nueva recomendación</code> marca que el paciente lo trae ese psicólogo. Ese paciente entra en «Revisar recomendado» en vez de «Nuevo paciente», hasta que el equipo valide la recomendación en Comunicaciones.</li>
+        <li>La casilla «Nueva recomendación» ya no se muestra (31-10-2026: la clínica no la usa). Todo paciente nuevo entra como «Nuevo paciente». Los que ya estaban en «Revisar recomendado» se siguen resolviendo en Comunicaciones.</li>
         <li><b>Adulto:</b> se pide su teléfono y el <b>tipo de consulta</b>, adultos o pareja, entre los que pasa ese psicólogo.</li>
         <li><b>Pareja:</b> aparece el bloque <code class="ui">Segunda persona (opcional)</code> con nombre y teléfono de la otra persona (si se rellena uno, hace falta el otro: <code class="ui">Indica nombre y teléfono de la segunda persona.</code>). Al guardar, si esa persona ya era paciente queda vinculada como paciente de pareja del mismo psicólogo y no se le reenvía el consentimiento (es único por persona, no por psicólogo): <code class="ui">Pareja registrada: la segunda persona ya era paciente y se ha vinculado a este psicólogo (no se le reenvía el consentimiento).</code> Si no lo era, se le crea una ficha mínima y recibe su consentimiento: <code class="ui">Pareja registrada: se ha creado la ficha de la segunda persona y se le ha enviado el consentimiento.</code> Las dos fichas quedan enlazadas. Si ya era paciente de pareja de otro psicólogo no se cambia: la app dice de quién es y el equipo lo cambia desde Pacientes. Quien da el alta sí puede saber si ya era paciente; lo que nunca lo revela es Dante ni el mensaje que recibe el paciente. Puede compartir teléfono con la primera persona; lo que no puede es ser la misma (<code class="ui">La segunda persona no puede ser la misma que la primera.</code>).</li>
         <li><b>Menor</b> (hasta 15 años): no se le pide teléfono, su contacto es el del tutor 1. Se piden los dos tutores legales; si solo hay uno, se marca la circunstancia especial y se explica en «Otros». Si un tutor ya es paciente, el botón <code class="ui">Ya es paciente</code> busca su ficha y copia sus datos.</li>
@@ -669,22 +671,22 @@ footer img{width:28px; height:28px}
     </ul>
   </article>
 
-  <p class="subtitulo">Estados del paciente</p>
+  <p class="subtitulo" id="estados">Estados del paciente</p>
   <div class="tabla"><table>
-    <thead><tr><th>Estado</th><th>Quién lo pone</th><th>Cuándo</th></tr></thead>
+    <thead><tr><th>Estado</th><th>Quién lo pone</th><th>Cuándo</th><th>Qué pasa después</th></tr></thead>
     <tbody>
-      <tr><td>Nuevo paciente</td><td>La app o Dante</td><td>Al darlo de alta sin recomendación, o al resolver una recomendación en Comunicaciones.</td></tr>
-      <tr><td>Agendado</td><td>Make</td><td>Al agendar o cambiar una cita.</td></tr>
-      <tr><td>Anulado</td><td>Make</td><td>Al cancelar una cita.</td></tr>
-      <tr><td>Sin disponibilidad</td><td>Make, a petición de Dante</td><td>Cuando Dante no encuentra hueco para el paciente. Avisa al equipo.</td></tr>
-      <tr><td>En espera</td><td>Comunicaciones</td><td>Al pulsar «Mover a En espera» sobre un paciente sin disponibilidad.</td></tr>
-      <tr><td>Cambio solicitado</td><td>Make, a petición de Dante</td><td>Cuando el paciente pide cambiar de psicólogo. Avisa al equipo.</td></tr>
-      <tr><td>Dudoso contactado</td><td>Comunicaciones</td><td>Tras escribir a un paciente indeciso.</td></tr>
-      <tr><td>Psicólogo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Tiene uso: alimenta la pestaña «Hablar con Psicólogo» de <a href="#p-comunicaciones">Comunicaciones</a>, desde donde se avisa al psicólogo de que tiene una llamada pendiente. Pero hoy ni la app ni Dante ponen a nadie en este estado. Por decidir: ¿lo activa el call center?</td></tr>
-      <tr><td>Dudoso</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Tiene uso: alimenta la pestaña «Dudosos» de Comunicaciones, donde se escribe a cada paciente y pasa a «Dudoso contactado». Pero hoy nadie pone a un paciente en «Dudoso». Por decidir: ¿lo activa el call center?</td></tr>
-      <tr><td>Revisar recomendado</td><td>La app</td><td>Al dar de alta un paciente con la casilla «Nueva recomendación». Queda así hasta que alguien del equipo lo revisa en la pestaña «Recomendaciones» de <a href="#p-comunicaciones">Comunicaciones</a>: si confirma la recomendación, o si la quita, el paciente pasa a «Nuevo paciente».</td></tr>
-      <tr><td>Psicólogo sin disponibilidad</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Tiene uso: alimenta la pestaña «En Espera» de Comunicaciones, con su propio mensaje estándar. Pero hoy nadie pone a un paciente en este estado. Por decidir: ¿lo activa el call center?</td></tr>
-      <tr><td>Inactivo</td><td>Comunicaciones</td><td>Cuando el psicólogo ha hablado con el paciente y este no quiere continuar: en la pestaña «Hablar con Psicólogo», botón «Marcar inactivo». El paciente sale de esa lista.</td></tr>
+      <tr><td>Nuevo paciente</td><td>La app o Dante</td><td>Al darlo de alta (en Citas o por Dante), o al resolver una recomendación antigua en Comunicaciones.</td><td>El paciente o sus tutores reciben el enlace del consentimiento y el equipo, el aviso de paciente nuevo. Con su primera cita pasa a «Agendado».</td></tr>
+      <tr><td>Agendado</td><td>Make</td><td>Al agendar o cambiar una cita, desde Citas, el calendario o Dante.</td><td>El paciente recibe la confirmación con psicólogo, día y hora. Si se cancela la cita, pasa a «Anulado».</td></tr>
+      <tr><td>Anulado</td><td>Make</td><td>Al cancelar una cita.</td><td>El paciente recibe el aviso de anulación con el teléfono de la clínica. Si vuelve a pedir cita, pasa otra vez a «Agendado».</td></tr>
+      <tr><td>Sin disponibilidad</td><td>Make, a petición de Dante</td><td>Cuando Dante no encuentra hueco para el paciente. Avisa al equipo.</td><td>Sale en la pestaña «Sin disponibilidad» de <a href="#p-comunicaciones">Comunicaciones</a>. Con <code class="ui">Mover a En espera</code> recibe el mensaje de lista de espera y pasa a «En espera».</td></tr>
+      <tr><td>En espera</td><td>Comunicaciones</td><td>Al pulsar <code class="ui">Mover a En espera</code> sobre un paciente sin disponibilidad.</td><td>Sale en la pestaña «En Espera» con su mensaje estándar; cada envío pone a cero los días que lleva esperando. Al darle cita pasa a «Agendado».</td></tr>
+      <tr><td>Cambio solicitado</td><td>Make, a petición de Dante</td><td>Cuando el paciente pide cambiar de psicólogo. Avisa al equipo y guarda el estado anterior.</td><td>Sale en la pestaña «En Espera» con su mensaje estándar mientras el equipo busca otro psicólogo. Al darle cita pasa a «Agendado».</td></tr>
+      <tr><td>Dudoso contactado</td><td>Comunicaciones</td><td>Tras escribir a un paciente indeciso desde la pestaña «Dudosos».</td><td>Sigue en «Dudosos» por si hay que volver a escribirle. Al darle cita pasa a «Agendado».</td></tr>
+      <tr><td>Revisar recomendado</td><td>La app (solo pacientes antiguos)</td><td>Se ponía al dar de alta con la casilla «Nueva recomendación», que ya no se muestra.</td><td>Sale en la pestaña «Recomendaciones» de Comunicaciones: tanto si se confirma como si se quita la recomendación, pasa a «Nuevo paciente».</td></tr>
+      <tr><td>Inactivo</td><td>Comunicaciones</td><td>Cuando el psicólogo ha hablado con el paciente y este no quiere continuar: botón <code class="ui">Marcar inactivo</code> en «Hablar con Psicólogo».</td><td>Sale de las listas de Comunicaciones. Si vuelve a pedir cita, pasa a «Agendado».</td></tr>
+      <tr><td>Psicólogo</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo pone. En Citas está preparada, sin encender, la acción del call center <code class="ui">Pendiente de psicólogo</code>, que lo pondría.</td><td>Sale en la pestaña «Hablar con Psicólogo» de Comunicaciones: <code class="ui">Notificar psicólogo</code> le avisa de que tiene una llamada pendiente (el estado no cambia, para no perder la cuenta de días); si el paciente no quiere seguir, <code class="ui">Marcar inactivo</code>.</td></tr>
+      <tr><td>Dudoso</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo pone y no hay ninguna acción preparada para ello. Por decidir: ¿quién marca a un paciente como indeciso?</td><td>Sale en la pestaña «Dudosos» de Comunicaciones; al escribirle con <code class="ui">Enviar mensaje</code> pasa a «Dudoso contactado».</td></tr>
+      <tr><td>Psicólogo sin disponibilidad</td><td><span class="badge b-decision">decisión pendiente</span></td><td>Hoy nadie lo pone y no hay ninguna acción preparada para ello. Por decidir: ¿lo activa el call center?</td><td>Sale en la pestaña «En Espera» de Comunicaciones con su propio mensaje estándar.</td></tr>
     </tbody>
   </table></div>
   <p class="nota">Los cambios de estado hechos desde Comunicaciones quedan registrados con fecha, para saber cuántos días lleva cada paciente esperando.</p>
@@ -872,7 +874,7 @@ footer img{width:28px; height:28px}
     <article class="ficha">
       <div class="ficha-cab"><h3>Decisiones que tomar</h3><span class="badge b-decision">decisión pendiente</span></div>
       <ul class="lista-msg">
-        <li><b>Estados que nadie activa.</b> «Psicólogo», «Dudoso» y «Psicólogo sin disponibilidad» ya tienen su pestaña en Comunicaciones, pero hoy nadie pone a un paciente en ellos. En Citas están preparadas tres acciones para el call center y los agentes que los activarían (<code class="ui">Sin cita disponible</code>, <code class="ui">Pendiente de psicólogo</code>, <code class="ui">Cambio de psicólogo</code>); falta que la clínica diga cuáles encender. Ver <a href="#cita">Estados del paciente</a>.</li>
+        <li><b>Estados que nadie activa.</b> «Psicólogo», «Dudoso» y «Psicólogo sin disponibilidad» ya tienen su pestaña en Comunicaciones, pero hoy nadie pone a un paciente en ellos. En Citas están preparadas, sin encender, tres acciones para el call center y los agentes (<code class="ui">Sin cita disponible</code>, <code class="ui">Pendiente de psicólogo</code>, <code class="ui">Cambio de psicólogo</code>): la segunda pondría «Psicólogo»; las otras dos ponen «Sin disponibilidad» y «Cambio solicitado», que hoy solo pone Dante. Para «Dudoso» y «Psicólogo sin disponibilidad» no hay acción. Falta que la clínica diga cuáles encender. Ver <a href="#estados">Estados del paciente</a>.</li>
         <li><b>Doble confirmación con Dante.</b> Decidir cuál de las dos confirmaciones se queda.</li>
         <li><b>Consentimiento desde Dante.</b> Cuando Dante da de alta a un paciente, el enlace del consentimiento ya lo envía Make, como con la app. Queda por decidir si Dante lo menciona también en la conversación.</li>
         <li><b>Pruebas de Resumen de pacientes, Actividad de citas e Inspección.</b> Ya están en la app; falta la ronda de pruebas del equipo: comprobar que las citas del mes cuadran con Google Calendar, que la ocupación y las horas bloqueadas salen bien con el horario de cada psicólogo, y que Inspección y los psicólogos no ven los números de la clínica.</li>
@@ -912,7 +914,7 @@ footer img{width:28px; height:28px}
     <div><dt>Origen</dt><dd>Quién hizo cada acción: un psicólogo, un agente, alguien del call center o Dante. Queda guardado siempre.</dd></div>
     <div><dt>Permiso de bloqueo</dt><dd>Permiso de un psicólogo para bloquear y desbloquear su agenda él mismo. Se da en Psicólogos.</dd></div>
     <div><dt>Proveedor externo de calendario</dt><dd>Un servicio externo que recibe un aviso automático con cada cita y cada bloqueo.</dd></div>
-    <div><dt>Recomendado</dt><dd>Paciente que trae el propio psicólogo, marcado con la casilla «Nueva recomendación».</dd></div>
+    <div><dt>Recomendado</dt><dd>Paciente que trae el propio psicólogo. Se marcaba con la casilla «Nueva recomendación», que desde el 31-10-2026 ya no se muestra.</dd></div>
     <div><dt>Tipo de cita</dt><dd>Adulto, Pareja o Menor. Solo se ofrecen los tipos que pasa el psicólogo. Todas duran 60 minutos.</dd></div>
     <div><dt>Tipo de consulta</dt><dd>Lo que atiende un psicólogo: adultos, pareja, infantil. Se marca en Psicólogos.</dd></div>
   </dl>

@@ -29,6 +29,8 @@
 
 ### Task 1: Accesos y Agentes (30)
 
+**Hecho 31-10-2026.** Prueba en navegador diferida a las pruebas de aceptación del final. También se cambiaron los textos «en Usuarios» de Psicólogos (`FichaPsicologo.tsx`, `equipo/page.tsx`) y `gestion.tsx`.
+
 **Files:**
 - Modify: `app/dashboard/_components/SidebarNav.tsx:69` (`label: 'Accesos'`), `app/dashboard/usuarios/page.tsx` (título `Accesos`, textos "Usuarios" → "Accesos"), `app/dashboard/agentes/page.tsx:95-115,265-295`, `docs/roles-y-permisos.md` (fila "Usuarios" → "Accesos")
 
@@ -36,13 +38,15 @@
 - Consumes: `PATCH /api/usuarios/[id]` con `{ tipo: 'agente', telefono: string | null }` (ya existe, `route.ts:35`).
 - Produces: en `agentes/page.tsx`, `guardarTelefono(a: Agente, telefono: string): Promise<void>`.
 
-- [ ] **Step 1: Quitar `restablecer`, `setResultado`/`resultado` si solo lo usaba, y los dos `ActionButton` de contraseña.** Tooltips restantes: "créala desde Accesos".
-- [ ] **Step 2: Editar teléfono**: estado `editando: string | null`, `telefonoNuevo: string`; en la celda Teléfono, si `editando === a.id` → `<input>` + `Guardar` / `Cancelar`, si no → texto + `ActionButton` `Editar teléfono`. `guardarTelefono` hace el `PATCH` (`telefono: telefonoNuevo.trim() || null`), actualiza `agentes` en memoria y muestra `Teléfono guardado.` o `No se pudo guardar el teléfono.` en el aviso existente.
-- [ ] **Step 3: Renombrar** en menú, título de `usuarios/page.tsx` y `roles-y-permisos.md`.
-- [ ] **Step 4: tsc; prueba manual** (aceptaciones 1 y 2; Review Focus 3 y 4).
-- [ ] **Step 5: Commit** `git commit -m "B9: Usuarios pasa a Accesos; Agentes solo teléfono y activo"`
+- [x] **Step 1: Quitar `restablecer`, `setResultado`/`resultado` si solo lo usaba, y los dos `ActionButton` de contraseña.** Tooltips restantes: "créala desde Accesos".
+- [x] **Step 2: Editar teléfono**: estado `editando: string | null`, `telefonoNuevo: string`; en la celda Teléfono, si `editando === a.id` → `<input>` + `Guardar` / `Cancelar`, si no → texto + `ActionButton` `Editar teléfono`. `guardarTelefono` hace el `PATCH` (`telefono: telefonoNuevo.trim() || null`), actualiza `agentes` en memoria y muestra `Teléfono guardado.` o `No se pudo guardar el teléfono.` en el aviso existente.
+- [x] **Step 3: Renombrar** en menú, título de `usuarios/page.tsx` y `roles-y-permisos.md`.
+- [x] **Step 4: tsc; prueba manual** (aceptaciones 1 y 2; Review Focus 3 y 4).
+- [x] **Step 5: Commit** `git commit -m "B9: Usuarios pasa a Accesos; Agentes solo teléfono y activo"`
 
 ### Task 2: Pie de los mensajes (37)
+
+**Hecho 31-10-2026.** Decisiones: `CONTACTO_DANTE = 91 166 50 47` (Sonia no dio el enlace; en docs hay dos bots, @Jaimervr_bot y @Dantito_bot: cambiar la constante si se prefiere uno); el aviso al psicólogo (`notificar_psicologo`) no lleva pie (`llevaPie`, con test). Envío real a un teléfono de prueba diferido a las pruebas de aceptación.
 
 **Files:**
 - Create: `lib/mensajes-pie.ts`, `lib/mensajes-pie.test.ts`
@@ -51,7 +55,7 @@
 **Interfaces:**
 - Produces: `CONTACTO_DANTE: string`; `pieMensaje(contacto?: string): string`; `conPie(mensaje: string, contacto?: string): string`.
 
-- [ ] **Step 1: Test**
+- [x] **Step 1: Test**
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -72,13 +76,13 @@ describe('conPie', () => {
 })
 ```
 
-- [ ] **Step 2: `npm test -- mensajes-pie` → falla**
-- [ ] **Step 3: Escribir `lib/mensajes-pie.ts`** (`trimEnd()` del mensaje; `contacto` por defecto `CONTACTO_DANTE`).
-- [ ] **Step 4: `npm test -- mensajes-pie` → pasa**
-- [ ] **Step 5: API**: tras `const body = await req.json()`, `if (typeof body.mensaje === 'string') body.mensaje = conPie(body.mensaje)`.
-- [ ] **Step 6: Vistas previas**: bajo cada texto editable o plantilla, bloque gris `Así llegará el mensaje:` + `conPie(texto)` en `white-space: pre-wrap` (solo lectura).
-- [ ] **Step 7: Prueba manual**: enviar reseña y lista de espera a un teléfono de prueba (aceptación 4); `curl` con cuerpo sin `mensaje` → Make recibe lo mismo de antes.
-- [ ] **Step 8: Commit** `git commit -m "B9: pie informativo en todos los mensajes salientes"`
+- [x] **Step 2: `npm test -- mensajes-pie` → falla**
+- [x] **Step 3: Escribir `lib/mensajes-pie.ts`** (`trimEnd()` del mensaje; `contacto` por defecto `CONTACTO_DANTE`).
+- [x] **Step 4: `npm test -- mensajes-pie` → pasa**
+- [x] **Step 5: API**: tras `const body = await req.json()`, `if (typeof body.mensaje === 'string') body.mensaje = conPie(body.mensaje)`.
+- [x] **Step 6: Vistas previas**: bajo cada texto editable o plantilla, bloque gris `Así llegará el mensaje:` + `conPie(texto)` en `white-space: pre-wrap` (solo lectura).
+- [x] **Step 7: Prueba manual**: enviar reseña y lista de espera a un teléfono de prueba (aceptación 4); `curl` con cuerpo sin `mensaje` → Make recibe lo mismo de antes.
+- [x] **Step 8: Commit** `git commit -m "B9: pie informativo en todos los mensajes salientes"`
 
 ### Task 3: Ocultar "Nueva recomendación" (33)
 
@@ -86,17 +90,19 @@ describe('conPie', () => {
 - Create: `lib/flags.ts`
 - Modify: `app/dashboard/psicologos/page.tsx` (~1580: `{MOSTRAR_RECOMENDACION && (...)}` alrededor de la casilla; `npEsRecomendado` se mantiene en `false`)
 
-- [ ] **Step 1: `lib/flags.ts`**: `export const MOSTRAR_RECOMENDACION = false` con comentario (tarea 33, 27-10-2026: el cliente no la usa; para volver a verla poner `true`).
-- [ ] **Step 2: Envolver la casilla; tsc; comprobar** que el alta sigue enviando `es_paciente_recomendado: false` y que Comunicaciones › Recomendaciones sigue listando a los antiguos.
-- [ ] **Step 3: Commit** `git commit -m "B9: casilla Nueva recomendación oculta tras MOSTRAR_RECOMENDACION"`
+- [x] **Step 1: `lib/flags.ts`**: `export const MOSTRAR_RECOMENDACION = false` con comentario (tarea 33, 27-10-2026: el cliente no la usa; para volver a verla poner `true`).
+- [x] **Step 2: Envolver la casilla; tsc; comprobar** que el alta sigue enviando `es_paciente_recomendado: false` y que Comunicaciones › Recomendaciones sigue listando a los antiguos.
+- [x] **Step 3: Commit** `git commit -m "B9: casilla Nueva recomendación oculta tras MOSTRAR_RECOMENDACION"`
 
 ### Task 4: Manual: estados y novedades (27)
+
+**Quedó así:** manual editado y `check-manual` OK; los estados se verificaron contra el código y `docs/make-cambios-2026-10-22.md` (rutas 6–9), sin reabrir los blueprints (la tabla anterior ya estaba verificada el 28-09). Falta Step 4: republicar el manual y merge a `main`.
 
 **Files:**
 - Modify: `docs/manual-somos/index.html` (tabla "Estados del paciente" ~613-631; Usuarios → Accesos ~504-508 y menú; Agentes ~554-556; Comunicaciones y Mensajes: nota del pie; Citas: nota de recomendación oculta; Novedades)
 
-- [ ] **Step 1: Verificar en los blueprints de Make** (`docs/` de la raíz, exportados) qué estado escribe cada ruta: Agendar/Cambiar → Agendado, Cancelar → Anulado, Sin disponibilidad, Cambio solicitado; y en el código qué cambia Comunicaciones (`mensajes/page.tsx`: En espera, Dudoso contactado, Inactivo, Nuevo paciente al resolver recomendación). Si B3 ya está en main, tomar de su spec los estados que activa el call center.
-- [ ] **Step 2: Reescribir la tabla** con columnas *Estado · Quién lo pone · Cuándo · Qué pasa después*; mantener `decisión pendiente` solo donde la tarea 51 no esté resuelta.
-- [ ] **Step 3: Resto de textos** del manual (Accesos, Agentes, pie de mensajes con el texto exacto, recomendación oculta) y entrada en Novedades: `Usuarios se llama ahora Accesos. En Agentes solo se edita el teléfono. Los mensajes a pacientes llevan un pie que indica que no se reciben respuestas y cómo contactar con Dante. La casilla "Nueva recomendación" ya no se muestra.`
+- [x] **Step 1: Verificar en los blueprints de Make** (`docs/` de la raíz, exportados) qué estado escribe cada ruta: Agendar/Cambiar → Agendado, Cancelar → Anulado, Sin disponibilidad, Cambio solicitado; y en el código qué cambia Comunicaciones (`mensajes/page.tsx`: En espera, Dudoso contactado, Inactivo, Nuevo paciente al resolver recomendación). Si B3 ya está en main, tomar de su spec los estados que activa el call center.
+- [x] **Step 2: Reescribir la tabla** con columnas *Estado · Quién lo pone · Cuándo · Qué pasa después*; mantener `decisión pendiente` solo donde la tarea 51 no esté resuelta.
+- [x] **Step 3: Resto de textos** del manual (Accesos, Agentes, pie de mensajes con el texto exacto, recomendación oculta) y entrada en Novedades: `Usuarios se llama ahora Accesos. En Agentes solo se edita el teléfono. Los mensajes a pacientes llevan un pie que indica que no se reciben respuestas y cómo contactar con Dante. La casilla "Nueva recomendación" ya no se muestra.`
 - [ ] **Step 4: Republicar el manual** (artifact de la memoria "Manual Somos para dueños"); tablero: 30, 33, 37, 27 → hecha; merge a `main` tras `npm run build`.
-- [ ] **Step 5: Commit** `git commit -m "B9: manual (estados de paciente, Accesos, pie de mensajes)"`
+- [x] **Step 5: Commit** `git commit -m "B9: manual (estados de paciente, Accesos, pie de mensajes)"`

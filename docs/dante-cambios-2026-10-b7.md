@@ -34,7 +34,7 @@ En el workflow principal: `IF Atendido` deja pasar `atendido` y `derivar a <nomb
 
 ## 2. Chats de Telegram del equipo (tarea 3)
 
-Hoy Marta, Jaime y Bea no tienen su chat en `agentes`, por eso todos los recordatorios acaban en Sonia.
+**Comprobado el 31-10-2026:** Sonia, Jaime, Marta y Bea ya tienen su chat en `agentes` y están activos (la nota del 27-10 estaba desfasada). Los pasos de abajo solo hacen falta si un aviso no llega en P1/P2.
 
 - [ ] Cada uno abre el bot de Dante y escribe cualquier cosa (por ejemplo `hola`).
 - [ ] En n8n, en la ejecución del `Telegram Trigger`, copiar `message.from.id` de cada uno.

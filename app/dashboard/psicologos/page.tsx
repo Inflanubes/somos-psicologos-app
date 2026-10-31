@@ -26,7 +26,7 @@ import {
 import { ahoraMadrid } from '@/lib/fechas'
 import {
   leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
-  citasMismoDia, textoAvisoMismoDia, ACCIONES_SOLICITUD_ACTIVAS, ETIQUETA_SOLICITUD, esAccionSolicitud,
+  citasMismoDia, textoAvisoMismoDia, ETIQUETA_SOLICITUD, esAccionSolicitud,
   psicologoActualExistente, accionAltaExistente, operadorParaEnvio,
   type Rol, type CitaDia, type AccionSolicitud,
 } from '@/lib/call-center'
@@ -35,20 +35,9 @@ import {
   fechasSerie, comprobarSerie, formatoFechaCorta, mensajeNoDisponibles, ETIQUETA_FRECUENCIA, OPCIONES_MESES,
   type FrecuenciaRepeticion,
 } from '@/lib/citas-recurrentes'
-
-type AccionPsicologo =
-  | 'Agendar cita'
-  | 'Cancelar cita'
-  | 'Cambiar cita'
-  | 'Bloquear agenda'
-  | 'Desbloquear agenda'
-  | 'Modificar bloqueo personal'
-  | 'Añadir nuevo paciente'
-  | 'Asuntos propios'
-  | 'Vacaciones'
-  | 'Baja laboral'
-  // Solicitudes al equipo (B3): 'Otro' | 'Sin disponibilidad' | 'hablar con psicologo' | 'Cambio solicitado'.
-  | AccionSolicitud
+import {
+  accionesMenu, tiposBloqueoDisponibles, accionReal, ACCION_BLOQUEOS, type AccionPsicologo,
+} from '@/lib/acciones-menu'
 
 type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
 
@@ -59,30 +48,14 @@ type Prefill =
 
 const ERROR_CITA_NO_ENCONTRADA = 'No encontramos esa cita: puede que ya se haya anulado.'
 
-const ACCIONES: AccionPsicologo[] = [
-  'Agendar cita',
-  'Añadir nuevo paciente',
-  'Cambiar cita',
-  'Cancelar cita',
-  'Bloquear agenda',
-  'Desbloquear agenda',
-  'Modificar bloqueo personal',
-  'Asuntos propios',
-  'Vacaciones',
-  'Baja laboral',
-]
-
 const ACCIONES_CITA: AccionPsicologo[] = ['Agendar cita', 'Cancelar cita', 'Cambiar cita']
-// Bloqueo general de agenda: solo para psicólogos con puede_bloquear = true
-// (los agentes no tienen restricción). Vacaciones/asuntos/baja son para todos.
-const ACCIONES_BLOQUEO_GENERAL: AccionPsicologo[] = ['Bloquear agenda', 'Desbloquear agenda']
 const ACCIONES_BLOQUEO: AccionPsicologo[] = [
   'Bloquear agenda',
   'Desbloquear agenda',
   'Modificar bloqueo personal',
   'Asuntos propios',
   'Vacaciones',
-  'Baja laboral',
+  'Baja médica',
 ]
 
 const LABEL_MAP: Record<AccionPsicologo, string> = {
@@ -95,7 +68,7 @@ const LABEL_MAP: Record<AccionPsicologo, string> = {
   'Añadir nuevo paciente': 'Añadir paciente',
   'Asuntos propios':       'Confirmar asuntos propios',
   'Vacaciones':            'Confirmar vacaciones',
-  'Baja laboral':          'Confirmar baja laboral',
+  'Baja médica':           'Confirmar baja médica',
   'Otro':                  'Enviar aviso al equipo',
   'Sin disponibilidad':    'Enviar solicitud',
   'hablar con psicologo':  'Enviar solicitud',
@@ -227,7 +200,15 @@ export default function PsicologosPage() {
 
   const [centroId, setCentroId] = useState('')
   const [psicologoId, setPsicologoId] = useState('')
-  const [accion, setAccion] = useState<AccionPsicologo | ''>('')
+  // El desplegable guarda la opción del menú y, si es de bloqueos, el tipo;
+  // `accion` es la acción real que usa el formulario y se envía a Make (B6).
+  const [accionMenu, setAccionMenu] = useState('')
+  const [tipoBloqueo, setTipoBloqueo] = useState('')
+  const accion = accionReal(accionMenu, tipoBloqueo)
+  function setAccion(a: AccionPsicologo | '') {
+    setAccionMenu(a)
+    setTipoBloqueo('')
+  }
 
   // Cita fields
   // Id del paciente elegido. Antes se guardaban las iniciales, pero no son únicas
@@ -426,23 +407,14 @@ export default function PsicologosPage() {
 
   const psicologoSeleccionado = filteredPsicologos.find((p) => p.id === psicologoId) ?? null
 
-  // Un usuario psicólogo solo ve Bloquear/Desbloquear agenda si su ficha lo permite;
-  // los agentes gestionan cualquier agenda sin restricción. El call center solo
-  // gestiona citas (agendar, cambiar, cancelar) y altas de paciente, sin bloqueos.
-  // Un psicólogo desactivado sigue gestionando su agenda pero no puede darse de
-  // alta pacientes nuevos (el agente sí puede asignárselos).
+  // Menú de Citas (B6): el submenú de bloqueos solo lo ven los agentes y los
+  // psicólogos con puede_bloquear; el call center solo gestiona citas, altas y
+  // solicitudes. Un psicólogo desactivado sigue gestionando su agenda pero no
+  // puede darse de alta pacientes nuevos (el agente sí puede asignárselos).
   const psicologoInactivo = psicologoSeleccionado !== null && !psicologoSeleccionado.activo
-  const accionesBase = ACCIONES.filter((a) => {
-    if (a === 'Añadir nuevo paciente' && esPsicologo && psicologoInactivo) return false
-    if (esCallCenter) return ACCIONES_CITA.includes(a) || a === 'Añadir nuevo paciente'
-    return (
-      !ACCIONES_BLOQUEO_GENERAL.includes(a) ||
-      !esPsicologo ||
-      (psicologoSeleccionado?.puede_bloquear ?? false)
-    )
-  })
-  // Solicitudes al equipo (B3): call center y agentes; las activas se configuran en lib/call-center.ts.
-  const accionesDisponibles: AccionPsicologo[] = esPsicologo ? accionesBase : [...accionesBase, ...ACCIONES_SOLICITUD_ACTIVAS]
+  const puedeBloquear = psicologoSeleccionado?.puede_bloquear ?? null
+  const opcionesMenu = accionesMenu(rol, { puedeBloquear, psicologoInactivo })
+  const tiposBloqueo = tiposBloqueoDisponibles(rol, puedeBloquear)
 
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const esSolicitud = accion !== '' && esAccionSolicitud(accion)
@@ -1476,7 +1448,7 @@ export default function PsicologosPage() {
     }
     if (
       esPsicologo &&
-      ACCIONES_BLOQUEO_GENERAL.includes(accion as AccionPsicologo) &&
+      (accion === 'Bloquear agenda' || accion === 'Desbloquear agenda') &&
       !(psicologoSeleccionado?.puede_bloquear ?? false)
     ) {
       setError('No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.')
@@ -2098,7 +2070,7 @@ export default function PsicologosPage() {
           {/* Acción */}
           <FormField label="¿Qué necesitas hoy?" required>
             <select
-              value={accion}
+              value={accionMenu}
               onChange={(e) => setAccion(e.target.value as AccionPsicologo)}
               style={{ ...inputStyle, cursor: 'pointer' }}
               disabled={!psicologoId}
@@ -2107,13 +2079,29 @@ export default function PsicologosPage() {
               <option value="">
                 {psicologoId ? 'Selecciona una acción' : 'Primero selecciona psicólogo'}
               </option>
-              {accionesDisponibles.map((a) => (
+              {opcionesMenu.map((a) => (
                 <option key={a} value={a}>
                   {esAccionSolicitud(a) ? ETIQUETA_SOLICITUD[a] : a}
                 </option>
               ))}
             </select>
           </FormField>
+
+          {accionMenu === ACCION_BLOQUEOS && (
+            <FormField label="Tipo de bloqueo" required>
+              <select
+                value={tipoBloqueo}
+                onChange={(e) => setTipoBloqueo(e.target.value)}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+                required
+              >
+                <option value="">Selecciona el tipo</option>
+                {tiposBloqueo.map((t) => (
+                  <option key={t.etiqueta} value={t.etiqueta}>{t.etiqueta}</option>
+                ))}
+              </select>
+            </FormField>
+          )}
 
           {/* NUEVO PACIENTE FIELDS */}
           {isNuevoPaciente && (

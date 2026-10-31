@@ -208,6 +208,7 @@ footer img{width:28px; height:28px}
     <section class="novedades" id="novedades" aria-labelledby="t-novedades">
       <h2 id="t-novedades">Novedades</h2>
       <ol>
+        <li><time datetime="2026-10-31">31-10-2026</time><span>Avisos de Dante al equipo: las emergencias llegan a la vez a Jaime y a Bea, y el primero que responde «atendido» la cierra para los dos; cualquiera puede pasar una derivación a otra persona respondiendo «derivar a <var>Marta</var>»; los recordatorios pasan a ser cada 30 minutos. Además queda escrito que los cambios en la app se suben solo de madrugada. <a href="#dante">Ver Dante</a> · <a href="#madrugada">Ver cuándo se sube</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Bloqueos más sencillos en Citas: el desplegable de acción queda en <code class="ui">Agendar cita</code>, <code class="ui">Añadir nuevo paciente</code>, <code class="ui">Cambiar cita</code>, <code class="ui">Cancelar cita</code> y <code class="ui">Bloquear / Desbloquear agenda</code>; al elegir esta última aparece <code class="ui">Tipo de bloqueo</code> con vacaciones, asuntos propios, baja médica, modificar un bloqueo, bloqueo general y desbloquear. Los psicólogos sin permiso de bloqueo ya no ven ningún bloqueo (se los pone un agente). «Baja laboral» pasa a llamarse <b>Baja médica</b> en toda la app, también en Estadísticas y en las bajas antiguas. <a href="#p-citas">Ver Citas</a>.</span></li>
         <li><time datetime="2026-10-31">31-10-2026</time><span>Dante: pide citas para otra persona adulta (un hijo mayor de edad, un padre, un amigo) con su móvil, y en Pacientes se ve «Añadido por Dante (a petición de <var>Ana López</var>)»; ofrece registrar a la pareja en las citas de pareja; reenvía el consentimiento cuando se lo piden; no cambia ni anula las citas que creó un psicólogo; una cita se puede cambiar dos veces (al segundo cambio Marta recibe un aviso; al tercero, Dante pasa la conversación al equipo); y cuando no puede seguir avisa él mismo al equipo, así nadie se queda esperando una llamada que no va a llegar. <a href="#dante">Ver Dante</a>.</span></li>
         <li><time datetime="2026-10-30">30-10-2026</time><span>Consentimiento informado: en Pacientes, cada paciente tiene los botones <code class="ui">Reenviar</code> (manda de nuevo el enlace, de adulto o de menores, al paciente o a sus tutores) y <code class="ui">Marcar firmado</code> (para quien firma en papel; la columna pasa a decir <code class="ui">Firmado a mano por <var>Marta</var> el <var>30/10/2026</var></code>); el agente puede además <code class="ui">Desmarcar</code> (en un menor, elige de qué tutor). En Comunicaciones, el estado y <code class="ui">Reenviar consentimiento</code> en cada paciente; si ya está firmado, avisa antes de reenviar. En el alta de pareja, bloque <code class="ui">Segunda persona (opcional)</code> con nombre y teléfono: si ya era paciente se vincula al mismo psicólogo y la app lo dice; si no, se le crea la ficha y recibe el consentimiento. El call center no ve nada de esto. <a href="#p-pacientes">Ver Pacientes</a> · <a href="#p-citas">Ver Citas</a>.</span></li>
@@ -276,6 +277,7 @@ footer img{width:28px; height:28px}
     <span>App o Dante</span><b>→</b><span>Make</span><b>→</b><span>Google Calendar</span><b>+</b><span>estado del paciente</span><b>+</b><span>aviso por Telegram</span>
   </div>
   <p class="nota">Cada acción queda además apuntada en un historial. De ahí salen las Estadísticas, y así se sabe siempre quién hizo qué y cuándo: un psicólogo, un agente, alguien del call center o Dante.</p>
+  <p class="nota" id="madrugada"><b>Cambios en la app solo de madrugada (4–5 h).</b> Las versiones nuevas de la app, de Dante y de los cambios en la base de datos se suben de madrugada, o con Dante y Make parados, para no cortar a nadie que esté trabajando o hablando con Dante.</p>
 </div></section>
 <!-- SECCION-ROLES -->
 <section class="clara seccion" id="roles"><div class="wrap">
@@ -839,11 +841,12 @@ footer img{width:28px; height:28px}
     <tbody>
       <tr><td>General</td><td>Marta → Sonia → Jaime</td><td>El paciente pide hablar con una persona, Dante no sabe resolverlo, o se trata de bloqueos, facturas o informes.</td></tr>
       <tr><td>Marketing</td><td>Jaime → Sonia → Marta</td><td>Colaboraciones, publicidad, prensa.</td></tr>
-      <tr><td>Emergencia</td><td>Bea → Marta → Sonia → Jaime</td><td>Además recuerda al paciente los teléfonos 112 y 024.</td></tr>
+      <tr><td>Emergencia</td><td>Jaime y Bea a la vez; si no le llega a ninguno, Marta → Sonia</td><td>Además recuerda al paciente los teléfonos 112 y 024.</td></tr>
     </tbody>
   </table></div>
+  <p>Quien recibe una derivación tiene dos respuestas en el bot: «atendido» la cierra (en una emergencia, también para la otra persona avisada), y «derivar a <var>Marta</var>» (o Jaime, Bea, Sonia) se la pasa a esa persona, que recibe el aviso con el motivo original y la frase «pasada por <var>Bea</var>». Mientras nadie responda «atendido», cada persona que la tiene pendiente recibe un recordatorio cada 30 minutos.</p>
   <div class="dos">
-    <p class="nota">Quien atiende la derivación responde «atendido» en Telegram y queda cerrada. Mientras no lo haga, la persona avisada recibe un recordatorio cada 15 minutos.</p>
+    <p class="nota">Si una persona del equipo no ha abierto nunca el bot, Telegram no le deja escribir: sus avisos van al siguiente de la lista y sus recordatorios llegan a Sonia, que se lo hace saber.</p>
     <p class="nota"><span class="badge b-decision">decisión pendiente</span> Cuando actúa Dante, el paciente recibe hoy dos confirmaciones: la de Dante y la de Make.</p>
   </div>
 </div></section>
@@ -865,7 +868,7 @@ footer img{width:28px; height:28px}
       <div class="ficha-cab"><h3>Por construir o ajustar</h3><span class="badge b-pend">pendiente</span></div>
       <ul class="lista-msg">
         <li id="p-telegram-pacientes"><b>Confirmaciones a pacientes dados de alta en la app.</b> <span class="badge b-pend">a confirmar</span> Las confirmaciones de cita y el enlace del consentimiento salen hoy por Telegram. Telegram solo puede escribir a quien ha hablado antes con el bot, es decir, a los pacientes que entraron por Dante. Los pacientes dados de alta en la app con su número de teléfono probablemente no los reciben. Se resuelve con el paso a WhatsApp.</li>
-        <li><b>WhatsApp para Dante y recordatorios.</b> Pasar Dante y los recordatorios de consentimiento de Telegram a WhatsApp.</li>
+        <li><b>WhatsApp para Dante y recordatorios.</b> Pasar Dante y los recordatorios de consentimiento de Telegram a WhatsApp. Con ese paso se decidirá también qué avisos al equipo van por WhatsApp (los urgentes) y cuáles siguen por Telegram (los informativos).</li>
         <li><b>Tipo de cita en el calendario.</b> Que el evento de Google Calendar incluya si es Adulto, Pareja o Menor.</li>
         <li><b>Revisar los horarios migrados.</b> Los psicólogos con varios centros tienen todas sus franjas en el primer centro por nombre; un agente debe repartirlas desde su ficha (la ficha lo avisa en ámbar).</li>
         <li><b>Citas a y media.</b> Activar <code class="ui">30'</code> a los psicólogos que las necesiten.</li>

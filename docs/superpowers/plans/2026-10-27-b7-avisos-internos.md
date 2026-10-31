@@ -37,9 +37,9 @@
 **Interfaces:**
 - Produces: columnas `derivaciones.grupo_id uuid NOT NULL DEFAULT gen_random_uuid()`, `derivaciones.derivada_desde text`; `atender_derivaciones(p_agente text) RETURNS integer`; `derivar_a(p_desde text, p_hacia text) RETURNS TABLE (id uuid, grupo_id uuid, chat_id text, paciente_nombre text, motivo text, tipo text, chat_destino text)`.
 
-- [ ] **Step 1:** Escribir la migración según la especificación: `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, índice, `CREATE OR REPLACE FUNCTION` × 2 (`LANGUAGE plpgsql SECURITY DEFINER`), `GRANT EXECUTE ON FUNCTION … TO anon, authenticated`. `derivar_a`: `IF p_desde = p_hacia OR NOT EXISTS (SELECT 1 FROM agentes WHERE nombre = p_hacia AND activo AND telefono IS NOT NULL) THEN RETURN; END IF;` luego `INSERT … SELECT` por grupo pendiente de `p_desde` (`mensaje_enviado` = `'Pasada por ' || p_desde`), `UPDATE` cierre de las de `p_desde`, `RETURN QUERY` con `chat_destino` del `agentes.telefono`.
-- [ ] **Step 2:** Bloque final comentado de pruebas para el SQL Editor: `SELECT atender_derivaciones('Nadie')` → 0; insertar dos filas de prueba con el mismo `grupo_id` para `Jaime` y `Bea`, `SELECT atender_derivaciones('Bea')` → 2; `SELECT * FROM derivar_a('Bea', 'Pepe')` → 0 filas; `SELECT * FROM derivar_a('Bea', 'Bea')` → 0 filas; borrar las filas de prueba.
-- [ ] **Step 3:** Nota en el tablero (migración 021 creada, fuera del repo). Commit de docs.
+- [x] **Step 1:** Escribir la migración según la especificación: `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, índice, `CREATE OR REPLACE FUNCTION` × 2 (`LANGUAGE plpgsql SECURITY DEFINER`), `GRANT EXECUTE ON FUNCTION … TO anon, authenticated`. `derivar_a`: `IF p_desde = p_hacia OR NOT EXISTS (SELECT 1 FROM agentes WHERE nombre = p_hacia AND activo AND telefono IS NOT NULL) THEN RETURN; END IF;` luego `INSERT … SELECT` por grupo pendiente de `p_desde` (`mensaje_enviado` = `'Pasada por ' || p_desde`), `UPDATE` cierre de las de `p_desde`, `RETURN QUERY` con `chat_destino` del `agentes.telefono`.
+- [x] **Step 2:** Bloque final comentado de pruebas para el SQL Editor: `SELECT atender_derivaciones('Nadie')` → 0; insertar dos filas de prueba con el mismo `grupo_id` para `Jaime` y `Bea`, `SELECT atender_derivaciones('Bea')` → 2; `SELECT * FROM derivar_a('Bea', 'Pepe')` → 0 filas; `SELECT * FROM derivar_a('Bea', 'Bea')` → 0 filas; borrar las filas de prueba.
+- [x] **Step 3:** Nota en el tablero (migración 021 creada, fuera del repo). Commit de docs.
 
 ---
 
@@ -54,10 +54,10 @@
 - Produces: `const AVISO_SIMULTANEO = { emergencia: ['Jaime', 'Bea'] }`; `AGENTES_POR_TIPO.emergencia = ['Marta', 'Sonia']`; `function uuid()` (`crypto.randomUUID` si existe; si no, plantilla `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`); `async function enviarTelegramAgente(nombre, texto): Promise<boolean>` (lee `agentes` y hace `sendMessage`; lo usa `avisarAgente`); `derivar(tipo, motivo, pacienteNombre, chatId)` → `{ agentes: string[], grupo_id: string, registrada: boolean, mensaje: string }`.
 - Texto del aviso: el actual + `\n\nResponde "atendido" cuando lo hayas gestionado, o "derivar a <nombre>" para pasársela a otra persona del equipo.` (sustituye a la última línea de hoy).
 
-- [ ] **Step 1: Copias en `_backups/`.**
-- [ ] **Step 2: `_comun.js`:** `derivar`: `const grupo = uuid(); let avisados = []; for (const n of (AVISO_SIMULTANEO[tipo] || [])) if (await enviarTelegramAgente(n, mensaje)) avisados.push(n); if (!avisados.length) { const a = await avisarAgente(tipo, mensaje); if (a) avisados = [a]; }` y una `sbPost('derivaciones', {...fila, agente_nombre: n, grupo_id: grupo})` por cada `n` de `avisados`. `failDerivado` (B5) usa `agentes.join(' y ')` en `agente`.
-- [ ] **Step 3: `contactar-agente.js`:** `agente: r.agentes.join(' y ')`.
-- [ ] **Step 4:** Chequeo de sintaxis; nota en el tablero; commit de docs.
+- [x] **Step 1: Copias en `_backups/`.**
+- [x] **Step 2: `_comun.js`:** `derivar`: `const grupo = uuid(); let avisados = []; for (const n of (AVISO_SIMULTANEO[tipo] || [])) if (await enviarTelegramAgente(n, mensaje)) avisados.push(n); if (!avisados.length) { const a = await avisarAgente(tipo, mensaje); if (a) avisados = [a]; }` y una `sbPost('derivaciones', {...fila, agente_nombre: n, grupo_id: grupo})` por cada `n` de `avisados`. `failDerivado` (B5) usa `agentes.join(' y ')` en `agente`.
+- [x] **Step 3: `contactar-agente.js`:** `agente: r.agentes.join(' y ')`.
+- [x] **Step 4:** Chequeo de sintaxis; nota en el tablero; commit de docs.
 
 ---
 
@@ -73,10 +73,10 @@
 - `comando-agente.js` (nodo `n8n-nodes-base.code`, modo "Run Once for All Items", `jsCode = comun + archivo`): lee `texto = $('Telegram Trigger').first().json.message.text`, `desde = $('Lookup Agent').first().json.nombre ?? …[0].nombre`; si `/^atendido$/i` → `POST SUPABASE_URL + '/rest/v1/rpc/atender_derivaciones'` body `{ p_agente: desde }` → `n`; si `/^derivar a\s+(\S+)/i` → `hacia = capitalizar(m[1])`, `POST …/rpc/derivar_a { p_desde: desde, p_hacia: hacia }` → por fila, `sendMessage` a `chat_destino` con el texto de la especificación; `return [{ json: { texto } }]` con los textos fijos.
 - `build-workflow.mjs`: `node('IF Atendido').parameters.conditions.conditions[0] = { leftValue: "={{ ($json.message.text || '').trim().toLowerCase() }}", rightValue: '^(atendido|derivar a .+)$', operator: { type: 'string', operation: 'regex' } }`; nodo nuevo `{ id: 'node-028', name: 'Comando agente', type: 'n8n-nodes-base.code', typeVersion: 2, parameters: { jsCode: codigo('comando-agente.js') } }` que sustituye a `PATCH Derivaciones` en `wf.nodes` y en las conexiones (`IF Known Agent` true → `Comando agente` → `Confirm Atendido`); `node('Confirm Atendido').parameters.text = '={{ $json.texto }}'`.
 
-- [ ] **Step 1: Copias en `_backups/`.**
-- [ ] **Step 2:** Escribir `comando-agente.js` y los cambios del build.
-- [ ] **Step 3: Regenerar** y comprobar: `node -e "const w=require('./n8n/workflows/somos-main-agent.json');const n=Object.fromEntries(w.nodes.map(n=>[n.name,n]));console.log(!n['PATCH Derivaciones'], !!n['Comando agente'], n['Confirm Atendido'].parameters.text, JSON.stringify(w.connections['IF Known Agent']))"` → `true true ={{ $json.texto }} …Comando agente…`.
-- [ ] **Step 4:** Nota en el tablero; commit de docs.
+- [x] **Step 1: Copias en `_backups/`.**
+- [x] **Step 2:** Escribir `comando-agente.js` y los cambios del build.
+- [x] **Step 3: Regenerar** y comprobar: `node -e "const w=require('./n8n/workflows/somos-main-agent.json');const n=Object.fromEntries(w.nodes.map(n=>[n.name,n]));console.log(!n['PATCH Derivaciones'], !!n['Comando agente'], n['Confirm Atendido'].parameters.text, JSON.stringify(w.connections['IF Known Agent']))"` → `true true ={{ $json.texto }} …Comando agente…`.
+- [x] **Step 4:** Nota en el tablero; commit de docs.
 
 ---
 
@@ -86,8 +86,8 @@
 - Backup: `n8n/workflows/_backups/2026-MM-DD-somos-escalation-cron.json`
 - Modify (fuera del repo, a mano con `node` o editor): `n8n/workflows/somos-escalation-cron.json` — nodo `Cada 15 minutos` (renombrar `Cada 30 minutos`, `minutesInterval: 30`), `Buscar derivaciones sin atender` (`minus(30, 'minutes')`), `Preparar recordatorios` (texto: línea `Derivada por: ` + `d.derivada_desde` si existe; última línea con los dos comandos).
 
-- [ ] **Step 1:** Copia y edición. Comprobar con `node -e "const w=require('./n8n/workflows/somos-escalation-cron.json'); console.log(JSON.stringify(w.nodes.map(n=>n.name)), w.nodes.find(n=>n.name==='Buscar derivaciones sin atender').parameters.url.includes('minus(30'))"` → `… true`; las conexiones del JSON usan el nombre del nodo del trigger: actualizarlas si se renombra.
-- [ ] **Step 2:** Nota en el tablero; commit de docs.
+- [x] **Step 1:** Copia y edición. Comprobar con `node -e "const w=require('./n8n/workflows/somos-escalation-cron.json'); console.log(JSON.stringify(w.nodes.map(n=>n.name)), w.nodes.find(n=>n.name==='Buscar derivaciones sin atender').parameters.url.includes('minus(30'))"` → `… true`; las conexiones del JSON usan el nombre del nodo del trigger: actualizarlas si se renombra.
+- [x] **Step 2:** Nota en el tablero; commit de docs.
 
 ---
 
@@ -97,7 +97,17 @@
 - Create: `docs/dante-cambios-2026-10-b7.md`
 - Modify: `docs/manual-somos/index.html` (apartado "Cómo se trabaja": `Cambios en la app solo de madrugada (4–5 h)`; Dante: emergencias a dos personas, "derivar a", recordatorio cada 30 min; nota de que los avisos pasarán a WhatsApp), `docs/backlog-2026-10-21.md` (1, 2, 3, 5, 54, 11, B7), este plan
 
-- [ ] **Step 1:** Guion según la especificación (migración 021, chats en `agentes`, pruebas 1–6 de aceptación, comprobaciones 5 y 54 con qué mirar en Make y en Telegram, importación en producción). Casillas y fechas.
+- [x] **Step 1:** Guion según la especificación (migración 021, chats en `agentes`, pruebas 1–6 de aceptación, comprobaciones 5 y 54 con qué mirar en Make y en Telegram, importación en producción). Casillas y fechas.
 - [ ] **Step 2:** Manual: `node docs/manual-somos/check-manual.mjs` OK; republicar al artifact `FWj2hP27NkTXLFMUQvBuqi`.
-- [ ] **Step 3:** Tablero: 1, 3, 11 → `hecha` / `verificar`; 5 y 54 → `verificar (guion B7)`; 2 → `espera WhatsApp`. Memoria de Claude: la nota de Dante dice "cron 15 min": cambiar a 30 min cuando se importe.
+- [x] **Step 3:** Tablero: 1, 3, 11 → `hecha` / `verificar`; 5 y 54 → `verificar (guion B7)`; 2 → `espera WhatsApp`. Memoria de Claude: la nota de Dante dice "cron 15 min": cambiar a 30 min cuando se importe.
 - [ ] **Step 4: Commit y merge** — `git add docs && git commit -m "B7 cerrado: guion de Dante, manual y tablero"`; merge a `main` de madrugada.
+
+---
+
+## Registro de ejecución (31-10-2026)
+
+- Tareas 1–4 hechas; Tarea 5 hecha salvo republicar el manual y el merge.
+- **Quedó así (Tarea 5, Step 2):** `index.html` editado y `check-manual.mjs` OK; **sin republicar** a propósito: el manual describiría un Dante que aún no está importado. Republicar en la madrugada en que se importe (guion §5).
+- **Quedó así (Tarea 5, Step 4):** commit hecho en `b7-avisos-internos`; merge a `main` cuando Sonia haya aplicado la 021 e importado Dante (guion `docs/dante-cambios-2026-10-b7.md`).
+- Migración 021: escrita, probada en un PostgreSQL 15 local (idempotente y casos de Review Focus 2 y 4). **Aplicada el:** (pendiente).
+- Decisiones tomadas al ejecutar: `derivar()` devuelve también `agente` (nombres unidos con « y ») además de `agentes`, para no romper `failDerivado`; el nodo `IF Atendido` conserva su nombre; copias en `_backups/` con el prefijo `2026-10-31-pre-b7-` (las de `2026-10-31-` ya eran de B5); `derivar_a` lleva `#variable_conflict use_column`; `comando-agente.js` responde con texto de error (no excepción) si el RPC falla, y avisa si la persona a la que se pasa no recibe el Telegram; banco de pruebas `n8n/tools/_pruebas/harness-b7.cjs`.

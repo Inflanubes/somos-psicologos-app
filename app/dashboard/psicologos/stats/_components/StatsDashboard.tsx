@@ -2,8 +2,8 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
-import MotivosChart from './MotivosChart'
-import BloqueosBarChart from './BloqueosBarChart'
+import GraficaQuesito from '../../../_components/GraficaQuesito'
+import GraficaBarras from '../../../_components/GraficaBarras'
 
 export type PeriodKey = 'this_month' | 'last_30' | 'last_90' | 'all'
 
@@ -567,11 +567,14 @@ export default function StatsDashboard({
         }}
       >
         <Card title="Motivos de bloqueo">
-          <MotivosChart data={motivoCounts} />
+          <GraficaQuesito
+            datos={Object.entries(motivoCounts).map(([etiqueta, valor]) => ({ etiqueta, valor }))}
+            unidad={{ singular: 'bloqueo', plural: 'bloqueos' }}
+          />
         </Card>
         {isAll && (
           <Card title="Bloqueos por psicólogo (top 10)">
-            <BloqueosBarChart data={topBloqueosChart} />
+            <GraficaBarras datos={topBloqueosChart.map((d) => ({ etiqueta: d.nombre, valor: d.count }))} unidad="" />
           </Card>
         )}
       </div>

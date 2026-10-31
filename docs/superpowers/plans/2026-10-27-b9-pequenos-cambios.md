@@ -117,3 +117,5 @@ tsc limpio, 241 tests y `npm run build` OK. Revisión independiente: 0 críticos
 - Menores diferidos: Agentes no muestra el error concreto del servidor al guardar el teléfono; `conPie` no reconoce un pie antiguo si cambia el contacto.
 
 **Make revisado (31-10-2026, blueprint exportado por Sonia, `Make blueprints/SPs envio mensajes.json`):** seis rutas, una por `tipo` (`notificar_psicologo` sin tilde en el valor, `mensaje_dudoso`, `mensaje_espera`, `mensaje_sin_disponibilidad`, `solicitar_resena`, `mensaje_libre`); todas envían `{{1.mensaje}}`, así que el pie llega en las cinco de pacientes. El aviso al psicólogo va a `{{1.psicologo.telefono}}` (bien). Nada que tocar en Make. Detalle: todo sale por Telegram con la conexión «Dante Bot SPs» (el mismo bot que Dante), así que el paciente lo recibe en el chat de Dante y si contesta ahí le responde Dante: el texto del pie («no recibimos respuestas… contacta con Dante») hay que ajustarlo a eso (decisión de Sonia).
+
+**Decisión de Sonia (31-10-2026):** el pie se queda como está; `91 166 50 47` es donde hay que contactar ahora. Se revisa al pasar a producción (tarea 37b del tablero, B10).

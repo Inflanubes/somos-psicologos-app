@@ -234,5 +234,6 @@ it('horasBloqueoPor motivo: Vacaciones 25', ...)
 - Modify: `docs/manual-somos/index.html` (menú lateral y fichas "Panel General" → "Resumen de pacientes" y "Estadísticas" → "Actividad de citas" con los indicadores y la nota de horarios; sección "Quién entra" con la ficha "Inspección"; Usuarios: pestaña Inspección; Novedades), `docs/backlog-2026-10-21.md` (21, 22, 23, 24, 25, 56 → hecha; nota "migración 022 aplicada el …")
 
 - [x] **Step 1: Manual** (entrada en Novedades: `Resumen de pacientes y Actividad de citas con fechas libres, filtro por centro y los indicadores nuevos; ocupación y horas bloqueadas se calculan a partir del horario de cada psicólogo. Nuevo perfil Inspección.`). Republicar el artifact del manual (memoria "Manual Somos para dueños").
-- [ ] **Step 2: Tablero** y casillas de este plan marcadas.
+- [x] **Step 2: Tablero** y casillas de este plan marcadas.
 - [ ] **Step 3: Merge a `main`** tras `npm run build` limpio; recordar: migración 022 en Supabase solo de madrugada y con autorización de Sonia.
+  **Quedó así (31-10-2026):** rama lista (build limpio, revisión final corregida), sin merge: lo decide Sonia. Manual republicado. Migración 022 sin aplicar.

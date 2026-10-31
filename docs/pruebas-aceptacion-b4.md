@@ -53,3 +53,15 @@ menor con un solo tutor, todos con teléfonos que sean chats de Dante en Telegra
 |---|---|---|---|
 | E1 | Call center | Recorrer sus pantallas (Calendario, Panel, Citas) | En ninguna aparece el estado del consentimiento ni los botones Reenviar / Marcar firmado / Desmarcar. Pacientes y Comunicaciones no le aparecen en el menú |
 | E2 | Call center | Alta de pareja en Citas | Sí ve el bloque «Segunda persona (opcional)» y funciona como en C1–C7 |
+
+## F. Teléfonos que no son un chat de Telegram
+
+Hasta que lleguen los mensajes por WhatsApp, el consentimiento solo llega a teléfonos que ya han escrito a Dante en Telegram. A un móvil normal no le llega nada, y es lo esperado. Lo que hay que comprobar es que ese envío fallido **no deja parado** el sistema de avisos.
+
+| # | Quién | Pasos | Qué tiene que pasar |
+|---|---|---|---|
+| F1 | Agente o psicólogo | Dar de alta en **Citas → Añadir nuevo paciente** a un adulto de prueba con un **móvil normal** (que no haya escrito nunca a Dante) | El alta se guarda y el psicólogo recibe su aviso de paciente nuevo por Telegram. Al paciente no le llega el consentimiento (normal hasta WhatsApp) |
+| F2 | Agente | En **Pacientes**, **Reenviar** el consentimiento a ese mismo paciente | Aparece «Consentimiento reenviado.» No le llega nada (normal hasta WhatsApp) |
+| F3 | Agente | Justo después, **Reenviar** el consentimiento al paciente adulto de prueba que **sí** es chat de Dante | Le llega el enlace. Si llega, los envíos fallidos de F1 y F2 no han parado nada |
+| F4 | Be Banana | En Make, mirar las ejecuciones de F1 y F2 | El escenario sigue activo y los módulos de envío al paciente no lo han detenido |
+

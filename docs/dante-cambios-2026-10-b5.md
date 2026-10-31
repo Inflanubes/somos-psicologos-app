@@ -36,6 +36,8 @@ Fecha: 31-10-2026. Rama `b5-dante-terceros`. Plan: `docs/superpowers/plans/2026-
 
 Nada nuevo que construir.
 
+**Ojo: no son las rutas de crear, cambiar o anular cita**, sino estas dos: ruta 14 «Añadir nuevo paciente» y ruta 16 «Reenviar consentimiento».
+
 Revisado en el blueprint exportado el 31-10-2026 (`Make blueprints/Formulario Citas Psicologos.blueprint.json`): en la ruta 14 los envíos del consentimiento son los **últimos** módulos (250 y 251 a los tutores, 254 al paciente) y en la ruta 16 «Reenviar consentimiento», los 271, 272 y 273. **Ninguno de los seis tiene gestor de errores**; el resto de envíos a pacientes del escenario sí lo tienen (avisan al chat de Be Banana). Hoy ya les llega un teléfono real en cada alta hecha desde la app, así que esto no es nuevo de B5.
 
 - [ ] **Comprobar sin enviar nada:** en el historial del escenario, abrir la ejecución de un alta reciente hecha desde la app (paciente con su móvil real). Si el módulo 254 sale en rojo con "chat not found" y el escenario sigue activo, Make aguanta el error; solo queda la ejecución marcada como fallida.
@@ -43,6 +45,8 @@ Revisado en el blueprint exportado el 31-10-2026 (`Make blueprints/Formulario Ci
 - [ ] Comprobar que la ruta «Reenviar consentimiento» (B4) está activa. Dante manda el mismo sobre que la app, con `psicologo_id` del psicólogo de referencia y `origen: dante`.
 
 ## 3. Importar el Dante nuevo y probarlo
+
+**Importado y publicado por Sonia el 31-10-2026.** Quedan las pruebas de abajo.
 
 **Qué es "importar":** sustituir el contenido del workflow de Dante que está funcionando en n8n (id `6nzKwBire02c9qx3`) por el archivo `n8n/workflows/somos-main-agent.json`, como en los reimportados anteriores. La versión de antes queda guardada en `n8n/workflows/_backups/2026-10-31-somos-main-agent.json`: si algo va mal, se vuelve a importar esa y Dante queda como estaba.
 
@@ -65,7 +69,7 @@ Una casilla por prueba:
 
 ## 4. Cierre
 
-- [ ] Anotar en el plan la fecha en que se importó Dante.
+- [x] Anotar en el plan la fecha en que se importó Dante (31-10-2026).
 - [ ] Merge de la rama `b5-dante-terceros` a `main` y despliegue de la app (etiqueta "a petición de").
 
 ## 5. Cuando llegue WhatsApp

@@ -1,41 +1,31 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server'
-import type { Psicologo, PsicologoCentro, Centro, AccionPsicologo, AccionHistorial, Paciente } from '@/types/database'
 import { redirect } from 'next/navigation'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import type { Psicologo, PsicologoCentro, Centro, AccionHistorial, Paciente, Rol } from '@/types/database'
 import { HOME_POR_ROL } from '@/lib/roles'
-import type { Rol } from '@/types/database'
+import { enRango, fechaMadrid, rangoDeParams, sumarDias } from '@/lib/periodo'
+import { leerTodas } from '@/lib/leer-todas'
+import { horasBloqueo, MOTIVO_SIN_DATO, serieBarras, type BloqueoKpi, type TramoKpi } from '@/lib/kpis'
 import StatsDashboard from './_components/StatsDashboard'
 import type {
-  PeriodKey,
+  BarraActividadKey,
   PsicologoLite,
   CentroLite,
   PerPsicologoRow,
-  MotivoCounts,
+  MotivoHoras,
   AccionRecent,
 } from './_components/StatsDashboard'
+import type { DatoBarra } from '@/lib/kpis'
+
+// ─── Actividad de citas (B8) ─────────────────────────────────────────────────
+// El periodo filtra por el día (en Madrid) en que se HIZO la acción. Los bloqueos
+// se cuentan en horas de horario: las horas de los tramos del psicólogo en los
+// días del bloqueo entero (spec B8, objetivo 4).
 
 const MOTIVOS = ['Asuntos propios', 'Vacaciones', 'Baja médica', 'Otros'] as const
-type Motivo = (typeof MOTIVOS)[number]
 
-const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
-  { key: 'this_month', label: 'Este mes' },
-  { key: 'last_30', label: 'Últimos 30 días' },
-  { key: 'last_90', label: 'Últimos 90 días' },
-  { key: 'all', label: 'Desde siempre' },
-]
+type SearchParams = Promise<{ desde?: string; hasta?: string; periodo?: string; psi?: string; centro?: string }>
 
-function getPeriodStart(period: PeriodKey, now: Date): string | null {
-  if (period === 'all') return null
-  if (period === 'this_month') {
-    const d = new Date(now.getFullYear(), now.getMonth(), 1)
-    return d.toISOString()
-  }
-  const d = new Date(now)
-  if (period === 'last_30') d.setDate(d.getDate() - 30)
-  if (period === 'last_90') d.setDate(d.getDate() - 90)
-  return d.toISOString()
-}
-
-type SearchParams = Promise<{ period?: string; psi?: string; centro?: string }>
+type BloqueoFila = BloqueoKpi & { id: string }
 
 export default async function PsicologosStatsPage({
   searchParams,
@@ -43,8 +33,8 @@ export default async function PsicologosStatsPage({
   searchParams: SearchParams
 }) {
   const params = await searchParams
-  const period: PeriodKey = (PERIOD_OPTIONS.find((p) => p.key === params.period)?.key ??
-    'this_month') as PeriodKey
+  const hoy = fechaMadrid(new Date())
+  const rango = rangoDeParams(params, hoy)
   const selectedCentroId = params.centro && params.centro !== 'all' ? params.centro : null
   const selectedPsicologoId = params.psi && params.psi !== 'all' ? params.psi : null
 
@@ -60,8 +50,10 @@ export default async function PsicologosStatsPage({
     : { data: null }
   if (perfil && perfil.rol !== 'agente') redirect(HOME_POR_ROL[perfil.rol as Rol] ?? '/dashboard/calendario')
 
-  const now = new Date()
-  const periodStart = getPeriodStart(period, now)
+  // Filas por creado_en con un día de margen (UTC/Madrid); luego se filtra por el día real en Madrid.
+  const creadoDesde = rango.desde ? sumarDias(rango.desde, -1) + 'T00:00:00Z' : null
+  const creadoHasta = rango.hasta ? sumarDias(rango.hasta, 2) + 'T00:00:00Z' : null
+  const hechoEnPeriodo = (r: { creado_en: string | null }) => !!r.creado_en && enRango(fechaMadrid(r.creado_en), rango)
 
   // ── Fetch psicologos & centros (always all, used for filter dropdown + table) ──
   const [{ data: psicologosRaw }, { data: centrosRaw }] = await Promise.all([
@@ -106,33 +98,52 @@ export default async function PsicologosStatsPage({
   const idsFiltro = idsSeleccionados ?? (selectedCentroId ? psicologos.map((p) => p.id) : null)
   const SIN_RESULTADOS = '00000000-0000-0000-0000-000000000000'
 
-  // KEY QUERY 1: bloqueos in period (for KPIs, motivos chart, per-psi table)
-  let bloqueosQ = supabase
-    .from('acciones_psicologos')
-    .select('*')
-    .eq('accion', 'Bloquear agenda')
-  if (periodStart) bloqueosQ = bloqueosQ.gte('creado_en', periodStart)
-  if (idsFiltro)
-    bloqueosQ =
-      idsFiltro.length > 0
-        ? bloqueosQ.in('psicologo_id', idsFiltro)
-        : bloqueosQ.eq('psicologo_id', SIN_RESULTADOS)
-  const { data: bloqueosRows } = await bloqueosQ
+  // Restringe una consulta a los psicólogos del filtro.
+  const porPsicologos = <Q extends { in: (c: string, v: string[]) => Q; eq: (c: string, v: string) => Q }>(q: Q): Q =>
+    idsFiltro ? (idsFiltro.length > 0 ? q.in('psicologo_id', idsFiltro) : q.eq('psicologo_id', SIN_RESULTADOS)) : q
 
-  // KEY QUERY 2: acciones sobre citas en el periodo (agendar / cambiar / anular),
-  // leídas del historial para que una cita anulada siga contando como agendada
-  // y la anulación se atribuya a quien la hizo y a la fecha real.
-  let citasQ = supabase
-    .from('acciones_historial')
-    .select('*')
-    .in('accion', ['Agendar cita', 'Cambiar cita', 'Cancelar cita'])
-  if (periodStart) citasQ = citasQ.gte('creado_en', periodStart)
-  if (idsFiltro)
-    citasQ =
-      idsFiltro.length > 0
-        ? citasQ.in('psicologo_id', idsFiltro)
-        : citasQ.eq('psicologo_id', SIN_RESULTADOS)
-  const { data: citasRows } = await citasQ
+  const [bloqueosRes, citasRes, horariosRes, activasRes] = await Promise.all([
+    // 1: bloqueos hechos en el periodo (KPIs, quesito de motivos, tabla, barras).
+    leerTodas<BloqueoFila>((a, b) => {
+      let q = supabase
+        .from('acciones_psicologos')
+        .select('id, psicologo_id, fecha_bloqueo_inicio, fecha_bloqueo_fin, motivo_bloqueo, creado_en')
+        .eq('accion', 'Bloquear agenda')
+      if (creadoDesde) q = q.gte('creado_en', creadoDesde)
+      if (creadoHasta) q = q.lt('creado_en', creadoHasta)
+      return porPsicologos(q).order('id').range(a, b)
+    }),
+    // 2: acciones sobre citas en el periodo (agendar / cambiar / anular), leídas del
+    // historial para que una cita anulada siga contando como agendada y la anulación
+    // se atribuya a quien la hizo y a la fecha real.
+    leerTodas<AccionHistorial>((a, b) => {
+      let q = supabase
+        .from('acciones_historial')
+        .select('*')
+        .in('accion', ['Agendar cita', 'Cambiar cita', 'Cancelar cita'])
+      if (creadoDesde) q = q.gte('creado_en', creadoDesde)
+      if (creadoHasta) q = q.lt('creado_en', creadoHasta)
+      return porPsicologos(q).order('id').range(a, b)
+    }),
+    // Horario de cada psicólogo (con centro elegido, solo sus tramos en ese centro).
+    (() => {
+      let q = supabase.from('horarios_psicologos').select('psicologo_id, centro_id, dia_semana, hora_inicio, hora_fin')
+      if (selectedCentroId) q = q.eq('centro_id', selectedCentroId)
+      return porPsicologos(q)
+    })(),
+    // Psicólogos activos = con alguna cita no anulada cuya fecha de sesión cae en el periodo.
+    leerTodas<{ psicologo_id: string | null }>((a, b) => {
+      let q = supabase
+        .from('acciones_psicologos')
+        .select('id, psicologo_id')
+        .eq('accion', 'Agendar cita')
+        .eq('activo', true)
+      if (rango.desde) q = q.gte('fecha_cita', rango.desde)
+      if (rango.hasta) q = q.lte('fecha_cita', rango.hasta)
+      if (selectedCentroId) q = q.eq('centro_id', selectedCentroId)
+      return porPsicologos(q).order('id').range(a, b)
+    }),
+  ])
 
   // KEY QUERY 3: last 10 actions for selected psicólogo (only when one is picked).
   let recentActions: AccionRecent[] = []
@@ -175,24 +186,29 @@ export default async function PsicologosStatsPage({
     }))
   }
 
-  // ── Aggregate (server side) ──
-  const bloq = (bloqueosRows ?? []) as AccionPsicologo[]
-  const cit = (citasRows ?? []) as AccionHistorial[]
+  // ── Agregación (servidor) ──
+  const tramos = ((horariosRes.data ?? []) as TramoKpi[]).filter((t) => t.centro_id)
+  const tramosDe = new Map<string, TramoKpi[]>()
+  for (const t of tramos) tramosDe.set(t.psicologo_id, [...(tramosDe.get(t.psicologo_id) ?? []), t])
+  // Las horas son las del bloqueo entero: sin recorte por periodo (el periodo dice cuándo se hizo).
+  const sinRecorte = { desde: '', hasta: '' }
+  const limites = { primero: hoy, ultimo: hoy }
+  const bloq = bloqueosRes.data
+    .filter(hechoEnPeriodo)
+    .map((b) => ({ ...b, horas: horasBloqueo(b, tramosDe.get(b.psicologo_id ?? '') ?? [], sinRecorte, limites) }))
+  const cit = citasRes.data.filter(hechoEnPeriodo)
 
-  // KPI counts
-  const bloqueosTotal = bloq.length
+  // KPIs
+  const motivoDe = (b: BloqueoKpi) => b.motivo_bloqueo || MOTIVO_SIN_DATO
+  const horasMotivo = (m: string) => bloq.filter((b) => motivoDe(b) === m).reduce((s, b) => s + b.horas, 0)
+  const horasTotal = bloq.reduce((s, b) => s + b.horas, 0)
   const citasTotal = cit.filter((r) => r.accion === 'Agendar cita').length
   const citasCambiadas = cit.filter((r) => r.accion === 'Cambiar cita').length
   const citasCanceladas = cit.filter((r) => r.accion === 'Cancelar cita').length
-  const motivoCounts: MotivoCounts = { 'Asuntos propios': 0, Vacaciones: 0, 'Baja médica': 0, Otros: 0 }
-  for (const r of bloq) {
-    if (r.motivo_bloqueo && r.motivo_bloqueo in motivoCounts) {
-      motivoCounts[r.motivo_bloqueo as Motivo] += 1
-    }
-  }
-  const psicologosActivos = psicologos.filter((p) => p.activo).length
+  const motivoHoras: MotivoHoras = MOTIVOS.map((m) => ({ etiqueta: m, valor: horasMotivo(m) }))
+  const psicologosActivos = new Set(activasRes.data.map((c) => c.psicologo_id).filter(Boolean)).size
 
-  // Per psicólogo aggregates — una fila por psicólogo (ficha única desde la 014).
+  // Por psicólogo — una fila por psicólogo (ficha única desde la 014).
   const perPsi: Record<string, PerPsicologoRow> = {}
   for (const p of psicologos) {
     perPsi[p.id] = {
@@ -202,35 +218,46 @@ export default async function PsicologosStatsPage({
       citas: 0,
       cambiadas: 0,
       canceladas: 0,
-      bloqueos: 0,
-      vacaciones: 0,
-      asuntos_propios: 0,
-      baja_medica: 0,
+      horas_bloqueo: 0,
+      horas_vacaciones: 0,
+      horas_asuntos: 0,
+      horas_baja: 0,
     }
   }
-  for (const r of bloq) {
-    const key = r.psicologo_id ?? undefined
-    if (!key || !perPsi[key]) continue
-    const row = perPsi[key]
-    row.bloqueos += 1
-    if (r.motivo_bloqueo === 'Vacaciones') row.vacaciones += 1
-    if (r.motivo_bloqueo === 'Asuntos propios') row.asuntos_propios += 1
-    if (r.motivo_bloqueo === 'Baja médica') row.baja_medica += 1
+  for (const b of bloq) {
+    const row = b.psicologo_id ? perPsi[b.psicologo_id] : undefined
+    if (!row) continue
+    row.horas_bloqueo += b.horas
+    if (b.motivo_bloqueo === 'Vacaciones') row.horas_vacaciones += b.horas
+    if (b.motivo_bloqueo === 'Asuntos propios') row.horas_asuntos += b.horas
+    if (b.motivo_bloqueo === 'Baja médica') row.horas_baja += b.horas
   }
   for (const r of cit) {
-    const key = r.psicologo_id ?? undefined
-    if (!key || !perPsi[key]) continue
-    if (r.accion === 'Agendar cita') perPsi[key].citas += 1
-    if (r.accion === 'Cambiar cita') perPsi[key].cambiadas += 1
-    if (r.accion === 'Cancelar cita') perPsi[key].canceladas += 1
+    const row = r.psicologo_id ? perPsi[r.psicologo_id] : undefined
+    if (!row) continue
+    if (r.accion === 'Agendar cita') row.citas += 1
+    if (r.accion === 'Cambiar cita') row.cambiadas += 1
+    if (r.accion === 'Cancelar cita') row.canceladas += 1
   }
-  const perPsicologoRows = Object.values(perPsi).sort((a, b) => b.bloqueos - a.bloqueos || b.citas - a.citas)
+  const perPsicologoRows = Object.values(perPsi).sort((a, b) => b.horas_bloqueo - a.horas_bloqueo || b.citas - a.citas)
 
-  // Top 10 by bloqueos for the bar chart
-  const topBloqueosChart = perPsicologoRows
-    .filter((r) => r.bloqueos > 0)
-    .slice(0, 10)
-    .map((r) => ({ nombre: r.nombre, count: r.bloqueos }))
+  // Barras: todos los psicólogos activos (del centro elegido), de mayor a menor.
+  const idsActivos = psicologos.filter((p) => p.activo).map((p) => p.id)
+  const nombres = new Map(psicologos.map((p) => [p.id, p.nombre]))
+  const serie = (valor: (r: PerPsicologoRow) => number): DatoBarra[] =>
+    serieBarras(
+      new Map(perPsicologoRows.filter((r) => valor(r) > 0).map((r) => [r.id, valor(r)])),
+      nombres,
+      idsActivos,
+    )
+  const barras: Record<BarraActividadKey, DatoBarra[]> = {
+    bloqueos: serie((r) => r.horas_bloqueo),
+    vacaciones: serie((r) => r.horas_vacaciones),
+    asuntos: serie((r) => r.horas_asuntos),
+    baja: serie((r) => r.horas_baja),
+    agendadas: serie((r) => r.citas),
+    anuladas: serie((r) => r.canceladas),
+  }
 
   // Build psicólogo lite list for dropdown — ya acotada por centro si hay uno seleccionado.
   const psicologosLite: PsicologoLite[] = psicologos
@@ -255,8 +282,8 @@ export default async function PsicologosStatsPage({
 
   return (
     <StatsDashboard
-      period={period}
-      periodOptions={PERIOD_OPTIONS}
+      rango={rango}
+      hoy={hoy}
       psicologosLite={psicologosLite}
       centrosLite={centrosLite}
       selectedCentroId={selectedCentroId}
@@ -265,16 +292,16 @@ export default async function PsicologosStatsPage({
       kpis={{
         psicologosActivos,
         psicologosTotal: psicologos.length,
-        bloqueosTotal,
-        vacaciones: motivoCounts['Vacaciones'],
-        asuntosPropios: motivoCounts['Asuntos propios'],
-        bajaMedica: motivoCounts['Baja médica'],
+        horasBloqueo: horasTotal,
+        horasVacaciones: horasMotivo('Vacaciones'),
+        horasAsuntos: horasMotivo('Asuntos propios'),
+        horasBaja: horasMotivo('Baja médica'),
         citasTotal,
         citasCambiadas,
         citasCanceladas,
       }}
-      motivoCounts={motivoCounts}
-      topBloqueosChart={topBloqueosChart}
+      motivoHoras={motivoHoras}
+      barras={barras}
       perPsicologoRows={perPsicologoRows}
       recentActions={recentActions}
     />

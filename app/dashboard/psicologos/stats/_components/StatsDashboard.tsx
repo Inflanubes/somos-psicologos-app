@@ -1,22 +1,45 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import GraficaQuesito from '../../../_components/GraficaQuesito'
 import GraficaBarras from '../../../_components/GraficaBarras'
+import SelectorGrafica from '../../../_components/SelectorGrafica'
+import FiltroPeriodo from '../../../_components/FiltroPeriodo'
+import { etiquetaRango, type Rango } from '@/lib/periodo'
+import type { DatoBarra } from '@/lib/kpis'
 
-export type PeriodKey = 'this_month' | 'last_30' | 'last_90' | 'all'
+export type BarraActividadKey = 'bloqueos' | 'vacaciones' | 'asuntos' | 'baja' | 'agendadas' | 'anuladas'
+
+const BARRAS: { key: BarraActividadKey; label: string }[] = [
+  { key: 'bloqueos', label: 'Bloqueos por psicólogo' },
+  { key: 'vacaciones', label: 'Vacaciones por psicólogo' },
+  { key: 'asuntos', label: 'Asuntos propios por psicólogo' },
+  { key: 'baja', label: 'Baja médica por psicólogo' },
+  { key: 'agendadas', label: 'Citas agendadas por psicólogo' },
+  { key: 'anuladas', label: 'Citas anuladas por psicólogo' },
+]
+
+const COLOR_BARRA: Record<BarraActividadKey, string> = {
+  bloqueos: '#f59e0b',
+  vacaciones: '#10b981',
+  asuntos: '#6366f1',
+  baja: '#ef4444',
+  agendadas: '#0ea5e9',
+  anuladas: '#dc2626',
+}
+
+/** Horas con una decimal solo si no son enteras: 12 → '12 h', 7.5 → '7,5 h'. */
+function horas(h: number): string {
+  return `${(Math.round(h * 10) / 10).toLocaleString('es-ES')} h`
+}
 
 export type PsicologoLite = { id: string; nombre: string; centro: string }
 
 export type CentroLite = { id: string; nombre: string }
 
-export type MotivoCounts = {
-  'Asuntos propios': number
-  Vacaciones: number
-  'Baja médica': number
-  Otros: number
-}
+/** Horas bloqueadas por motivo (Asuntos propios, Vacaciones, Baja médica, Otros). */
+export type MotivoHoras = { etiqueta: string; valor: number }[]
 
 export type PerPsicologoRow = {
   id: string
@@ -25,10 +48,10 @@ export type PerPsicologoRow = {
   citas: number
   cambiadas: number
   canceladas: number
-  bloqueos: number
-  vacaciones: number
-  asuntos_propios: number
-  baja_medica: number
+  horas_bloqueo: number
+  horas_vacaciones: number
+  horas_asuntos: number
+  horas_baja: number
 }
 
 export type AccionRecent = {
@@ -46,18 +69,18 @@ export type AccionRecent = {
 type Kpis = {
   psicologosActivos: number
   psicologosTotal: number
-  bloqueosTotal: number
-  vacaciones: number
-  asuntosPropios: number
-  bajaMedica: number
+  horasBloqueo: number
+  horasVacaciones: number
+  horasAsuntos: number
+  horasBaja: number
   citasTotal: number
   citasCambiadas: number
   citasCanceladas: number
 }
 
 interface Props {
-  period: PeriodKey
-  periodOptions: { key: PeriodKey; label: string }[]
+  rango: Rango
+  hoy: string
   psicologosLite: PsicologoLite[]
   centrosLite: CentroLite[]
   selectedCentroId: string | null
@@ -70,8 +93,8 @@ interface Props {
     activo: boolean
   } | null
   kpis: Kpis
-  motivoCounts: MotivoCounts
-  topBloqueosChart: { nombre: string; count: number }[]
+  motivoHoras: MotivoHoras
+  barras: Record<BarraActividadKey, DatoBarra[]>
   perPsicologoRows: PerPsicologoRow[]
   recentActions: AccionRecent[]
 }
@@ -277,16 +300,16 @@ const ACCION_STYLE: Record<string, { bg: string; color: string }> = {
 }
 
 export default function StatsDashboard({
-  period,
-  periodOptions,
+  rango,
+  hoy,
   psicologosLite,
   centrosLite,
   selectedCentroId,
   selectedPsicologoId,
   selectedDetail,
   kpis,
-  motivoCounts,
-  topBloqueosChart,
+  motivoHoras,
+  barras,
   perPsicologoRows,
   recentActions,
 }: Props) {
@@ -295,13 +318,13 @@ export default function StatsDashboard({
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
+  const [barra, setBarra] = useState<BarraActividadKey>('bloqueos')
+
   function navigate(next: {
-    period?: PeriodKey
     psi?: string | null
     centro?: string | null
   }) {
     const sp = new URLSearchParams(searchParams?.toString() ?? '')
-    if (next.period !== undefined) sp.set('period', next.period)
     if (next.centro === null) sp.delete('centro')
     else if (next.centro !== undefined) sp.set('centro', next.centro)
     if (next.psi === null) sp.delete('psi')
@@ -311,15 +334,8 @@ export default function StatsDashboard({
     })
   }
 
-  // Changing centro clears the psicólogo filter so we never show "psicólogo X in centro Y"
-  // when X doesn't actually belong to Y.
-  function onCentroChange(value: string) {
-    const nextCentro = value === 'all' ? null : value
-    navigate({ centro: nextCentro, psi: null })
-  }
-
   const isAll = !selectedPsicologoId
-  const periodLabel = periodOptions.find((p) => p.key === period)?.label ?? ''
+  const periodLabel = etiquetaRango(rango)
   const isCentroFiltered = !!selectedCentroId
   const anyFilterActive = isCentroFiltered || !!selectedPsicologoId
 
@@ -339,10 +355,10 @@ export default function StatsDashboard({
             marginBottom: 6,
           }}
         >
-          Estadísticas Psicólogos
+          Actividad de citas
         </h1>
         <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
-          Bloqueos de agenda, motivos y actividad por psicólogo
+          {periodLabel} · bloqueos de agenda (en horas de horario), motivos y citas por psicólogo
         </p>
       </div>
 
@@ -361,61 +377,14 @@ export default function StatsDashboard({
           marginBottom: 22,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#667799', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Período
-          </label>
-          <select
-            value={period}
-            onChange={(e) => navigate({ period: e.target.value as PeriodKey })}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid rgba(47,90,174,0.2)',
-              background: '#f4f5f7',
-              fontSize: 13,
-              color: '#272626',
-              outline: 'none',
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              minWidth: 170,
-            }}
-          >
-            {periodOptions.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#667799', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Centro
-          </label>
-          <select
-            value={selectedCentroId ?? 'all'}
-            onChange={(e) => onCentroChange(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid rgba(47,90,174,0.2)',
-              background: '#f4f5f7',
-              fontSize: 13,
-              color: '#272626',
-              outline: 'none',
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              minWidth: 180,
-            }}
-          >
-            <option value="all">Todos los centros</option>
-            {centrosLite.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
+        <div style={{ flex: '1 1 100%' }}>
+          <FiltroPeriodo
+            rango={rango}
+            hoy={hoy}
+            centros={centrosLite}
+            centroId={selectedCentroId}
+            limpiarAlCambiarCentro={['psi']}
+          />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -482,7 +451,7 @@ export default function StatsDashboard({
       >
         {isAll ? (
           <KpiCard
-            label="Psicólogos Activos"
+            label="Psicólogos activos"
             value={kpis.psicologosActivos}
             sub={`de ${kpis.psicologosTotal} en total`}
             icon={icons.badge}
@@ -500,8 +469,8 @@ export default function StatsDashboard({
           />
         )}
         <KpiCard
-          label="Bloqueos totales"
-          value={kpis.bloqueosTotal}
+          label="Bloqueos en agenda"
+          value={horas(kpis.horasBloqueo)}
           sub={periodLabel}
           icon={icons.lock}
           accent="#f59e0b"
@@ -509,24 +478,24 @@ export default function StatsDashboard({
         />
         <KpiCard
           label="Vacaciones"
-          value={kpis.vacaciones}
-          sub="Bloqueos por vacaciones"
+          value={horas(kpis.horasVacaciones)}
+          sub="Horas de vacaciones"
           icon={icons.sun}
           accent="#10b981"
           accentBg="#d1fae5"
         />
         <KpiCard
           label="Asuntos propios"
-          value={kpis.asuntosPropios}
-          sub="Bloqueos personales"
+          value={horas(kpis.horasAsuntos)}
+          sub="Horas de asuntos propios"
           icon={icons.briefcase}
           accent="#6366f1"
           accentBg="#e0e7ff"
         />
         <KpiCard
           label="Baja médica"
-          value={kpis.bajaMedica}
-          sub="Bloqueos por baja"
+          value={horas(kpis.horasBaja)}
+          sub="Horas de baja médica"
           icon={icons.health}
           accent="#ef4444"
           accentBg="#fee2e2"
@@ -567,14 +536,18 @@ export default function StatsDashboard({
         }}
       >
         <Card title="Motivos de bloqueo">
-          <GraficaQuesito
-            datos={Object.entries(motivoCounts).map(([etiqueta, valor]) => ({ etiqueta, valor }))}
-            unidad={{ singular: 'bloqueo', plural: 'bloqueos' }}
-          />
+          <GraficaQuesito datos={motivoHoras} unidad={{ singular: 'h', plural: 'h' }} />
         </Card>
         {isAll && (
-          <Card title="Bloqueos por psicólogo (top 10)">
-            <GraficaBarras datos={topBloqueosChart.map((d) => ({ etiqueta: d.nombre, valor: d.count }))} unidad="" />
+          <Card
+            title={BARRAS.find((b) => b.key === barra)?.label ?? ''}
+            right={<SelectorGrafica opciones={BARRAS} valor={barra} onChange={setBarra} />}
+          >
+            <GraficaBarras
+              datos={barras[barra]}
+              unidad={barra === 'agendadas' || barra === 'anuladas' ? '' : 'h'}
+              color={COLOR_BARRA[barra]}
+            />
           </Card>
         )}
       </div>
@@ -730,7 +703,7 @@ export default function StatsDashboard({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          {r.bloqueos}
+                          {horas(r.horas_bloqueo)}
                         </td>
                         <td
                           data-label="Vacaciones"
@@ -742,7 +715,7 @@ export default function StatsDashboard({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          {r.vacaciones}
+                          {horas(r.horas_vacaciones)}
                         </td>
                         <td
                           data-label="Asuntos propios"
@@ -754,7 +727,7 @@ export default function StatsDashboard({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          {r.asuntos_propios}
+                          {horas(r.horas_asuntos)}
                         </td>
                         <td
                           data-label="Baja médica"
@@ -766,7 +739,7 @@ export default function StatsDashboard({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          {r.baja_medica}
+                          {horas(r.horas_baja)}
                         </td>
                       </tr>
                     )

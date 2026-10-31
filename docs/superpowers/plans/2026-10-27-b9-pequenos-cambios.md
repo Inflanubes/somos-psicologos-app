@@ -104,7 +104,7 @@ describe('conPie', () => {
 - [x] **Step 1: Verificar en los blueprints de Make** (`docs/` de la raíz, exportados) qué estado escribe cada ruta: Agendar/Cambiar → Agendado, Cancelar → Anulado, Sin disponibilidad, Cambio solicitado; y en el código qué cambia Comunicaciones (`mensajes/page.tsx`: En espera, Dudoso contactado, Inactivo, Nuevo paciente al resolver recomendación). Si B3 ya está en main, tomar de su spec los estados que activa el call center.
 - [x] **Step 2: Reescribir la tabla** con columnas *Estado · Quién lo pone · Cuándo · Qué pasa después*; mantener `decisión pendiente` solo donde la tarea 51 no esté resuelta.
 - [x] **Step 3: Resto de textos** del manual (Accesos, Agentes, pie de mensajes con el texto exacto, recomendación oculta) y entrada en Novedades: `Usuarios se llama ahora Accesos. En Agentes solo se edita el teléfono. Los mensajes a pacientes llevan un pie que indica que no se reciben respuestas y cómo contactar con Dante. La casilla "Nueva recomendación" ya no se muestra.`
-- [ ] **Step 4: Republicar el manual** (artifact de la memoria "Manual Somos para dueños"); tablero: 30, 33, 37, 27 → hecha; merge a `main` tras `npm run build`.
+- [x] **Step 4: Republicar el manual** (artifact de la memoria "Manual Somos para dueños"); tablero: 30, 33, 37, 27 → hecha; merge a `main` tras `npm run build`.
 - [x] **Step 5: Commit** `git commit -m "B9: manual (estados de paciente, Accesos, pie de mensajes)"`
 
 ## Cierre (31-10-2026)
@@ -119,3 +119,5 @@ tsc limpio, 241 tests y `npm run build` OK. Revisión independiente: 0 críticos
 **Make revisado (31-10-2026, blueprint exportado por Sonia, `Make blueprints/SPs envio mensajes.json`):** seis rutas, una por `tipo` (`notificar_psicologo` sin tilde en el valor, `mensaje_dudoso`, `mensaje_espera`, `mensaje_sin_disponibilidad`, `solicitar_resena`, `mensaje_libre`); todas envían `{{1.mensaje}}`, así que el pie llega en las cinco de pacientes. El aviso al psicólogo va a `{{1.psicologo.telefono}}` (bien). Nada que tocar en Make. Detalle: todo sale por Telegram con la conexión «Dante Bot SPs» (el mismo bot que Dante), así que el paciente lo recibe en el chat de Dante y si contesta ahí le responde Dante: el texto del pie («no recibimos respuestas… contacta con Dante») hay que ajustarlo a eso (decisión de Sonia).
 
 **Decisión de Sonia (31-10-2026):** el pie se queda como está; `91 166 50 47` es donde hay que contactar ahora. Se revisa al pasar a producción (tarea 37b del tablero, B10).
+
+**Cerrado 31-10-2026:** merge en `main` (c8cfba4, GitHub), manual republicado (versión 24). Quedan las pruebas de aceptación 1–5 de la especificación, con las de los demás bloques.

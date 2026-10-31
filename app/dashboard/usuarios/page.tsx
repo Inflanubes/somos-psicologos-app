@@ -9,7 +9,7 @@ import {
   type AgenteGestion, type CentroGestion, type PsicologoGestion, type TipoUsuario,
 } from '../_components/gestion'
 
-// Usuarios: solo cuentas para entrar en la app (alta, enviar acceso, contraseña
+// Accesos (antes Usuarios; la ruta sigue siendo /dashboard/usuarios): solo cuentas para entrar en la app (alta, enviar acceso, contraseña
 // temporal y activar agentes / call center). Cómo trabaja cada psicólogo
 // (centros, horario, permisos de agenda…) se gestiona en Psicólogos (/dashboard/equipo).
 
@@ -162,7 +162,7 @@ export default function UsuariosPage() {
     <div className="page-pad" style={{ maxWidth: 1000 }}>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={h1}>Usuarios</h1>
+          <h1 style={h1}>Accesos</h1>
           <p style={subtitulo}>Cuentas para entrar en la app: altas, accesos y contraseñas</p>
         </div>
         <ActionButton variant={mostrarAlta ? 'default' : 'primary'} onClick={() => setMostrarAlta((v) => !v)}>

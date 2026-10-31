@@ -1,7 +1,7 @@
 'use client'
 
 // Piezas compartidas por las páginas Psicólogos (/dashboard/equipo, configuración
-// de consulta) y Usuarios (/dashboard/usuarios, cuentas y accesos). Las dos leen
+// de consulta) y Accesos (/dashboard/usuarios, cuentas y accesos). Las dos leen
 // de GET /api/usuarios y guardan con PATCH /api/usuarios/[id].
 
 import { useState } from 'react'

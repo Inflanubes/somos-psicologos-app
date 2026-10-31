@@ -11,7 +11,7 @@ import {
 } from '../_components/gestion'
 
 // Psicólogos: cómo trabaja cada uno (centros, tipos, horario, permisos de agenda,
-// calendario y si está activo). Las cuentas y contraseñas están en Usuarios.
+// calendario y si está activo). Las cuentas y contraseñas están en Accesos.
 export default function EquipoPage() {
   const [psicologos, setPsicologos] = useState<PsicologoGestion[]>([])
   const [centros, setCentros] = useState<CentroGestion[]>([])

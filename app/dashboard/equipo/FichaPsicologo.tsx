@@ -207,7 +207,7 @@ export default function FichaPsicologo({ psicologo: p, centros, guardando, onGua
         {error && <div style={{ fontSize: 12.5, color: '#b91c1c' }}>{error}</div>}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <span style={{ fontSize: 12, color: guardado && !hayCambios ? '#1e7d4f' : '#8899bb' }}>
-            {guardando ? 'Guardando…' : guardado && !hayCambios ? '✓ Guardado' : hayCambios ? 'Tienes cambios sin guardar' : 'Contraseña y acceso, en Usuarios'}
+            {guardando ? 'Guardando…' : guardado && !hayCambios ? '✓ Guardado' : hayCambios ? 'Tienes cambios sin guardar' : 'Contraseña y acceso, en Accesos'}
           </span>
           <ActionButton variant="primary" onClick={guardarBorrador} disabled={!hayCambios || guardando}>Guardar cambios</ActionButton>
         </div>

@@ -68,7 +68,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/pacientes', label: 'Pacientes', Icon: PeopleIcon, roles: ['agente', 'psicologo', 'inspeccion'] },
   { href: '/dashboard/equipo', label: 'Psicólogos', Icon: PersonIcon, roles: ['agente', 'inspeccion'] },
   { href: '/dashboard/agentes', label: 'Agentes', Icon: PeopleIcon, roles: ['agente', 'inspeccion'] },
-  { href: '/dashboard/usuarios', label: 'Usuarios', Icon: PeopleIcon, roles: ['agente', 'inspeccion'] },
+  { href: '/dashboard/usuarios', label: 'Accesos', Icon: PeopleIcon, roles: ['agente', 'inspeccion'] },
   { href: '/dashboard/psicologos', label: 'Citas', Icon: PersonIcon, exact: true, roles: ['agente', 'psicologo', 'call_center', 'inspeccion'] },
   // exact: '/dashboard/mensajes-psicologo' también empieza por '/dashboard/mensajes'
   { href: '/dashboard/mensajes', label: 'Comunicaciones', Icon: ChatIcon, exact: true, roles: ['agente', 'inspeccion'] },

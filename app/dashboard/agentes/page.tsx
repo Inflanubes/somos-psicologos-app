@@ -54,14 +54,14 @@ function ActionButton({ children, onClick, disabled, variant = 'default', title 
   )
 }
 
-type Resultado = { nombre: string; email: string; password?: string; emailSent: boolean }
-
 export default function AgentesPage() {
   const [agentes, setAgentes] = useState<Agente[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [resultado, setResultado] = useState<Resultado | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [editando, setEditando] = useState<string | null>(null)
+  const [telefonoNuevo, setTelefonoNuevo] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -91,26 +91,23 @@ export default function AgentesPage() {
     setBusy(null)
   }
 
-  // Restablece el acceso de un agente usando la misma API que el panel de Usuarios:
-  // - 'email': Supabase le envía un enlace para crear una contraseña nueva.
-  // - 'generar': se crea una contraseña temporal que hay que entregarle a mano.
-  async function restablecer(a: Agente, metodo: 'email' | 'generar') {
-    const confirmMsg = metodo === 'email'
-      ? `¿Enviar a ${a.nombre} un email para que cree una contraseña nueva?`
-      : `¿Generar una contraseña temporal para ${a.nombre}? La anterior dejará de funcionar y tendrás que entregársela tú.`
-    if (!window.confirm(confirmMsg)) return
-    setBusy(a.id); setError(null); setResultado(null)
+  // Edita el teléfono del agente con la misma API que Accesos (va por el id de
+  // agentes, así que funciona aunque el agente no tenga cuenta de acceso).
+  async function guardarTelefono(a: Agente, telefono: string) {
+    const valor = telefono.trim() || null
+    setBusy(a.id); setError(null); setAviso(null)
     try {
       const res = await fetch(`/api/usuarios/${a.id}`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: 'agente', metodo }),
+        body: JSON.stringify({ tipo: 'agente', telefono: valor }),
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error ?? 'No se pudo restablecer el acceso'); return }
-      setResultado({ nombre: a.nombre, email: data.email, password: data.password, emailSent: metodo === 'email' })
+      if (!res.ok) { setError('No se pudo guardar el teléfono.'); return }
+      setAgentes(prev => prev.map(x => (x.id === a.id ? { ...x, telefono: valor } : x)))
+      setEditando(null)
+      setAviso('Teléfono guardado.')
     } catch {
-      setError('Error de conexión al restablecer el acceso')
+      setError('No se pudo guardar el teléfono.')
     } finally {
       setBusy(null)
     }
@@ -133,7 +130,7 @@ export default function AgentesPage() {
           Agentes
         </h1>
         <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
-          Gestiona el estado y el acceso de cada agente de call center
+          Gestiona el estado y el teléfono de cada agente. Las cuentas y contraseñas están en Accesos
         </p>
       </div>
 
@@ -143,52 +140,9 @@ export default function AgentesPage() {
         </div>
       )}
 
-      {resultado && (
-        <div style={{ background: '#eef2fb', border: '1.5px solid #2f5aae', borderRadius: 10, padding: '16px 18px', marginBottom: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#254d99', marginBottom: 8 }}>
-                Acceso restablecido · {resultado.nombre}
-              </div>
-              <div style={{ fontSize: 13, color: '#3a4a6b', marginBottom: 6 }}>
-                <strong>Email:</strong> <span style={{ fontFamily: 'monospace' }}>{resultado.email}</span>
-              </div>
-
-              {resultado.emailSent && (
-                <div style={{ fontSize: 13, color: '#1e7d4f', fontWeight: 600, marginBottom: 6 }}>
-                  📧 Le hemos enviado un email para que cree su propia contraseña.
-                </div>
-              )}
-
-              {resultado.password && (
-                <div style={{ fontSize: 13, color: '#3a4a6b' }}>
-                  <strong>Contraseña temporal:</strong>{' '}
-                  <span style={{ fontFamily: 'monospace', background: '#fff', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(47,90,174,0.25)' }}>
-                    {resultado.password}
-                  </span>
-                  <div style={{ fontSize: 12, color: '#667799', marginTop: 6 }}>
-                    Entrégasela al agente. No volverá a mostrarse.
-                  </div>
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {resultado.password && (
-                <button
-                  onClick={() => navigator.clipboard?.writeText(`Email: ${resultado.email}\nContraseña: ${resultado.password}`)}
-                  style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid #2f5aae', background: '#fff', color: '#254d99', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-                >
-                  Copiar
-                </button>
-              )}
-              <button
-                onClick={() => setResultado(null)}
-                style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#2f5aae', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Hecho
-              </button>
-            </div>
-          </div>
+      {aviso && (
+        <div style={{ background: '#eafaf1', color: '#155f3b', padding: '10px 14px', borderRadius: 8, marginBottom: 18, fontSize: 13 }}>
+          {aviso}
         </div>
       )}
 
@@ -237,7 +191,6 @@ export default function AgentesPage() {
             <tbody>
               {agentes.map((a, i) => {
                 const ocupado = busy === a.id
-                const sinCuenta = !a.auth_user_id
                 return (
                   <tr
                     key={a.id}
@@ -253,7 +206,28 @@ export default function AgentesPage() {
                       {a.email ?? '—'}
                     </td>
                     <td data-label="Teléfono" style={{ padding: '14px 20px', fontSize: 13, color: '#4a5870' }}>
-                      {a.telefono ?? '—'}
+                      {editando === a.id ? (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <input
+                            type="tel"
+                            value={telefonoNuevo}
+                            onChange={e => setTelefonoNuevo(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') guardarTelefono(a, telefonoNuevo); if (e.key === 'Escape') setEditando(null) }}
+                            autoFocus
+                            disabled={ocupado}
+                            aria-label={`Teléfono de ${a.nombre}`}
+                            style={{ padding: '6px 10px', borderRadius: 8, border: '1.5px solid rgba(47,90,174,0.3)', fontSize: 13, fontFamily: 'inherit', width: 150 }}
+                          />
+                          <ActionButton onClick={() => guardarTelefono(a, telefonoNuevo)} disabled={ocupado} variant="success">
+                            {ocupado ? '...' : 'Guardar'}
+                          </ActionButton>
+                          <ActionButton onClick={() => setEditando(null)} disabled={ocupado}>
+                            Cancelar
+                          </ActionButton>
+                        </div>
+                      ) : (
+                        a.telefono ?? '—'
+                      )}
                     </td>
                     <td data-label="Estado" style={{ padding: '14px 20px' }}>
                       <span style={{
@@ -271,18 +245,10 @@ export default function AgentesPage() {
                     <td data-label="" style={{ padding: '14px 20px' }}>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <ActionButton
-                          onClick={() => restablecer(a, 'email')}
-                          disabled={ocupado || sinCuenta}
-                          title={sinCuenta ? 'Este agente no tiene cuenta de acceso; créala desde Usuarios' : 'Enviar email para que el agente cree una contraseña nueva'}
+                          onClick={() => { setEditando(a.id); setTelefonoNuevo(a.telefono ?? ''); setAviso(null) }}
+                          disabled={ocupado || editando === a.id}
                         >
-                          Enviar acceso
-                        </ActionButton>
-                        <ActionButton
-                          onClick={() => restablecer(a, 'generar')}
-                          disabled={ocupado || sinCuenta}
-                          title={sinCuenta ? 'Este agente no tiene cuenta de acceso; créala desde Usuarios' : 'Generar una contraseña temporal para entregar tú'}
-                        >
-                          Generar contraseña
+                          Editar teléfono
                         </ActionButton>
                         <ActionButton
                           onClick={() => toggleActivo(a.id, a.activo)}

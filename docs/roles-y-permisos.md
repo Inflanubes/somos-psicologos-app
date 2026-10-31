@@ -29,8 +29,8 @@ equipo: agentes internos, psicólogos y call center entran con su usuario y cont
 | Actividad de citas | `/dashboard/psicologos/stats` | Sí | No | No | No |
 | Pacientes | `/dashboard/pacientes` | Todos los pacientes | Solo los suyos (todas sus filas de psicólogo, por email) | No | Como agente |
 | Psicólogos (centros, tipos, horario, permisos de agenda, activo) | `/dashboard/equipo` | Sí | No | No | Como agente |
-| Agentes | `/dashboard/agentes` | Sí | No | No | Como agente |
-| Usuarios (cuentas: altas, accesos y contraseñas) | `/dashboard/usuarios` | Sí | No | No | Como agente |
+| Agentes (teléfono y activo) | `/dashboard/agentes` | Sí | No | No | Como agente |
+| Accesos (antes Usuarios; cuentas: altas, accesos y contraseñas) | `/dashboard/usuarios` | Sí | No | No | Como agente |
 | Citas (formulario de agenda) | `/dashboard/psicologos` | Cualquier centro y psicólogo, todas las acciones y las solicitudes al equipo; buscador por teléfono | Fijado a su propia agenda | Cualquier centro y psicólogo activo; citas, altas de paciente y solicitudes al equipo; buscador por teléfono; campo Operador; no toca citas creadas por el psicólogo | Como agente |
 | Comunicaciones (call center / avisos) | `/dashboard/mensajes` | Sí | No | No | Como agente |
 | Mensajes a pacientes (reseña Google, libre) | `/dashboard/mensajes-psicologo` | No | Sí | No | No |
@@ -47,12 +47,9 @@ Pacientes › Añadido por ve el operador del call center ("Call center (Ana)").
 
 #### Restablecer la contraseña de un usuario (psicólogo, agente o call center)
 
-Cuando alguien olvida su contraseña, un agente puede restablecerla desde dos sitios:
+Cuando alguien olvida su contraseña, un agente puede restablecerla desde **Accesos** (`/dashboard/usuarios`), en cada fila de las pestañas Psicólogos, Agentes y Call center. (Hasta el 31-10-2026 también estaba en Agentes; desde B9, tarea 30, Agentes solo edita el teléfono y activa/desactiva.)
 
-- **Usuarios** (`/dashboard/usuarios`): en cada fila de las pestañas Psicólogos, Agentes y Call center.
-- **Agentes** (`/dashboard/agentes`): en cada fila de agente (añadido el 25-09-2026, antes solo se podía activar/desactivar).
-
-En ambos hay los mismos dos botones, que llaman a `POST /api/usuarios/[id]`:
+Hay dos botones, que llaman a `POST /api/usuarios/[id]`:
 
 | Botón | Qué hace | Cuándo usarlo |
 |---|---|---|
@@ -60,7 +57,7 @@ En ambos hay los mismos dos botones, que llaman a `POST /api/usuarios/[id]`:
 | **Generar contraseña** | Crea una contraseña temporal y la muestra en pantalla una sola vez (con botón Copiar). La anterior deja de funcionar. | Si el email no le llega o hay prisa. Hay que entregársela a mano. |
 
 Los botones se desactivan si la ficha no tiene cuenta de acceso (`auth_user_id` vacío); en ese caso hay que
-crear el usuario desde Usuarios. Ojo con las personas que tienen dos fichas (una de agente y otra de call center):
+crear el usuario desde Accesos. Ojo con las personas que tienen dos fichas (una de agente y otra de call center):
 cada ficha tiene su propia cuenta y su propio email.
 
 ### Psicólogo
@@ -145,7 +142,7 @@ fuera del repo).
 
 ## Psicólogos desactivados
 
-Desactivar un psicólogo (`psicologos.activo = false`, desde Psicólogos; en Usuarios solo se ve el estado) no le quita el acceso.
+Desactivar un psicólogo (`psicologos.activo = false`, desde Psicólogos; en Accesos solo se ve el estado) no le quita el acceso.
 Desde el 28-09-2026 el formulario de Citas trata así a un psicólogo desactivado:
 
 | Quién | ¿Lo puede elegir? | Citas y bloqueos | Añadir nuevo paciente |
@@ -190,7 +187,7 @@ varios centros elige en Citas en cuál está hoy (se recuerda en el navegador).
   **30'** y **Bloquea agenda** y un interruptor **Activo**. Al pulsar una fila se abre la ficha lateral:
   centros y tipos y calendario de Google (se guardan con **Guardar cambios**), **Editar horario** (editor de
   siete días) e interruptores de medias horas, bloqueo de agenda y activo (se guardan al pulsarlos).
-  Nadie más puede editarlo. Usuarios queda solo para cuentas: alta, Enviar acceso y Generar contraseña.
+  Nadie más puede editarlo. Accesos (antes Usuarios) queda solo para cuentas: alta, Enviar acceso y Generar contraseña.
 - Una ficha **sin horario** no restringe nada: solo se ocultan las horas ya ocupadas. Una ficha **sin
   tipos de consulta** ofrece los tres tipos en Citas (y así se ve en Psicólogos, en rojo, para completarla).
 - Toda cita dura **60 minutos**. Se ofrecen las horas de 08:00 a 21:00 en punto y, si la persona tiene 30',
@@ -268,4 +265,4 @@ usuario con la anon key y sesión podría leer datos por fuera de la app. Está 
 
 Para añadir un rol nuevo o cambiar permisos: ampliar `Rol` en `types/database.ts`, el CHECK de
 `perfiles.rol` en Supabase, `navItems` en SidebarNav, `isAllowed`/`HOME` en RoleGate y, si aplica,
-`require-agente.ts` y la pantalla de Usuarios.
+`require-agente.ts` y la pantalla de Accesos.

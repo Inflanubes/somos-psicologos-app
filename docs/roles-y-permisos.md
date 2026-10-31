@@ -69,9 +69,10 @@ Al entrar aterriza en Citas. Su centro y su psicólogo vienen fijados por el ema
 (si trabaja en varios centros, elige el centro y se recuerda en el navegador). Solo ve sus
 pacientes y solo puede enviar mensajes a sus pacientes.
 
-Matiz: las acciones **Bloquear agenda** y **Desbloquear agenda** solo aparecen si su ficha en
-`psicologos` tiene `puede_bloquear = true` (se activa en la ficha del psicólogo, en Psicólogos). Vacaciones, asuntos propios,
-baja y modificar bloqueo personal están siempre disponibles.
+Matiz (B6, 31-10-2026): la opción **Bloquear / Desbloquear agenda** (y con ella todos sus tipos: vacaciones,
+asuntos propios, baja médica, modificar un bloqueo, bloqueo general y desbloquear) solo aparece si su ficha en
+`psicologos` tiene `puede_bloquear = true` (se activa en la ficha del psicólogo, en Psicólogos). Sin ese permiso
+no ve ningún bloqueo: se los pone un agente.
 
 ### Call center
 

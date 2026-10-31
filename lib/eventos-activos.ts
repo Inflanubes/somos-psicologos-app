@@ -33,12 +33,12 @@ export type EventoActivo = {
  *
  * IMPORTANT (real data): Make stamps EVERY block with a motivo_bloqueo. Generic
  * "Bloquear agenda" blocks get `motivo_bloqueo='Otros'` (not null). The named
- * blocks get 'Vacaciones' / 'Asuntos propios' / 'Baja laboral'.
+ * blocks get 'Vacaciones' / 'Asuntos propios' / 'Baja médica'.
  *   - Desbloquear agenda → generic blocks ('Otros' or null)
  *   - Modificar bloqueo  → the named ones (MOTIVOS_MODIFICABLES)
  */
 export const ACCION_BLOQUEO = 'Bloquear agenda'
-export const MOTIVOS_MODIFICABLES = ['Vacaciones', 'Asuntos propios', 'Baja laboral']
+export const MOTIVOS_MODIFICABLES = ['Vacaciones', 'Asuntos propios', 'Baja médica']
 
 /** Today's date as `YYYY-MM-DD` in the clinic's timezone (Europe/Madrid). */
 export function todayISODate(): string {
@@ -153,7 +153,7 @@ export async function fetchBloqueosActivos(params: {
   psicologoId: string
   /**
    * 'desbloquear' → generic blocks ('Otros' or null)
-   * 'modificar'   → named blocks (Vacaciones/Asuntos propios/Baja laboral)
+   * 'modificar'   → named blocks (Vacaciones/Asuntos propios/Baja médica)
    * undefined → all blocks
    */
   categoria?: 'desbloquear' | 'modificar'

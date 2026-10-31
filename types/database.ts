@@ -142,7 +142,7 @@ export type AccionCallCenter = {
   origen: string | null
 }
 
-export type MotivoBloqueo = 'Asuntos propios' | 'Vacaciones' | 'Baja laboral' | 'Otros'
+export type MotivoBloqueo = 'Asuntos propios' | 'Vacaciones' | 'Baja médica' | 'Otros'
 
 export type TipoCita = 'adulto' | 'pareja' | 'menor'
 

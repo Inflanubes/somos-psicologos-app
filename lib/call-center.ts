@@ -25,6 +25,16 @@ export type AccionSolicitud = (typeof ACCIONES_SOLICITUD)[number]
 /** Las que se ofrecen en pantalla, en este orden. Jaime aprobó las cuatro el 31-10-2026 (tarea 51 del tablero). */
 export const ACCIONES_SOLICITUD_ACTIVAS: readonly AccionSolicitud[] = ['Sin disponibilidad', 'hablar con psicologo', 'Cambio solicitado', 'Otro']
 
+/**
+ * Solicitudes que ve cada rol. El call center no marca "Sin cita disponible"
+ * (decisión de Sonia, 01-11-2026): esos casos los rellenan los agentes.
+ */
+export function accionesSolicitudPara(rol: Rol): readonly AccionSolicitud[] {
+  if (rol === 'psicologo') return []
+  if (rol === 'call_center') return ACCIONES_SOLICITUD_ACTIVAS.filter((a) => a !== 'Sin disponibilidad')
+  return ACCIONES_SOLICITUD_ACTIVAS
+}
+
 /** Etiquetas de pantalla; a Make viaja siempre el texto de ACCIONES_SOLICITUD. */
 export const ETIQUETA_SOLICITUD: Record<AccionSolicitud, string> = {
   Otro: 'Otros (aviso al equipo)',

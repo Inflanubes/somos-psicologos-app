@@ -3,7 +3,7 @@
 // solo ven agentes y psicólogos con puede_bloquear. Cada tipo se traduce a la
 // acción de siempre, que es la que viaja a Make y se guarda.
 
-import { ACCIONES_SOLICITUD_ACTIVAS, esAccionSolicitud, type AccionSolicitud, type Rol } from './call-center'
+import { accionesSolicitudPara, esAccionSolicitud, type AccionSolicitud, type Rol } from './call-center'
 import { esGestor } from './roles'
 
 export type AccionPsicologo =
@@ -55,8 +55,8 @@ export function accionesMenu(
   )
   const menu: string[] = [...base]
   if (tiposBloqueoDisponibles(rol, opts.puedeBloquear).length > 0) menu.push(ACCION_BLOQUEOS)
-  // Solicitudes al equipo (B3): call center y agentes; las activas se configuran en lib/call-center.ts.
-  if (rol !== 'psicologo') menu.push(...ACCIONES_SOLICITUD_ACTIVAS)
+  // Solicitudes al equipo (B3): call center y agentes; las de cada rol se configuran en lib/call-center.ts.
+  menu.push(...accionesSolicitudPara(rol))
   return menu
 }
 

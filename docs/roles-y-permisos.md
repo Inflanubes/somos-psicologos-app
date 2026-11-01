@@ -119,13 +119,15 @@ texto exacto que esperan las rutas 6 a 9 (`docs/make-cambios-2026-10-22.md`, fue
 
 | En pantalla | Texto a Make | Qué hace Make | Activa hoy |
 |---|---|---|---|
-| Sin cita disponible | `Sin disponibilidad` | Paciente a `Sin disponibilidad` + Telegram | Sí |
+| Sin cita disponible | `Sin disponibilidad` | Paciente a `Sin disponibilidad` + Telegram | Solo agentes (desde 01-11-2026) |
 | Pendiente de psicólogo | `hablar con psicologo` | Paciente a `Psicólogo` + Telegram | Sí |
 | Cambio de psicólogo | `Cambio solicitado` | Paciente a `Cambio solicitado` + Telegram | Sí |
 | Otros (aviso al equipo) | `Otro` | Telegram a los agentes con el comentario (obligatorio) | Sí |
 
 Jaime aprobó las cuatro el 31-10-2026 (tarea 51 del tablero). Se ofrecen en el orden de
 `ACCIONES_SOLICITUD_ACTIVAS` en `lib/call-center.ts`; las pestañas de Comunicaciones se llenan solas.
+El 01-11-2026 Sonia quitó "Sin cita disponible" al call center: esos casos los marcan los agentes
+(`accionesSolicitudPara` en `lib/call-center.ts`).
 En el Panel General ve **solo su propia actividad** ("Mi actividad", componente `PanelCallCenter`): citas agendadas, cambiadas y canceladas y pacientes añadidos por él, con filtro hoy / esta semana / este mes, gráfico de citas por día, reparto por centro y psicólogo y sus últimas acciones. Nunca ve los datos globales de la clínica ni la tabla de pacientes. No ve pacientes, equipo, usuarios ni comunicaciones.
 
 Cada cita que registra queda atribuida a su usuario (`created_by` con su nombre y

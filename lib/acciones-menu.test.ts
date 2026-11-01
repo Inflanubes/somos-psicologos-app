@@ -24,7 +24,12 @@ describe('accionesMenu y tiposBloqueoDisponibles', () => {
     expect(accionesMenu('psicologo', { puedeBloquear: true, psicologoInactivo: false })).toEqual([...BASE, ACCION_BLOQUEOS])
     expect(tiposBloqueoDisponibles('call_center', true)).toEqual([])
     expect(accionesMenu('call_center', { puedeBloquear: true, psicologoInactivo: false }))
-      .toEqual([...BASE, ...ACCIONES_SOLICITUD_ACTIVAS])
+      .toEqual([...BASE, 'hablar con psicologo', 'Cambio solicitado', 'Otro'])
+  })
+
+  it('el call center no ve Sin disponibilidad; el agente sí', () => {
+    expect(accionesMenu('call_center', { puedeBloquear: null, psicologoInactivo: false })).not.toContain('Sin disponibilidad')
+    expect(accionesMenu('agente', { puedeBloquear: null, psicologoInactivo: false })).toContain('Sin disponibilidad')
   })
 
   it('psicólogo inactivo no ve Añadir nuevo paciente; el agente sí', () => {

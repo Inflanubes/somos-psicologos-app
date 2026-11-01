@@ -39,7 +39,7 @@ describe('acciones de solicitud', () => {
     expect(ETIQUETA_SOLICITUD).toEqual({
       Otro: 'Otros (aviso al equipo)',
       'Sin disponibilidad': 'Sin cita disponible',
-      'hablar con psicologo': 'Pendiente de psicólogo',
+      'hablar con psicologo': 'Hablar con el psicólogo',
       'Cambio solicitado': 'Cambio de psicólogo',
     })
   })

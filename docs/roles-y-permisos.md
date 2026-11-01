@@ -120,7 +120,7 @@ texto exacto que esperan las rutas 6 a 9 (`docs/make-cambios-2026-10-22.md`, fue
 | En pantalla | Texto a Make | Qué hace Make | Activa hoy |
 |---|---|---|---|
 | Sin cita disponible | `Sin disponibilidad` | Paciente a `Sin disponibilidad` + Telegram | Solo agentes (desde 01-11-2026) |
-| Pendiente de psicólogo | `hablar con psicologo` | Paciente a `Psicólogo` + Telegram | Sí |
+| Hablar con el psicólogo | `hablar con psicologo` | Paciente a `Psicólogo` + Telegram | Sí |
 | Cambio de psicólogo | `Cambio solicitado` | Paciente a `Cambio solicitado` + Telegram | Sí |
 | Otros (aviso al equipo) | `Otro` | Telegram a los agentes con el comentario (obligatorio) | Sí |
 

@@ -39,7 +39,7 @@ export function accionesSolicitudPara(rol: Rol): readonly AccionSolicitud[] {
 export const ETIQUETA_SOLICITUD: Record<AccionSolicitud, string> = {
   Otro: 'Otros (aviso al equipo)',
   'Sin disponibilidad': 'Sin cita disponible',
-  'hablar con psicologo': 'Pendiente de psicólogo',
+  'hablar con psicologo': 'Hablar con el psicólogo',
   'Cambio solicitado': 'Cambio de psicólogo',
 }
 

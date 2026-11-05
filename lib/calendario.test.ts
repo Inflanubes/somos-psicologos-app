@@ -3,7 +3,7 @@ import {
   sumarDias, lunesDeSemana, diasDeSemana, etiquetaRangoSemana, etiquetaDia,
   FILAS_HORA, filaDeHora, filtrarEventos, bloqueoCubreDia, tramoCubreCelda, etiquetaTipoCita,
   estadoVisual, COLORES_ESTADO, LEYENDA, modoContador, textoChip,
-  distribuirColumnas,
+  distribuirColumnas, quitarBloqueosOcultos, MOTIVOS_OCULTOS_VISTA_GENERAL,
   type EventoCalendario,
 } from './calendario'
 
@@ -54,6 +54,25 @@ describe('filas de la rejilla', () => {
     expect(filaDeHora('21:30')).toBe(27)
     expect(filaDeHora('07:00')).toBe(-1)
     expect(filaDeHora('22:00')).toBe(-1)
+  })
+})
+
+describe('quitarBloqueosOcultos (página Calendario, F1 tarea 2)', () => {
+  it('oculta bajas médicas y asuntos propios; deja vacaciones, «Cerrado» y citas', () => {
+    const eventos = [
+      bloqueo({ id: 'baja', motivo: 'Baja médica' }),
+      bloqueo({ id: 'asuntos', motivo: 'Asuntos propios' }),
+      bloqueo({ id: 'vac', motivo: 'Vacaciones' }),
+      bloqueo({ id: 'cerrado', motivo: 'Otros' }),
+      bloqueo({ id: 'nulo', motivo: null }),
+      cita({ id: 'c1' }),
+    ]
+    expect(quitarBloqueosOcultos(eventos, MOTIVOS_OCULTOS_VISTA_GENERAL).map((e) => e.id))
+      .toEqual(['vac', 'cerrado', 'nulo', 'c1'])
+  })
+  it('sin motivos ocultos devuelve todo', () => {
+    const eventos = [bloqueo({ id: 'baja', motivo: 'Baja médica' })]
+    expect(quitarBloqueosOcultos(eventos, [])).toHaveLength(1)
   })
 })
 

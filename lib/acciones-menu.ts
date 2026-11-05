@@ -29,7 +29,7 @@ export const TIPOS_BLOQUEO: { etiqueta: string; accion: AccionPsicologo; requier
   { etiqueta: 'Asuntos propios',      accion: 'Asuntos propios',            requierePermiso: false },
   { etiqueta: 'Baja médica',          accion: 'Baja médica',                requierePermiso: false },
   { etiqueta: 'Modificar un bloqueo', accion: 'Modificar bloqueo personal', requierePermiso: false },
-  { etiqueta: 'Bloqueo general',      accion: 'Bloquear agenda',            requierePermiso: true },
+  { etiqueta: 'Cerrar agenda',        accion: 'Bloquear agenda',            requierePermiso: true },
   { etiqueta: 'Desbloquear',          accion: 'Desbloquear agenda',         requierePermiso: true },
 ]
 

@@ -41,9 +41,14 @@ describe('calcularLibres', () => {
     expect(l.map((e) => e.fecha)).toEqual(['2026-10-26'])
     expect(l[0].centroId).toBe('on')
   })
-  it('una cita a las 10:30 de un psicólogo con medias horas tapa 10:00 y 11:00', () => {
+  it('con medias horas: un libre por hora, a y media, nunca dos en la misma hora (caso Marta)', () => {
+    const p = jaime({ mediaHora: true, tramos: [t(1, '09:00', '14:00', 'sb')] })
+    expect(calcularLibres([p], ['2026-10-26'], { fecha: '2026-10-26', minutos: 0 }, 'sb').map((e) => e.hora))
+      .toEqual(['09:30', '10:30', '11:30', '12:30'])
+  })
+  it('con medias horas, una cita a las 10:30 solo quita las 10:30', () => {
     const p = jaime({ mediaHora: true, tramos: [t(1, '10:00', '13:00', 'mor')], citas: [{ fecha: '2026-10-26', hora: '10:30:00' }] })
-    expect(calcularLibres([p], ['2026-10-26'], { fecha: '2026-10-26', minutos: 0 }, 'mor').map((e) => e.hora)).toEqual(['11:30', '12:00'])
+    expect(calcularLibres([p], ['2026-10-26'], { fecha: '2026-10-26', minutos: 0 }, 'mor').map((e) => e.hora)).toEqual(['11:30'])
   })
   it('no calcula libres en días pasados', () => {
     expect(calcularLibres([jaime()], ['2026-10-19', '2026-10-20'], AHORA, null)).toEqual([])

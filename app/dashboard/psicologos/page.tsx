@@ -63,7 +63,7 @@ const ACCIONES_BLOQUEO: AccionPsicologo[] = [
 
 const LABEL_MAP: Record<AccionPsicologo, string> = {
   'Agendar cita':          'Confirmar cita',
-  'Bloquear agenda':       'Bloquear agenda',
+  'Bloquear agenda':       'Cerrar agenda',
   'Desbloquear agenda':    'Desbloquear agenda',
   'Modificar bloqueo personal':     'Modificar bloqueo personal',
   'Cambiar cita':          'Cambiar cita',
@@ -471,8 +471,9 @@ export default function PsicologosPage() {
   const { datos: disp, cargando: cargandoDisp, error: errorDisp, añadirCitaLocal } = useDisponibilidad(psicologoDisp, effCentroId || null)
   const excluirAccionId = isCambiarCita ? eventoActual?.id : undefined
   // "Recibe citas nuevas" apagado en ese centro: solo bloquea Agendar cita (cambiar y cancelar siguen).
+  // El psicólogo no sabe que está apagado: sigue viendo y usando sus huecos (F1 tarea 9).
   const esAgendar = accion === 'Agendar cita'
-  const centroInactivo = esAgendar && !!disp && !disp.centroActivo
+  const centroInactivo = esAgendar && !esPsicologo && !!disp && !disp.centroActivo
   const sinHorario = !!disp && !disp.tieneAlgunHorario
   const huecos = useMemo(() => {
     if (!disp || !fecha) return null
@@ -846,11 +847,10 @@ export default function PsicologosPage() {
     }
     let cancelled = false
     setLoadingEventos(true)
-    // Desbloquear → bloqueos genéricos (Otros/null); Modificar → vacaciones/asuntos/baja
+    // Desbloquear y Modificar listan los cuatro tipos de bloqueo (F1).
     fetchBloqueosActivos({
       tabla: 'acciones_psicologos',
       psicologoId,
-      categoria: esModificarBloqueo ? 'modificar' : 'desbloquear',
     })
       .then((eventos) => { if (!cancelled) setBloqueosActivos(eventos) })
       .catch(() => { if (!cancelled) setBloqueosActivos([]) })
@@ -1536,7 +1536,7 @@ export default function PsicologosPage() {
       (accion === 'Bloquear agenda' || accion === 'Desbloquear agenda') &&
       !(psicologoSeleccionado?.puede_bloquear ?? false)
     ) {
-      setError('No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.')
+      setError('No tienes permiso para cerrar la agenda. Habla con el equipo.')
       return
     }
     if (isNuevoPaciente && esPsicologo && psicologoInactivo) {
@@ -2094,7 +2094,7 @@ export default function PsicologosPage() {
                       >
                         {id === TODOS_LOS_CENTROS
                           ? 'Todos'
-                          : `${nombreCentro(id)}${psiPsicologoId && centroApagado(psiPsicologoId, id) ? ' (no recibe citas nuevas)' : ''}`}
+                          : nombreCentro(id)}
                       </button>
                     )
                   })}
@@ -2112,7 +2112,7 @@ export default function PsicologosPage() {
                   <option value="">Selecciona un centro</option>
                   {centros.filter((c) => misCentros.includes(c.id)).map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre}{psiPsicologoId && centroApagado(psiPsicologoId, c.id) ? ' (no recibe citas nuevas)' : ''}
+                      {c.nombre}
                     </option>
                   ))}
                 </select>
@@ -2813,7 +2813,7 @@ export default function PsicologosPage() {
                 </FormField>
               )}
 
-              {/* Modificar bloqueo: pick a vacaciones/baja/asuntos block + new dates */}
+              {/* Modificar bloqueo: pick any active block (los cuatro tipos) + new dates */}
               {esModificarBloqueo && (
                 <>
                   <FormField label="Bloqueo a modificar" required>
@@ -2822,7 +2822,7 @@ export default function PsicologosPage() {
                       value={eventoSeleccionadoId}
                       onChange={setEventoSeleccionadoId}
                       loading={loadingEventos}
-                      emptyText="Sin vacaciones, baja o asuntos propios activos"
+                      emptyText="Sin bloqueos activos para este psicólogo"
                       placeholder="Selecciona el bloqueo"
                       inputStyle={inputStyle}
                       required

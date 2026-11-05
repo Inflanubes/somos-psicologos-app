@@ -110,6 +110,19 @@ export function filtrarEventos(eventos: EventoCalendario[], f: FiltrosCalendario
   })
 }
 
+/**
+ * Motivos de bloqueo que no se pintan en la página Calendario (vista de todos
+ * los psicólogos): meten ruido (feedback de Jaime, nov 2026). En el calendario
+ * de Citas (un psicólogo) se ven siempre. Esos días tampoco salen como libres.
+ */
+export const MOTIVOS_OCULTOS_VISTA_GENERAL = ['Baja médica', 'Asuntos propios']
+
+/** Quita los bloqueos con esos motivos; el resto de eventos queda igual. */
+export function quitarBloqueosOcultos(eventos: EventoCalendario[], motivos: string[]): EventoCalendario[] {
+  if (motivos.length === 0) return eventos
+  return eventos.filter((e) => !(e.tipo === 'bloqueo' && e.motivo && motivos.includes(e.motivo)))
+}
+
 export function bloqueoCubreDia(e: EventoCalendario, fecha: string): boolean {
   return e.tipo === 'bloqueo' && !!e.inicio && e.inicio <= fecha && (e.fin == null || fecha <= e.fin)
 }

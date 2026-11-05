@@ -10,7 +10,7 @@ Tablero: `docs/backlog-2026-11-05-feedback-v2.md` (se actualiza en `main` al fus
 | 14 | Pacientes: subpestañas Parejas y Menores | hecha | pruebas de aceptación |
 | 15 | Botones «Marcar "firmado en papel"» y «Desmarcar "firmado"» | hecha | — |
 | 16 | Comunicaciones no muestra los pacientes de las solicitudes | parte de la app hecha; **la causa está en Make** (F4, tarea 19) | que Jaime repita la 3.6 |
-| 17 | Botón para eliminar usuarios | hecha | **aplicar la migración 026** y pruebas |
+| 17 | Botón para eliminar usuarios | hecha (026 aplicada 05-11) | pruebas |
 | 18 | Pie de mensajes con el contacto de Dante | espera cliente | el número de Dante |
 
 ## 14 · Parejas y Menores
@@ -48,11 +48,17 @@ Decisiones de Sonia (05-11-2026):
 - Sin la 026 aplicada, borrar un psicólogo da «Falta aplicar la migración 026 en Supabase…»; borrar agentes funciona ya.
 - Ningún trigger salta al borrar (los de 011 son AFTER INSERT/UPDATE): no se avisa a Make ni al calendario de Elias.
 
-### Migración 026 (pendiente de aplicar)
+### Migración 026 (aplicada el 05-11-2026)
 
 `Supabase/migrations/026_eliminar_psicologo.sql`. Idempotente. Solo crea la función y le quita el permiso a `anon` y `authenticated`; no toca datos al aplicarla. Aplicar en el SQL Editor (de madrugada o con Make y Dante parados, regla del proyecto) y anotar aquí la fecha.
 
-- [ ] 026 aplicada en producción (fecha: …)
+- [x] 026 aplicada en producción por Sonia (fecha: 05-11-2026)
+
+## Merge de main (05-11-2026, con F1 y F2 ya fusionados)
+
+- `git merge main` sin conflictos. F3 no toca los archivos de F1/F2 (`psicologos/page.tsx`, calendario, call center).
+- Lo único que afectaba: F2 llama «Cambio de psicólogo o centro» a la solicitud de cambio cuando el paciente aún no tiene citas (supuesto 2). Va a la misma pestaña, así que se añade a la línea de ayuda de Comunicaciones.
+- tsc limpio y 273 tests en verde tras el merge.
 
 ## Make / Dante
 

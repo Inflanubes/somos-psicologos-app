@@ -366,7 +366,7 @@ export default function MensajesPage() {
         <p style={{ fontSize: 12.5, color: '#667799', margin: '10px 0 0', background: '#f7f4ef', borderRadius: 8, padding: '8px 12px' }}>
           Dónde aparece cada solicitud del formulario de Citas: <strong>Sin cita disponible</strong> → pestaña Sin cita
           disponible · <strong>Hablar con el psicólogo</strong> → pestaña Hablar con el psicólogo · <strong>Cambio de
-          psicólogo</strong> → pestaña En espera, apartado Cambio de psicólogo. <strong>Otros</strong> solo avisa al equipo
+          psicólogo</strong> (o «Cambio de psicólogo o centro») → pestaña En espera, apartado Cambio de psicólogo. <strong>Otros</strong> solo avisa al equipo
           por Telegram y no cambia el estado del paciente. El paciente aparece aquí unos segundos después de enviar la solicitud.
         </p>
       </div>

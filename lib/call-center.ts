@@ -231,3 +231,50 @@ export function comentarioCambioPsicologo(nombrePsicologo: string, operador: str
 export function textoAvisoMismoDia(c: CitaDia): string {
   return `Este paciente ya tiene cita el ${diaConFecha(c.fecha)} a las ${c.hora.slice(0, 5)} con ${c.psicologoNombre}. ¿Quieres modificarla o es otra cita (por ejemplo, de pareja)?`
 }
+
+// ── Formulario por pasos del call center (F2, tarea 11; feedback de Jaime 3.4) ──
+/**
+ * 1 = paciente que ya ha tenido alguna cita (no anulada) · 2 = ficha creada sin
+ * ninguna cita · 3 = el teléfono no es de ningún paciente (persona nueva).
+ */
+export type SupuestoCallCenter = 1 | 2 | 3
+
+export function supuestoCallCenter(p: { existe: boolean; tieneCitas: boolean }): SupuestoCallCenter {
+  if (!p.existe) return 3
+  return p.tieneCitas ? 1 : 2
+}
+
+/** Para dar de alta a una persona nueva hace falta el número entero, no un trozo. */
+export function telefonoCompleto(s: string): boolean {
+  return normalizarTelefono(s).length >= 9
+}
+
+/** Paso en el que está el formulario del call center (null = solo el buscador). */
+export type PasoCallCenter = {
+  supuesto: SupuestoCallCenter
+  /** Centro, psicólogo y paciente fijados por el buscador (supuestos 1 y 2). */
+  bloqueado: boolean
+  centroId: string
+  psicologoId: string
+  pacienteId: string
+}
+
+/**
+ * Un clic en el calendario (o un enlace) rellena el formulario. Para el call center
+ * solo vale si ya buscó el teléfono, si la acción está en su menú y, con los campos
+ * bloqueados, si es el mismo psicólogo y el mismo paciente. Devuelve el aviso o null.
+ */
+export function motivoRechazoPrefillCallCenter(
+  paso: PasoCallCenter | null,
+  prefill: { accion: string; centroId?: string; psicologoId: string; pacienteId?: string },
+  opcionesMenu: readonly string[],
+): string | null {
+  if (!paso) return 'Busca primero el teléfono del paciente.'
+  if (paso.supuesto === 3) return 'Primero da de alta al paciente con «Añadir nuevo paciente».'
+  if (!opcionesMenu.includes(prefill.accion)) return 'Esa acción no está disponible para este paciente.'
+  if (!paso.bloqueado) return null
+  if (prefill.psicologoId !== paso.psicologoId) return 'Este paciente va con su psicólogo: elige un hueco de su agenda.'
+  if (prefill.centroId && paso.centroId && prefill.centroId !== paso.centroId) return 'Este paciente va a otro centro: elige un hueco de su centro.'
+  if (prefill.pacienteId && prefill.pacienteId !== paso.pacienteId) return 'Esa cita es de otro paciente.'
+  return null
+}

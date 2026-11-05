@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { accionesMenu, tiposBloqueoDisponibles, accionReal, ACCION_BLOQUEOS } from './acciones-menu'
+import { accionesMenu, tiposBloqueoDisponibles, accionReal, etiquetaOpcionMenu, ACCION_BLOQUEOS } from './acciones-menu'
 import { ACCIONES_SOLICITUD_ACTIVAS } from './call-center'
 
 const BASE = ['Agendar cita', 'Añadir nuevo paciente', 'Cambiar cita', 'Cancelar cita']
@@ -49,5 +49,28 @@ describe('accionReal', () => {
     expect(accionReal('Agendar cita', '')).toBe('Agendar cita')
     expect(accionReal('Otro', '')).toBe('Otro')
     expect(accionReal('', '')).toBe('')
+  })
+})
+
+describe('call center por supuestos (F2, tarea 11)', () => {
+  const opts = { puedeBloquear: null, psicologoInactivo: false }
+  it('supuesto 1 (ya tuvo cita): agendar, cambiar, cancelar, hablar, cambio de psicólogo y otros', () => {
+    expect(accionesMenu('call_center', { ...opts, supuesto: 1 }))
+      .toEqual(['Agendar cita', 'Cambiar cita', 'Cancelar cita', 'hablar con psicologo', 'Cambio solicitado', 'Otro'])
+  })
+  it('supuesto 2 (ficha sin citas): agendar, cambio de psicólogo o centro y otros', () => {
+    expect(accionesMenu('call_center', { ...opts, supuesto: 2 })).toEqual(['Agendar cita', 'Cambio solicitado', 'Otro'])
+    expect(etiquetaOpcionMenu('Cambio solicitado', 2)).toBe('Cambio de psicólogo o centro')
+    expect(etiquetaOpcionMenu('Cambio solicitado', 1)).toBe('Cambio de psicólogo')
+  })
+  it('supuesto 3 (no existe): añadir paciente y otros', () => {
+    expect(accionesMenu('call_center', { ...opts, supuesto: 3 })).toEqual(['Añadir nuevo paciente', 'Otro'])
+  })
+  it('el supuesto solo cambia el menú del call center', () => {
+    expect(accionesMenu('agente', { ...opts, supuesto: 3 })).toEqual(accionesMenu('agente', opts))
+  })
+  it('etiquetas del resto de opciones', () => {
+    expect(etiquetaOpcionMenu('Otro')).toBe('Otros (aviso al equipo)')
+    expect(etiquetaOpcionMenu('Agendar cita', 1)).toBe('Agendar cita')
   })
 })

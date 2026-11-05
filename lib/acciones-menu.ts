@@ -3,7 +3,7 @@
 // solo ven agentes y psicólogos con puede_bloquear. Cada tipo se traduce a la
 // acción de siempre, que es la que viaja a Make y se guarda.
 
-import { accionesSolicitudPara, esAccionSolicitud, type AccionSolicitud, type Rol } from './call-center'
+import { accionesSolicitudPara, esAccionSolicitud, ETIQUETA_SOLICITUD, type AccionSolicitud, type Rol, type SupuestoCallCenter } from './call-center'
 import { esGestor } from './roles'
 
 export type AccionPsicologo =
@@ -44,11 +44,26 @@ export function tiposBloqueoDisponibles(rol: Rol, puedeBloquear: boolean | null)
   return []
 }
 
+/** Menú del call center según el supuesto (feedback de Jaime 3.4, 05-11-2026). */
+const MENU_CALL_CENTER: Record<SupuestoCallCenter, readonly AccionPsicologo[]> = {
+  1: ['Agendar cita', 'Cambiar cita', 'Cancelar cita', 'hablar con psicologo', 'Cambio solicitado', 'Otro'],
+  2: ['Agendar cita', 'Cambio solicitado', 'Otro'],
+  3: ['Añadir nuevo paciente', 'Otro'],
+}
+
+/** Texto que se ve en el desplegable (a Make viaja siempre el valor). */
+export function etiquetaOpcionMenu(opcion: string, supuesto?: SupuestoCallCenter): string {
+  if (opcion === 'Cambio solicitado' && supuesto === 2) return 'Cambio de psicólogo o centro'
+  return esAccionSolicitud(opcion) ? ETIQUETA_SOLICITUD[opcion] : opcion
+}
+
 /** Opciones del primer desplegable, en orden. */
 export function accionesMenu(
   rol: Rol,
-  opts: { puedeBloquear: boolean | null; psicologoInactivo: boolean },
+  opts: { puedeBloquear: boolean | null; psicologoInactivo: boolean; supuesto?: SupuestoCallCenter },
 ): string[] {
+  // Call center con el formulario por pasos (F2, tarea 11): menú fijo según el supuesto.
+  if (rol === 'call_center' && opts.supuesto) return [...MENU_CALL_CENTER[opts.supuesto]]
   // Un psicólogo desactivado gestiona su agenda pero no se da de alta pacientes nuevos.
   const base = ACCIONES_BASE.filter(
     (a) => !(a === 'Añadir nuevo paciente' && rol === 'psicologo' && opts.psicologoInactivo),

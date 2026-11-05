@@ -25,10 +25,11 @@ import {
 } from '@/lib/disponibilidad'
 import { ahoraMadrid } from '@/lib/fechas'
 import {
-  leerOperador, guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
-  citasMismoDia, textoAvisoMismoDia, ETIQUETA_SOLICITUD, esAccionSolicitud,
+  guardarOperador, puedeGestionarCita, comentarioAvisoCita, comentarioCambioPsicologo,
+  citasMismoDia, textoAvisoMismoDia, esAccionSolicitud,
   psicologoActualExistente, accionAltaExistente, operadorParaEnvio,
-  type Rol, type CitaDia, type AccionSolicitud,
+  supuestoCallCenter, motivoRechazoPrefillCallCenter,
+  type Rol, type CitaDia, type PasoCallCenter,
 } from '@/lib/call-center'
 import { useDisponibilidad } from './useDisponibilidad'
 import {
@@ -38,7 +39,7 @@ import {
 import { esGestor } from '@/lib/roles'
 import { MOSTRAR_RECOMENDACION } from '@/lib/flags'
 import {
-  accionesMenu, tiposBloqueoDisponibles, accionReal, ACCION_BLOQUEOS, type AccionPsicologo,
+  accionesMenu, tiposBloqueoDisponibles, accionReal, etiquetaOpcionMenu, ACCION_BLOQUEOS, type AccionPsicologo,
 } from '@/lib/acciones-menu'
 
 type PeriodoBloqueo = 'Horas' | 'Dias' | 'Semanas' | 'Meses'
@@ -302,14 +303,21 @@ export default function PsicologosPage() {
   // Sin fila en perfiles = agente.
   const rol: Rol = perfil?.rol ?? 'agente'
 
-  // Operador del call center (B3): nombre libre que viaja con cada acción y se
-  // recuerda en el navegador por usuario. Vacío = se envía null y nada se bloquea.
+  // Operador del call center (B3): nombre libre que viaja con cada acción. Desde F2
+  // (tarea 10) se vacía después de cada acción, porque varios operadores comparten
+  // el usuario a la vez; ya no se recuerda en el navegador (se borra lo guardado antes).
   const [operador, setOperador] = useState('')
-  useEffect(() => { if (userId && esCallCenter) setOperador(leerOperador(userId)) }, [userId, esCallCenter])
+  useEffect(() => { if (userId && esCallCenter) guardarOperador(userId, '') }, [userId, esCallCenter])
   function cambiarOperador(valor: string) {
     setOperador(valor)
-    if (userId) guardarOperador(userId, valor)
   }
+
+  // Formulario por pasos del call center (F2, tarea 11): null = solo se ve el buscador.
+  // Al elegir paciente (supuestos 1 y 2) centro, psicólogo y paciente quedan fijados;
+  // con una persona nueva (supuesto 3) solo se puede dar de alta o escribir en Otros.
+  const [pasoCC, setPasoCC] = useState<PasoCallCenter | null>(null)
+  const [telefonoBuscado, setTelefonoBuscado] = useState('')
+  const [buscadorKey, setBuscadorKey] = useState(0)
   // Vacío → "agente en general" (decisión de Sonia): así se distingue el call center sin nombre.
   const operadorEnvio = operadorParaEnvio(rol, operador)
 
@@ -415,13 +423,18 @@ export default function PsicologosPage() {
   // puede darse de alta pacientes nuevos (el agente sí puede asignárselos).
   const psicologoInactivo = psicologoSeleccionado !== null && !psicologoSeleccionado.activo
   const puedeBloquear = psicologoSeleccionado?.puede_bloquear ?? null
-  const opcionesMenu = accionesMenu(rol, { puedeBloquear, psicologoInactivo })
+  const opcionesMenu = accionesMenu(rol, { puedeBloquear, psicologoInactivo, supuesto: esCallCenter ? pasoCC?.supuesto : undefined })
+  const supuestoCC = esCallCenter ? pasoCC?.supuesto : undefined
+  const bloqueadoCC = esCallCenter && !!pasoCC?.bloqueado
+  const ocultarFormularioCC = esCallCenter && !pasoCC
   const tiposBloqueo = tiposBloqueoDisponibles(rol, puedeBloquear)
 
   const isCitaAction = accion !== '' && ACCIONES_CITA.includes(accion as AccionPsicologo)
   const esSolicitud = accion !== '' && esAccionSolicitud(accion)
+  // Call center con una persona que aún no es paciente: «Otros» va sin ficha, con el teléfono buscado.
+  const otroSinFicha = supuestoCC === 3 && accion === 'Otro'
   // Acciones que piden elegir un paciente de la lista del psicólogo.
-  const pidePaciente = isCitaAction || esSolicitud
+  const pidePaciente = (isCitaAction || esSolicitud) && !otroSinFicha
   const isBloqueoAction = accion !== '' && ACCIONES_BLOQUEO.includes(accion as AccionPsicologo)
   const isCambiarCita = accion === 'Cambiar cita'
   const isNuevoPaciente = accion === 'Añadir nuevo paciente'
@@ -598,6 +611,14 @@ export default function PsicologosPage() {
   useEffect(() => {
     if (!prefill || prefillFase !== 0) return
     if (!perfilCargado || psicologos.length === 0 || (esPsicologo && !variantesCargadas)) return
+    if (esCallCenter) {
+      const motivo = motivoRechazoPrefillCallCenter(
+        pasoCC,
+        { accion: prefill.accion, centroId: prefill.centroId, psicologoId: prefill.psicologoId, pacienteId: prefill.accion === 'Cambiar cita' ? prefill.pacienteId : undefined },
+        opcionesMenu,
+      )
+      if (motivo) { setError(motivo); setPrefill(null); return }
+    }
     setSuccess(false)
     setError('')
     setResumenSerie(null)
@@ -681,7 +702,14 @@ export default function PsicologosPage() {
   useEffect(() => {
     const s = seleccionBuscador
     if (!s) return
-    const terminar = (mensaje?: string) => { if (mensaje) setError(mensaje); setSeleccionBuscador(null) }
+    const terminar = (mensaje?: string) => {
+      if (mensaje) {
+        setError(mensaje)
+        // No se pudo fijar centro/psicólogo/paciente: se desbloquean para elegirlos a mano.
+        setPasoCC((p) => (p ? { ...p, bloqueado: false } : p))
+      }
+      setSeleccionBuscador(null)
+    }
     if (s.fase === 0) {
       setSuccess(false)
       setError('')
@@ -714,6 +742,50 @@ export default function PsicologosPage() {
     terminar('Ese paciente no está en la lista de este psicólogo. Elige el paciente a mano.')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seleccionBuscador, centroId, psicologoId, filteredPsicologos, loadingPacientes, pacientes])
+
+  // Call center: el buscador es el primer paso del formulario (F2, tarea 11).
+  function seleccionarDesdeBuscador(s: { centroId: string; psicologoId: string; pacienteId: string; tieneCitas: boolean }) {
+    if (esCallCenter) {
+      resetForm()
+      setTelefonoBuscado('')
+      const centro = s.centroId || (psicologosCentros.find((pc) => pc.psicologo_id === s.psicologoId)?.centro_id ?? '')
+      setPasoCC({
+        supuesto: supuestoCallCenter({ existe: true, tieneCitas: s.tieneCitas }),
+        bloqueado: true,
+        centroId: centro,
+        psicologoId: s.psicologoId,
+        pacienteId: s.pacienteId,
+      })
+    }
+    aplicarSeleccionBuscador(s)
+  }
+
+  function atenderPersonaNueva(telefono: string) {
+    resetForm()
+    setError('')
+    setSuccess(false)
+    setPasoCC({ supuesto: 3, bloqueado: false, centroId: '', psicologoId: '', pacienteId: '' })
+    setTelefonoBuscado(telefono)
+    setNpTelefono(telefono)
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  // Si cambia el número buscado, el formulario vuelve a ocultarse.
+  function cambioBusqueda() {
+    if (!pasoCC) return
+    setPasoCC(null)
+    setTelefonoBuscado('')
+    resetForm()
+  }
+
+  // Tras cada acción del call center: operador vacío (tarea 10), buscador vacío y vuelta al primer paso.
+  useEffect(() => {
+    if (!success || !esCallCenter) return
+    setOperador('')
+    setPasoCC(null)
+    setTelefonoBuscado('')
+    setBuscadorKey((k) => k + 1)
+  }, [success, esCallCenter])
 
   const rellenarDesdeLibre = useCallback((h: ClickLibre) => {
     // Psicólogo con "Todos" y hueco libre en varios centros: el centro lo elige en el formulario.
@@ -837,6 +909,12 @@ export default function PsicologosPage() {
     setNpT2PacienteId(null)
     setBusquedaTutor(null)
   }
+
+  // Persona nueva (call center): si resulta ser un menor, el teléfono buscado suele ser el del tutor que llama.
+  useEffect(() => {
+    if (npEsMenor && telefonoBuscado && !npT1Telefono) setNpT1Telefono(telefonoBuscado)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [npEsMenor])
 
   // Menor → tipo 'menor' implícito; adulto → un tipo que el psicólogo tenga.
   const tiposAlta = tiposDisponibles(psicologoSeleccionado, npFechaNacimiento ? npEsMenor : null)
@@ -1078,6 +1156,11 @@ export default function PsicologosPage() {
     resetForm()
     setAccion('Otro')
     setComentarioSolicitud(comentario)
+    if (esCallCenter) {
+      setTelefonoBuscado('')
+      const centro = psicologosCentros.find((pc) => pc.psicologo_id === actualId)?.centro_id ?? ''
+      setPasoCC({ supuesto: 1, bloqueado: true, centroId: centro, psicologoId: actualId, pacienteId: existente.id })
+    }
     aplicarSeleccionBuscador({ centroId: '', psicologoId: actualId, pacienteId: existente.id })
   }
 
@@ -1444,7 +1527,7 @@ export default function PsicologosPage() {
     setExitoTexto(null)
     setResumenSerie(null)
 
-    if (!effCentroId || !effPsicologoId || !accion) {
+    if (!accion || (!otroSinFicha && (!effCentroId || !effPsicologoId))) {
       setError('Por favor, completa los campos obligatorios.')
       return
     }
@@ -1618,6 +1701,8 @@ export default function PsicologosPage() {
           paciente_id:          pidePaciente ? pacienteSeleccionado?.id ?? null : null,
           // Solicitudes al equipo (rutas 6 a 9 de Make): comentario libre; null en el resto.
           comentario:           esSolicitud ? comentarioSolicitud.trim() || null : null,
+          // «Otros» de una persona que aún no es paciente (F2): sin paciente_id, con el teléfono buscado.
+          ...(otroSinFicha ? { telefono: telefonoBuscado, sin_ficha: true } : {}),
           fecha_cita:           isCitaAction ? fechaEnvio || null : null,
           hora_cita:            isCitaAction ? formatTime(hora) : null,
           tipo_cita:            pideTipoCita ? tipoCita || null : null,
@@ -1920,7 +2005,20 @@ export default function PsicologosPage() {
       {/* Columna del formulario: buscador por teléfono (agentes y call center) + tarjeta del formulario */}
       <div className="form-card">
       {!esPsicologo && perfilCargado && (
-        <BuscadorTelefono rol={rol} centros={centros} psicologos={psicologos} onSeleccionar={aplicarSeleccionBuscador} />
+        <BuscadorTelefono
+          key={buscadorKey}
+          rol={rol}
+          centros={centros}
+          psicologos={psicologos}
+          onSeleccionar={seleccionarDesdeBuscador}
+          onPersonaNueva={esCallCenter ? atenderPersonaNueva : undefined}
+          onCambioTexto={esCallCenter ? cambioBusqueda : undefined}
+        />
+      )}
+      {ocultarFormularioCC && (
+        <div style={{ background: '#eef2fb', borderLeft: `4px solid ${BRAND_BLUE}`, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontSize: 13.5, color: '#3a4a6b' }}>
+          Empieza por el teléfono de la persona que llama. Si ya es paciente, pulsa «Usar en el formulario»; si no, «Continuar: es una persona nueva».
+        </div>
       )}
       <div
         ref={formRef}
@@ -1929,6 +2027,7 @@ export default function PsicologosPage() {
           background: '#ffffff',
           borderRadius: 16,
           boxShadow: '6px 6px 30px rgba(0,0,0,0.10)',
+          ...(ocultarFormularioCC ? { display: 'none' } : {}),
         }}
       >
         <form onSubmit={handleSubmit}>
@@ -2020,13 +2119,15 @@ export default function PsicologosPage() {
               </FormField>
             )}
             </>
-          ) : (
+          ) : otroSinFicha ? null : (
+          <>
           <div className="r-grid-2" style={{ gap: 16 }}>
             <FormField label="Centro" required>
               <select
                 value={centroId}
                 onChange={(e) => setCentroId(e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
+                style={{ ...inputStyle, cursor: bloqueadoCC ? 'not-allowed' : 'pointer' }}
+                disabled={bloqueadoCC}
                 required
               >
                 <option value="">Selecciona un centro</option>
@@ -2041,8 +2142,8 @@ export default function PsicologosPage() {
               <select
                 value={psicologoId}
                 onChange={(e) => setPsicologoId(e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-                disabled={!centroId}
+                style={{ ...inputStyle, cursor: bloqueadoCC ? 'not-allowed' : 'pointer' }}
+                disabled={!centroId || bloqueadoCC}
                 required
               >
                 <option value="">
@@ -2056,6 +2157,12 @@ export default function PsicologosPage() {
               </select>
             </FormField>
           </div>
+          {bloqueadoCC && (
+            <InfoBox>
+              Centro y psicólogo son los de este paciente y no se pueden cambiar aquí. Si quiere otro psicólogo o centro, elige «{etiquetaOpcionMenu('Cambio solicitado', supuestoCC)}».
+            </InfoBox>
+          )}
+          </>
           )}
 
           {psicologoInactivo && (
@@ -2075,15 +2182,15 @@ export default function PsicologosPage() {
               value={accionMenu}
               onChange={(e) => setAccion(e.target.value as AccionPsicologo)}
               style={{ ...inputStyle, cursor: 'pointer' }}
-              disabled={!psicologoId}
+              disabled={!psicologoId && supuestoCC !== 3}
               required
             >
               <option value="">
-                {psicologoId ? 'Selecciona una acción' : 'Primero selecciona psicólogo'}
+                {psicologoId || supuestoCC === 3 ? 'Selecciona una acción' : 'Primero selecciona psicólogo'}
               </option>
               {opcionesMenu.map((a) => (
                 <option key={a} value={a}>
-                  {esAccionSolicitud(a) ? ETIQUETA_SOLICITUD[a] : a}
+                  {etiquetaOpcionMenu(a, supuestoCC)}
                 </option>
               ))}
             </select>
@@ -2116,7 +2223,7 @@ export default function PsicologosPage() {
                 <strong>Nuevo paciente</strong>.
               </InfoBox>
 
-              <FormField label="Nombre completo" required>
+              <FormField label="Nombre completo de la persona citada (si es menor, el nombre del menor)" required>
                 <input
                   type="text"
                   value={npNombre}
@@ -2155,7 +2262,7 @@ export default function PsicologosPage() {
               </FormField>
 
               <div className="r-grid-2" style={{ gap: 16 }}>
-                <FormField label="Fecha de nacimiento" required>
+                <FormField label="Fecha de nacimiento de la persona citada" required>
                   <input
                     type="date"
                     value={npFechaNacimiento}
@@ -2388,28 +2495,31 @@ export default function PsicologosPage() {
           )}
 
           {/* CITA FIELDS (y solicitudes al equipo: paciente + comentario) */}
-          {pidePaciente && (
+          {(pidePaciente || otroSinFicha) && (
             <div>
               <SectionTitle>
                 {esSolicitud
-                  ? ETIQUETA_SOLICITUD[accion as AccionSolicitud]
+                  ? etiquetaOpcionMenu(accion, supuestoCC)
                   : accion === 'Agendar cita' ? 'Nueva cita' : accion === 'Cancelar cita' ? 'Cancelar cita' : 'Cambiar cita'}
               </SectionTitle>
               {esSolicitud && (
                 <InfoBox>
-                  {accion === 'Otro'
-                    ? 'Se avisa a los agentes por Telegram con tu comentario. No cambia nada en la agenda ni en el paciente.'
-                    : 'Se avisa a los agentes y el paciente pasa al estado correspondiente para que lo gestionen en Comunicaciones.'}
+                  {otroSinFicha
+                    ? `Esta persona aún no es paciente. Se avisa a los agentes por Telegram con tu comentario y su teléfono (${telefonoBuscado}): explica qué necesita y cuándo prefiere que le llamen.`
+                    : accion === 'Otro'
+                      ? 'Se avisa a los agentes por Telegram con tu comentario. No cambia nada en la agenda ni en el paciente.'
+                      : 'Se avisa a los agentes y el paciente pasa al estado correspondiente para que lo gestionen en Comunicaciones.'}
                 </InfoBox>
               )}
 
               {/* Patient dropdown */}
+              {!otroSinFicha && (
               <FormField label="Paciente" required>
                 <select
                   value={pacienteId}
                   onChange={(e) => setPacienteId(e.target.value)}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                  disabled={!psicologoId || loadingPacientes}
+                  style={{ ...inputStyle, cursor: bloqueadoCC ? 'not-allowed' : 'pointer' }}
+                  disabled={!psicologoId || loadingPacientes || bloqueadoCC}
                   required
                 >
                   <option value="">
@@ -2428,6 +2538,7 @@ export default function PsicologosPage() {
                   ))}
                 </select>
               </FormField>
+              )}
 
               {/* Estado del consentimiento informado (lo actualiza Make al recibir el formulario firmado). El call center no lo ve. */}
               {pacienteSeleccionado && !esCallCenter && (

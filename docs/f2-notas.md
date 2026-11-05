@@ -46,7 +46,7 @@ Hoy la ruta «Otro» (router 5, ruta 9, en el blueprint *Formulario Citas Psicol
    (En la copia, `68` pasa a ser el número del nuevo módulo «Busca agente».)
 2. Volver a aprender el webhook (o añadir `telefono` y `sin_ficha` a la estructura) para que Make vea los campos nuevos.
 
-Mientras no se haga, esa opción se envía bien desde la app, pero no avisa a nadie.
+**Hecho por Sonia el 05-11-2026** y revisado en el blueprint exportado: el If-else [304] va justo detrás del filtro «Otro». La rama «Es paciente» (`paciente_id` *exists*) lleva [87] → [68] → [69]; la rama Else lleva [295] → [296] con el texto del teléfono. No hizo falta volver a aprender el webhook: Make lee `telefono` al ejecutarse aunque no esté en la estructura. Falta la prueba real (prueba 5 de abajo), que confirmará también que un `paciente_id` vacío va por la rama Else.
 
 No cambia nada más de lo que se envía a Make: las demás acciones mandan los mismos valores que antes.
 
@@ -56,7 +56,7 @@ No cambia nada más de lo que se envía a Make: las demás acciones mandan los m
 2. Escribir el teléfono de un paciente que ya ha tenido cita → «Usar en el formulario». Centro, psicólogo y paciente salen rellenos y grises (no se pueden cambiar). El menú tiene las 6 opciones del supuesto 1.
 3. Paciente con ficha pero sin ninguna cita → mismo bloqueo; menú con Agendar cita, «Cambio de psicólogo o centro» y Otros.
 4. Teléfono que no existe (número completo) → «Continuar: es una persona nueva». Menú con «Añadir nuevo paciente» y Otros. En «Añadir nuevo paciente» el teléfono ya está puesto; con una fecha de nacimiento de menor, el teléfono del tutor 1 sale relleno con ese número.
-5. En el supuesto 3, «Otros» sin centro ni psicólogo: escribir el comentario y enviar. Sale «Solicitud enviada al equipo». (El Telegram solo llega cuando Make tenga el cambio de arriba.)
+5. En el supuesto 3, «Otros» sin centro ni psicólogo: escribir el comentario y enviar. Sale «Solicitud enviada al equipo» y llega a los agentes el Telegram «Una persona que aún no es paciente (teléfono …)». Un «Otros» de un paciente existente sigue llegando con su nombre.
 6. Con 4–8 dígitos no aparece el botón de persona nueva; aparece «Escribe el teléfono completo…».
 7. Con resultados, «No es ninguno: es una persona nueva» lleva al supuesto 3.
 8. Escribir el operador, agendar una cita: al terminar, el operador está vacío, el buscador vacío y el formulario oculto. Recargar la página: el operador sigue vacío.

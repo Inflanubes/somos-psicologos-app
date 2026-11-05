@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { etiquetaMotivo } from '@/lib/disponibilidad'
 
 // The helper is parametrised by table name (acciones_psicologos now,
 // acciones_call_center / agentes later), so we use a relaxed view of the client
@@ -34,11 +35,10 @@ export type EventoActivo = {
  * IMPORTANT (real data): Make stamps EVERY block with a motivo_bloqueo. Generic
  * "Bloquear agenda" blocks get `motivo_bloqueo='Otros'` (not null). The named
  * blocks get 'Vacaciones' / 'Asuntos propios' / 'Baja médica'.
- *   - Desbloquear agenda → generic blocks ('Otros' or null)
- *   - Modificar bloqueo  → the named ones (MOTIVOS_MODIFICABLES)
+ * Desde F1 (nov 2026) "Desbloquear" y "Modificar un bloqueo" listan los cuatro
+ * tipos: Make borra / mueve el evento por gcal_event_id sea cual sea el motivo.
  */
 export const ACCION_BLOQUEO = 'Bloquear agenda'
-export const MOTIVOS_MODIFICABLES = ['Vacaciones', 'Asuntos propios', 'Baja médica']
 
 /** Today's date as `YYYY-MM-DD` in the clinic's timezone (Europe/Madrid). */
 export function todayISODate(): string {
@@ -93,10 +93,9 @@ export function formatBloqueoLabel(
   inicio: string | null,
   fin: string | null,
 ): string {
-  // 'Otros' / null are generic blocks → show "Bloqueo"; named motivos show as-is.
-  const etiquetaMotivo = !motivo || motivo === 'Otros' ? 'Bloqueo' : motivo
+  // 'Otros' / null («Cerrar agenda») → "Cerrado"; named motivos show as-is.
   const rango = formatRangoFechas(inicio, fin)
-  return [etiquetaMotivo, rango].filter(Boolean).join(' · ')
+  return [etiquetaMotivo(motivo), rango].filter(Boolean).join(' · ')
 }
 
 /**
@@ -151,29 +150,17 @@ export async function fetchCitasActivas(params: {
 export async function fetchBloqueosActivos(params: {
   tabla: string
   psicologoId: string
-  /**
-   * 'desbloquear' → generic blocks ('Otros' or null)
-   * 'modificar'   → named blocks (Vacaciones/Asuntos propios/Baja médica)
-   * undefined → all blocks
-   */
-  categoria?: 'desbloquear' | 'modificar'
 }): Promise<EventoActivo[]> {
-  const { tabla, psicologoId, categoria } = params
+  const { tabla, psicologoId } = params
   const hoy = todayISODate()
 
-  let query = sb
+  const query = sb
     .from(tabla)
     .select('id, gcal_event_id, fecha_bloqueo_inicio, fecha_bloqueo_fin, accion, motivo_bloqueo')
     .eq('psicologo_id', psicologoId)
     .eq('accion', ACCION_BLOQUEO)
     .eq('activo', true)
     .or(`fecha_bloqueo_fin.gte.${hoy},fecha_bloqueo_fin.is.null`)
-
-  if (categoria === 'modificar') {
-    query = query.in('motivo_bloqueo', MOTIVOS_MODIFICABLES)
-  } else if (categoria === 'desbloquear') {
-    query = query.or('motivo_bloqueo.is.null,motivo_bloqueo.eq.Otros')
-  }
 
   const { data, error } = await query.order('fecha_bloqueo_inicio', { ascending: true })
 

@@ -62,7 +62,7 @@ const ACCIONES_BLOQUEO: AccionPsicologo[] = [
 
 const LABEL_MAP: Record<AccionPsicologo, string> = {
   'Agendar cita':          'Confirmar cita',
-  'Bloquear agenda':       'Bloquear agenda',
+  'Bloquear agenda':       'Cerrar agenda',
   'Desbloquear agenda':    'Desbloquear agenda',
   'Modificar bloqueo personal':     'Modificar bloqueo personal',
   'Cambiar cita':          'Cambiar cita',
@@ -774,11 +774,10 @@ export default function PsicologosPage() {
     }
     let cancelled = false
     setLoadingEventos(true)
-    // Desbloquear → bloqueos genéricos (Otros/null); Modificar → vacaciones/asuntos/baja
+    // Desbloquear y Modificar listan los cuatro tipos de bloqueo (F1).
     fetchBloqueosActivos({
       tabla: 'acciones_psicologos',
       psicologoId,
-      categoria: esModificarBloqueo ? 'modificar' : 'desbloquear',
     })
       .then((eventos) => { if (!cancelled) setBloqueosActivos(eventos) })
       .catch(() => { if (!cancelled) setBloqueosActivos([]) })
@@ -1453,7 +1452,7 @@ export default function PsicologosPage() {
       (accion === 'Bloquear agenda' || accion === 'Desbloquear agenda') &&
       !(psicologoSeleccionado?.puede_bloquear ?? false)
     ) {
-      setError('No tienes permiso para usar el bloqueo general de agenda. Habla con el equipo.')
+      setError('No tienes permiso para cerrar la agenda. Habla con el equipo.')
       return
     }
     if (isNuevoPaciente && esPsicologo && psicologoInactivo) {
@@ -2702,7 +2701,7 @@ export default function PsicologosPage() {
                 </FormField>
               )}
 
-              {/* Modificar bloqueo: pick a vacaciones/baja/asuntos block + new dates */}
+              {/* Modificar bloqueo: pick any active block (los cuatro tipos) + new dates */}
               {esModificarBloqueo && (
                 <>
                   <FormField label="Bloqueo a modificar" required>
@@ -2711,7 +2710,7 @@ export default function PsicologosPage() {
                       value={eventoSeleccionadoId}
                       onChange={setEventoSeleccionadoId}
                       loading={loadingEventos}
-                      emptyText="Sin vacaciones, baja o asuntos propios activos"
+                      emptyText="Sin bloqueos activos para este psicólogo"
                       placeholder="Selecciona el bloqueo"
                       inputStyle={inputStyle}
                       required

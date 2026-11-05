@@ -88,9 +88,9 @@ export function trabajaEseDia(tramos: Tramo[], fecha: string): boolean {
   return tramos.some((t) => t.dia_semana === dia)
 }
 
-/** 'Otros' y nulo se muestran como "Bloqueo"; los motivos con nombre, tal cual. */
+/** 'Otros' y nulo (bloqueos de «Cerrar agenda») se muestran como "Cerrado"; los motivos con nombre, tal cual. */
 export function etiquetaMotivo(motivo: string | null | undefined): string {
-  return !motivo || motivo === 'Otros' ? 'Bloqueo' : motivo
+  return !motivo || motivo === 'Otros' ? 'Cerrado' : motivo
 }
 
 export function generarHuecos(p: ParamsHuecos): Hueco[] {

@@ -3,7 +3,7 @@ import { accionesMenu, tiposBloqueoDisponibles, accionReal, ACCION_BLOQUEOS } fr
 import { ACCIONES_SOLICITUD_ACTIVAS } from './call-center'
 
 const BASE = ['Agendar cita', 'Añadir nuevo paciente', 'Cambiar cita', 'Cancelar cita']
-const SEIS = ['Vacaciones', 'Asuntos propios', 'Baja médica', 'Modificar un bloqueo', 'Bloqueo general', 'Desbloquear']
+const SEIS = ['Vacaciones', 'Asuntos propios', 'Baja médica', 'Modificar un bloqueo', 'Cerrar agenda', 'Desbloquear']
 
 describe('accionesMenu y tiposBloqueoDisponibles', () => {
   it('agente ve cinco opciones (más las solicitudes activas) y seis tipos', () => {
@@ -40,7 +40,7 @@ describe('accionesMenu y tiposBloqueoDisponibles', () => {
 
 describe('accionReal', () => {
   it('traduce el submenú a la acción de siempre', () => {
-    expect(accionReal(ACCION_BLOQUEOS, 'Bloqueo general')).toBe('Bloquear agenda')
+    expect(accionReal(ACCION_BLOQUEOS, 'Cerrar agenda')).toBe('Bloquear agenda')
     expect(accionReal(ACCION_BLOQUEOS, 'Desbloquear')).toBe('Desbloquear agenda')
     expect(accionReal(ACCION_BLOQUEOS, 'Modificar un bloqueo')).toBe('Modificar bloqueo personal')
     expect(accionReal(ACCION_BLOQUEOS, 'Baja médica')).toBe('Baja médica')

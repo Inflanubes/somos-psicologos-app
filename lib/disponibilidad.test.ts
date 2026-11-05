@@ -217,9 +217,9 @@ describe('aplicarCitaLocal (estado optimista tras agendar o cambiar)', () => {
 })
 
 describe('etiquetaMotivo', () => {
-  it('Otros y nulo se muestran como Bloqueo', () => {
-    expect(etiquetaMotivo('Otros')).toBe('Bloqueo')
-    expect(etiquetaMotivo(null)).toBe('Bloqueo')
+  it('Otros y nulo (Cerrar agenda) se muestran como Cerrado', () => {
+    expect(etiquetaMotivo('Otros')).toBe('Cerrado')
+    expect(etiquetaMotivo(null)).toBe('Cerrado')
     expect(etiquetaMotivo('Vacaciones')).toBe('Vacaciones')
   })
 })

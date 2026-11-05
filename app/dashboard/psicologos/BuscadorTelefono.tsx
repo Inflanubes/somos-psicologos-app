@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Centro, Psicologo, EstadoPaciente } from '@/types/database'
-import { etiquetaOrigen, estadoCitaHistorico, sufijoBusquedaTelefono, patronBusquedaTelefono, type Rol } from '@/lib/call-center'
+import { etiquetaOrigen, estadoCitaHistorico, sufijoBusquedaTelefono, patronBusquedaTelefono, telefonoCompleto, type Rol } from '@/lib/call-center'
 import { todayISODate } from '@/lib/eventos-activos'
 
 /**
@@ -11,6 +11,11 @@ import { todayISODate } from '@/lib/eventos-activos'
  * Encuentra pacientes por su teléfono o por el de un tutor y muestra su histórico
  * de citas (sin comentarios ni datos clínicos). "Usar en el formulario" rellena
  * centro, psicólogo y paciente.
+ *
+ * Call center (F2, tarea 11): es el primer paso del formulario. Avisa al elegir
+ * paciente de si ya ha tenido cita (supuestos 1 y 2) y ofrece «Es una persona
+ * nueva» con el teléfono completo (supuesto 3). Si cambia el número, el
+ * formulario vuelve a ocultarse (onCambioTexto).
  */
 
 const BRAND_BLUE = '#2f5aae'
@@ -68,11 +73,16 @@ export default function BuscadorTelefono({
   centros,
   psicologos,
   onSeleccionar,
+  onPersonaNueva,
+  onCambioTexto,
 }: {
   rol: Rol
   centros: Centro[]
   psicologos: Psicologo[]
-  onSeleccionar: (s: { centroId: string; psicologoId: string; pacienteId: string }) => void
+  onSeleccionar: (s: { centroId: string; psicologoId: string; pacienteId: string; tieneCitas: boolean }) => void
+  /** Solo call center: el teléfono no es de ningún paciente (o es otra persona). */
+  onPersonaNueva?: (telefono: string) => void
+  onCambioTexto?: () => void
 }) {
   const [texto, setTexto] = useState('')
   const [resultados, setResultados] = useState<PacienteBusqueda[] | null>(null)
@@ -147,23 +157,33 @@ export default function BuscadorTelefono({
   async function usar(p: PacienteBusqueda) {
     setUsando(p.id)
     try {
-      const { data } = await supabase
-        .from('acciones_psicologos')
-        .select('psicologo_id, centro_id')
-        .eq('paciente_id', p.id)
-        .eq('accion', 'Agendar cita')
-        .eq('activo', true)
-        .gte('fecha_cita', todayISODate())
-        .order('fecha_cita', { ascending: true })
-        .order('hora_cita', { ascending: true })
-        .limit(1)
-        .maybeSingle()
+      const [{ data }, { count }] = await Promise.all([
+        supabase
+          .from('acciones_psicologos')
+          .select('psicologo_id, centro_id')
+          .eq('paciente_id', p.id)
+          .eq('accion', 'Agendar cita')
+          .eq('activo', true)
+          .gte('fecha_cita', todayISODate())
+          .order('fecha_cita', { ascending: true })
+          .order('hora_cita', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        // ¿Ha tenido alguna cita no anulada (pasada o futura)? Decide el supuesto del call center.
+        supabase
+          .from('acciones_psicologos')
+          .select('id', { count: 'exact', head: true })
+          .eq('paciente_id', p.id)
+          .eq('accion', 'Agendar cita')
+          .eq('activo', true),
+      ])
       const cita = (data ?? null) as { psicologo_id: string | null; centro_id: string | null } | null
       const psicologoFicha = p.psicologo_adultos_id ?? p.psicologo_pareja_id ?? p.psicologo_infantil_id ?? ''
       onSeleccionar({
         centroId: cita?.centro_id ?? p.centro_id ?? '',
         psicologoId: cita?.psicologo_id ?? psicologoFicha,
         pacienteId: p.id,
+        tieneCitas: (count ?? 0) > 0,
       })
     } finally {
       setUsando(null)
@@ -181,7 +201,7 @@ export default function BuscadorTelefono({
         id="buscar-telefono"
         type="tel"
         value={texto}
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={(e) => { setTexto(e.target.value); onCambioTexto?.() }}
         placeholder="Teléfono del paciente o de un tutor (mín. 4 dígitos)"
         autoComplete="off"
         style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #dde1ea', borderRadius: 8, fontSize: 14, color: '#272626', background: '#fff', outline: 'none', fontFamily: "'Montserrat', inherit", boxSizing: 'border-box' }}
@@ -199,6 +219,22 @@ export default function BuscadorTelefono({
 
       {resultados !== null && !buscando && resultados.length === 0 && !error && (
         <div style={{ fontSize: 13, color: '#888', marginTop: 12 }}>Ningún paciente con ese teléfono.</div>
+      )}
+
+      {onPersonaNueva && resultados !== null && !buscando && !error && (
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {telefonoCompleto(texto) ? (
+            <button
+              type="button"
+              onClick={() => onPersonaNueva(texto.trim())}
+              style={{ padding: '7px 14px', borderRadius: 16, border: `1px solid ${BRAND_BLUE}`, background: resultados.length === 0 ? BRAND_BLUE : '#fff', color: resultados.length === 0 ? '#fff' : BRAND_BLUE, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s' }}
+            >
+              {resultados.length === 0 ? 'Continuar: es una persona nueva' : 'No es ninguno: es una persona nueva'}
+            </button>
+          ) : (
+            <span style={{ fontSize: 12, color: '#888' }}>Escribe el teléfono completo para atender a una persona nueva.</span>
+          )}
+        </div>
       )}
 
       {resultados !== null && resultados.length > 0 && (

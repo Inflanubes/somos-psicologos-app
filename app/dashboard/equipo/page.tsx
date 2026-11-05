@@ -130,7 +130,7 @@ export default function EquipoPage() {
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#272626' }}>{p.nombre}</div>
                     {(p.citas_media_hora || p.puede_bloquear) && (
                       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                        {p.citas_media_hora && <span className="etiqueta-mini" title="Puede tener citas a las medias horas">30&apos;</span>}
+                        {p.citas_media_hora && <span className="etiqueta-mini" title="Tiene las citas a las medias horas">30&apos;</span>}
                         {p.puede_bloquear && <span className="etiqueta-mini ambar" title="Puede bloquear y desbloquear su agenda">Bloquea agenda</span>}
                       </div>
                     )}

@@ -75,6 +75,8 @@ describe('comprobarHueco', () => {
     expect(comprobarHueco(datos(), AHORA, '2026-10-27', '10:00')).toEqual({ ok: false, motivo: 'fuera_horario' })
     expect(comprobarHueco(datos(), AHORA, '2026-10-26', '10:15')).toEqual({ ok: false, motivo: 'hora_no_valida' })
     expect(comprobarHueco(datos({ mediaHora: false }), AHORA, '2026-10-27', '16:30')).toEqual({ ok: false, motivo: 'media_hora' })
+    // Con medias horas las citas solo empiezan a y media (F1, feedback v2).
+    expect(comprobarHueco(datos({ mediaHora: true }), AHORA, '2026-10-27', '16:00')).toEqual({ ok: false, motivo: 'media_hora' })
   })
   it('centro apagado bloquea agendar pero no cambiar (excluirAccionId)', () => {
     expect(comprobarHueco(datos({ centroActivo: false }), AHORA, '2026-10-27', '16:00')).toEqual({ ok: false, motivo: 'centro_inactivo' })

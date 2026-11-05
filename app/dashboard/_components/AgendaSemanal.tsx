@@ -8,10 +8,10 @@ import {
 } from '@/lib/calendario'
 
 const BRAND_BLUE = '#2f5aae'
-/** Alto en píxeles de cada fila de media hora. Una cita (60 min) ocupa dos filas; un hueco libre, una. */
+/** Alto en píxeles de cada fila de media hora. Una cita y un hueco libre (60 min) ocupan dos filas. */
 const ALTO_FILA = 30
 const ALTO_REJILLA = FILAS_HORA.length * ALTO_FILA
-const FILAS_POR_LIBRE = 1
+const FILAS_POR_LIBRE = FILAS_POR_CITA
 
 const cabecera: React.CSSProperties = {
   position: 'sticky', top: 0, zIndex: 2, background: '#fff', padding: '10px 6px', textAlign: 'center',

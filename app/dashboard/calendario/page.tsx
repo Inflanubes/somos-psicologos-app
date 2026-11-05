@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getPerfilActual } from '@/lib/perfil'
 import type { Centro, Psicologo, PsicologoCentro, Rol } from '@/types/database'
-import { TIPOS_CITA_FILTRO, type EventoCalendario, type FiltrosCalendario } from '@/lib/calendario'
+import { TIPOS_CITA_FILTRO, MOTIVOS_OCULTOS_VISTA_GENERAL, type EventoCalendario, type FiltrosCalendario } from '@/lib/calendario'
 import CalendarioAgenda from '../_components/CalendarioAgenda'
 import type { ClickLibre } from '../_components/AgendaSemanal'
 import { esGestor } from '@/lib/roles'
@@ -144,6 +144,7 @@ export default function CalendarioPage() {
           centros={centros}
           onClickLibre={irAAgendar}
           onClickCita={irACambiar}
+          ocultarMotivos={MOTIVOS_OCULTOS_VISTA_GENERAL}
         />
       )}
     </div>

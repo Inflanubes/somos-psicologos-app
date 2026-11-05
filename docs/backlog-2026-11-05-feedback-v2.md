@@ -14,8 +14,8 @@ Fuente: `docs/Feedback IA v2.docx` (en la carpeta `docs/` de la raíz del proyec
 
 | Bloque | Carpeta | Rama | Migración reservada | Estado |
 |---|---|---|---|---|
-| F1 Calendario y bloqueos | `../somos-app-f1` | `f1-calendario-bloqueos` | 024 | pendiente |
-| F2 Call center | `../somos-app-f2` | `f2-call-center` | 025 | pendiente |
+| F1 Calendario y bloqueos | `../somos-app-f1` | `f1-calendario-bloqueos` | 024 (no usada) | **en main** 05-11-2026 (b512d47, fast-forward; tsc, 249 tests y build OK). Notas y pruebas P1–P10 en `docs/f1-notas.md`. Falta: arreglo de Make (baja médica → F4), pruebas de aceptación |
+| F2 Call center | `../somos-app-f2` | `f2-call-center` | 025 (no usada) | **en main** 05-11-2026 (58963d7; tsc, 257 tests y build OK). Notas y pruebas 1–11 en `docs/f2-notas.md`. Make ruta «Otro» sin ficha hecha por Sonia 05-11. Falta: pruebas de aceptación |
 | F3 Pacientes, comunicaciones y usuarios | `../somos-app-f3` | `f3-pacientes-comunicaciones` | 026 | pendiente |
 | F4 Dante y Make | `../somos-app-f4` | `f4-dante-make` | 027 | pendiente |
 
@@ -29,23 +29,23 @@ Estado: `pendiente` · `en curso` · `hecha` · `verificar` · `espera cliente`.
 
 | # | Tarea | Estado | Notas |
 |---|---|---|---|
-| 1 | Huecos libres de **60 min** siempre (hoy se pintan de 30). Con «cita a las medias horas» activado, huecos de y media a y media (4:30–5:30…), nunca dos huecos por hora (caso Marta, San Blas) (0.0) | pendiente | `lib/disponibilidad.ts` lo usa también Dante (`/api/disponibilidad`): cualquier cambio de formato avisar a F4 |
-| 2 | Calendario de agentes: **ocultar bajas y asuntos propios** (meten ruido). «X libres» se queda (0.0) | pendiente | |
-| 3 | Vista móvil por día: «Día >» y «< Día» no se bloquean al final/principio de semana (2.8) | pendiente | |
-| 4 | «Desbloquear» dice «Sin bloqueos activos» aunque los haya; solo lista el bloqueo general (2.6, 6.4) | pendiente | `psicologos/page.tsx` ~l. 777 (Desbloquear → solo genéricos) |
-| 5 | «Modificar un bloqueo» no lista el bloqueo general (6.4) | pendiente | |
-| 6 | Baja médica no se ve en el calendario del propio psicólogo (sí en agente y call center) (6.4) | pendiente | |
-| 7 | Regla: los 4 tipos de bloqueo funcionan igual: se ven en los 3 paneles, mandan Telegram, se modifican y se desbloquean (6.4) | pendiente | Telegram es Make → F4 (tarea 20) |
-| 8 | Renombrar «Bloqueo general» → «Cerrar agenda»; en el calendario solo «Cerrado» (6.5) | pendiente | Si cambia el valor que se envía a Make, avisar a F4 |
-| 9 | Clínica apagada: el psicólogo sigue viendo y usando sus huecos; quitar «(no recibe citas nuevas)» de su selector de centros. Solo el call center no puede agendar (1.3) | pendiente | `psicologos/page.tsx` ~l. 1998–2053 |
+| 1 | Huecos libres de **60 min** siempre (hoy se pintan de 30). Con «cita a las medias horas» activado, huecos de y media a y media (4:30–5:30…), nunca dos huecos por hora (caso Marta, San Blas) (0.0) | verificar | `lib/disponibilidad.ts` lo usa también Dante (`/api/disponibilidad`): cualquier cambio de formato avisar a F4 |
+| 2 | Calendario de agentes: **ocultar bajas y asuntos propios** (meten ruido). «X libres» se queda (0.0) | verificar | |
+| 3 | Vista móvil por día: «Día >» y «< Día» no se bloquean al final/principio de semana (2.8) | verificar | |
+| 4 | «Desbloquear» dice «Sin bloqueos activos» aunque los haya; solo lista el bloqueo general (2.6, 6.4) | verificar | `psicologos/page.tsx` ~l. 777 (Desbloquear → solo genéricos) |
+| 5 | «Modificar un bloqueo» no lista el bloqueo general (6.4) | verificar | |
+| 6 | Baja médica no se ve en el calendario del propio psicólogo (sí en agente y call center) (6.4) | hecha en la app; Make → F4 tarea 20 | |
+| 7 | Regla: los 4 tipos de bloqueo funcionan igual: se ven en los 3 paneles, mandan Telegram, se modifican y se desbloquean (6.4) | hecha en la app; Make → F4 tarea 20 | Telegram es Make → F4 (tarea 20) |
+| 8 | Renombrar «Bloqueo general» → «Cerrar agenda»; en el calendario solo «Cerrado» (6.5) | verificar | Si cambia el valor que se envía a Make, avisar a F4 |
+| 9 | Clínica apagada: el psicólogo sigue viendo y usando sus huecos; quitar «(no recibe citas nuevas)» de su selector de centros. Solo el call center no puede agendar (1.3) | verificar | `psicologos/page.tsx` ~l. 1998–2053 |
 
 ### F2 Call center
 
 | # | Tarea | Estado | Notas |
 |---|---|---|---|
-| 10 | Vaciar el campo «Operador» después de cada acción registrada (3.3) | pendiente | |
-| 11 | Formulario por pasos: al entrar solo el buscador de teléfono; el resto oculto hasta buscar. Tres supuestos (3.4): **1)** paciente con cita previa → centro y psicólogo bloqueados; acciones: Agendar, Cambiar, Cancelar, Hablar con el psicólogo, Cambio de psicólogo, Otros. **2)** paciente creado sin ninguna cita → centro y psicólogo bloqueados; acciones: Agendar, «Cambio de psicólogo o centro», Otros. **3)** no existe → Añadir nuevo paciente, Otros | pendiente | Solo rol call center (confirmar si también agentes) |
-| 12 | Textos del alta: «Nombre completo de la persona citada (si es menor, el nombre del menor)» y «Fecha de nacimiento de la persona citada» (4.7) | pendiente | |
+| 10 | Vaciar el campo «Operador» después de cada acción registrada (3.3) | verificar | |
+| 11 | Formulario por pasos: al entrar solo el buscador de teléfono; el resto oculto hasta buscar. Tres supuestos (3.4): **1)** paciente con cita previa → centro y psicólogo bloqueados; acciones: Agendar, Cambiar, Cancelar, Hablar con el psicólogo, Cambio de psicólogo, Otros. **2)** paciente creado sin ninguna cita → centro y psicólogo bloqueados; acciones: Agendar, «Cambio de psicólogo o centro», Otros. **3)** no existe → Añadir nuevo paciente, Otros | verificar | Solo rol call center (confirmar si también agentes) |
+| 12 | Textos del alta: «Nombre completo de la persona citada (si es menor, el nombre del menor)» y «Fecha de nacimiento de la persona citada» (4.7) | verificar | |
 | 13 | Quitar «Sin cita disponible» del call center (0.0) | hecha | 01-11-2026 |
 
 ### F3 Pacientes, comunicaciones y usuarios

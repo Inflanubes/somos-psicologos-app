@@ -7,7 +7,7 @@ import { ahoraMadrid } from '@/lib/fechas'
 import type { Centro, Psicologo, Rol } from '@/types/database'
 import type { CitaOcupada } from '@/lib/disponibilidad'
 import {
-  lunesDeSemana, sumarDias, diasDeSemana, etiquetaRangoSemana, etiquetaDia, filtrarEventos, modoContador,
+  lunesDeSemana, sumarDias, diasDeSemana, etiquetaRangoSemana, etiquetaDia, filtrarEventos, modoContador, quitarBloqueosOcultos,
   COLORES_ESTADO, LEYENDA, type EventoCalendario, type FiltrosCalendario,
 } from '@/lib/calendario'
 import {
@@ -46,6 +46,8 @@ export type Props = {
   cambioLocal?: AccionLocal | AccionLocal[] | null
   /** Ancho mínimo de cada columna de día en escritorio (px). Más estrecho junto al formulario de Citas. */
   anchoColumnaMin?: number
+  /** Motivos de bloqueo que no se pintan (página Calendario: bajas y asuntos propios). Esos días siguen sin libres. */
+  ocultarMotivos?: string[]
 }
 
 function aplicarCambios(citas: EventoCalendario[], cambio: AccionLocal | AccionLocal[] | null): EventoCalendario[] {
@@ -54,7 +56,7 @@ function aplicarCambios(citas: EventoCalendario[], cambio: AccionLocal | AccionL
 }
 
 export default function CalendarioAgenda({
-  rol, filtros, psicologosVisibles, centros, onClickLibre, onClickCita, recargaKey = 0, cambioLocal = null, anchoColumnaMin,
+  rol, filtros, psicologosVisibles, centros, onClickLibre, onClickCita, recargaKey = 0, cambioLocal = null, anchoColumnaMin, ocultarMotivos,
 }: Props) {
   const [lunes, setLunes] = useState(() => lunesDeSemana(todayISODate()))
   const [verAnuladas, setVerAnuladas] = useState(false)
@@ -148,14 +150,15 @@ export default function CalendarioAgenda({
       .map((p) => ({
         id: p.id, nombre: p.nombre, activo: p.activo, mediaHora: !!p.citas_media_hora,
         tramos: datos.tramosDe.get(p.id) ?? [], citas: citasDe.get(p.id) ?? [], bloqueos: datos.bloqueosDe.get(p.id) ?? [],
-        centrosApagados: datos.apagadosDe.get(p.id) ?? [],
+        // El psicólogo no sabe que un centro está apagado: sigue viendo sus huecos allí (F1 tarea 9).
+        centrosApagados: rol === 'psicologo' ? [] : datos.apagadosDe.get(p.id) ?? [],
       }))
     const libres = calcularLibres(paraLibres, dias, ahoraMadrid(), filtros.centroId || null)
-    const bloqueosHora = bloqueosPorHora(datos.bloqueos, datos.tramosDe, dias)
+    const bloqueosHora = bloqueosPorHora(quitarBloqueosOcultos(datos.bloqueos, ocultarMotivos ?? []), datos.tramosDe, dias)
     const anuladasLocales = citas.filter((e) => e.tipo === 'anulada')
     const anuladas = verAnuladas ? [...datos.anuladas, ...anuladasLocales] : []
     return filtrarEventos([...citasActivas, ...anuladas, ...bloqueosHora, ...libres], filtros)
-  }, [datos, citas, psicologosVisibles, filtros, rol, dias, verAnuladas])
+  }, [datos, citas, psicologosVisibles, filtros, rol, dias, verAnuladas, ocultarMotivos])
 
   const diasVisibles = esMovil ? [dias[Math.min(Math.max(diaMovil, 0), 6)]] : dias
   const contador = modoContador(filtros)
@@ -164,6 +167,15 @@ export default function CalendarioAgenda({
     setLunes(lunesDeSemana(hoy))
     setDiaMovil(diasDeSemana(lunesDeSemana(hoy)).indexOf(hoy))
   }, [hoy])
+
+  // Móvil: «‹ Día» y «Día ›» no se paran en lunes ni domingo; cruzan a la semana anterior o siguiente.
+  const moverDia = useCallback((delta: -1 | 1) => {
+    const actual = Math.min(Math.max(diaMovil, 0), 6)
+    const nuevo = actual + delta
+    if (nuevo < 0) { setLunes((l) => sumarDias(l, -7)); setDiaMovil(6) }
+    else if (nuevo > 6) { setLunes((l) => sumarDias(l, 7)); setDiaMovil(0) }
+    else setDiaMovil(nuevo)
+  }, [diaMovil])
 
   return (
     <div>
@@ -201,9 +213,9 @@ export default function CalendarioAgenda({
         </div>
         {esMovil && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'space-between' }}>
-            <button type="button" style={btnNav} onClick={() => setDiaMovil((d) => Math.max(0, d - 1))} disabled={diaMovil === 0}>‹ Día</button>
+            <button type="button" style={btnNav} onClick={() => moverDia(-1)}>‹ Día</button>
             <span style={{ fontSize: 13.5, fontWeight: 600, color: BRAND_BLUE }}>{etiquetaDia(diasVisibles[0])}</span>
-            <button type="button" style={btnNav} onClick={() => setDiaMovil((d) => Math.min(6, d + 1))} disabled={diaMovil === 6}>Día ›</button>
+            <button type="button" style={btnNav} onClick={() => moverDia(1)}>Día ›</button>
           </div>
         )}
       </div>

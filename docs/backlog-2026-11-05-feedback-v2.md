@@ -16,7 +16,7 @@ Fuente: `docs/Feedback IA v2.docx` (en la carpeta `docs/` de la raíz del proyec
 |---|---|---|---|---|
 | F1 Calendario y bloqueos | `../somos-app-f1` | `f1-calendario-bloqueos` | 024 (no usada) | **en main** 05-11-2026 (b512d47, fast-forward; tsc, 249 tests y build OK). Notas y pruebas P1–P10 en `docs/f1-notas.md`. Falta: arreglo de Make (baja médica → F4), pruebas de aceptación |
 | F2 Call center | `../somos-app-f2` | `f2-call-center` | 025 (no usada) | **en main** 05-11-2026 (58963d7; tsc, 257 tests y build OK). Notas y pruebas 1–11 en `docs/f2-notas.md`. Make ruta «Otro» sin ficha hecha por Sonia 05-11. Falta: pruebas de aceptación |
-| F3 Pacientes, comunicaciones y usuarios | `../somos-app-f3` | `f3-pacientes-comunicaciones` | 026 | pendiente |
+| F3 Pacientes, comunicaciones y usuarios | `../somos-app-f3` | `f3-pacientes-comunicaciones` | 026 (aplicada 05-11) | **en main** 05-11-2026 (55a2eca; tsc, 273 tests y build OK). Notas y pruebas 1–9 en `docs/f3-notas.md`. Falta: número de Dante (18), Make rutas 6–8 (F4 tarea 19), pruebas |
 | F4 Dante y Make | `../somos-app-f4` | `f4-dante-make` | 027 | pendiente |
 
 ---
@@ -52,10 +52,10 @@ Estado: `pendiente` · `en curso` · `hecha` · `verificar` · `espera cliente`.
 
 | # | Tarea | Estado | Notas |
 |---|---|---|---|
-| 14 | Pacientes (agentes): subpestañas **Parejas** (las dos personas) y **Menores** (menor + tutores), con el estado del consentimiento de cada entidad (0.0) | pendiente | `pareja_de` existe desde B4/B8 |
-| 15 | Textos de botones: «Marcar "firmado en papel"» y «Desmarcar "firmado"» (4.3, 4.4) | pendiente | `ConsentimientoAcciones.tsx` |
-| 16 | Comunicaciones no muestra los pacientes de las pruebas (sin cita, hablar con el psicólogo, cambio de psicólogo…) (3.6, 4.8) | pendiente | Comprobar la regla «más de 1 día esperando» de la pestaña y si el estado se guarda (puede depender de Make → F4 tarea 19) |
-| 17 | Botón para eliminar un usuario (agente o psicólogo) con confirmación: «¿Estás seguro de que quieres eliminar este usuario? Ten en cuenta que se eliminará todo su histórico de citas» (9.1) | pendiente | |
+| 14 | Pacientes (agentes): subpestañas **Parejas** (las dos personas) y **Menores** (menor + tutores), con el estado del consentimiento de cada entidad (0.0) | verificar | `pareja_de` existe desde B4/B8 |
+| 15 | Textos de botones: «Marcar "firmado en papel"» y «Desmarcar "firmado"» (4.3, 4.4) | verificar | `ConsentimientoAcciones.tsx` |
+| 16 | Comunicaciones no muestra los pacientes de las pruebas (sin cita, hablar con el psicólogo, cambio de psicólogo…) (3.6, 4.8) | hecha en la app (sin filtro de días; pestañas renombradas); Make → F4 tarea 19 | Comprobar la regla «más de 1 día esperando» de la pestaña y si el estado se guarda (puede depender de Make → F4 tarea 19) |
+| 17 | Botón para eliminar un usuario (agente o psicólogo) con confirmación: «¿Estás seguro de que quieres eliminar este usuario? Ten en cuenta que se eliminará todo su histórico de citas» (9.1) | verificar | |
 | 18 | Pie de mensajes: contacto de **Dante** en lugar del teléfono del call center (91 166 50 47) (9.4) | espera cliente | Falta el número de Dante. `lib/mensajes-pie.ts` (una constante) |
 
 ### F4 Dante y Make

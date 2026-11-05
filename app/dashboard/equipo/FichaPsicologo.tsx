@@ -167,7 +167,7 @@ export default function FichaPsicologo({ psicologo: p, centros, guardando, onGua
           <div style={fila}>
             <div>
               <div style={etiqueta}>Citas a las medias horas</div>
-              <div style={pista}>Permite dar citas a las 9:30, 10:30…</div>
+              <div style={pista}>Sus citas empiezan a y media (9:30, 10:30…) en vez de en punto. Revisa que su horario cuadre (por ejemplo, 9:30–14:30).</div>
             </div>
             <Interruptor activo={!!p.citas_media_hora} disabled={guardando} etiqueta="Citas a las medias horas"
               onChange={() => guardar({ citas_media_hora: !p.citas_media_hora })} />

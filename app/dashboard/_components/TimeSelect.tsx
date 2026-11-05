@@ -21,6 +21,9 @@ const SUFIJO: Record<EstadoHueco, string> = {
   centro_inactivo: ' · no recibe citas nuevas',
   media_hora: ' · media hora no activa',
 }
+/** media_hora en una hora en punto = el psicólogo tiene las citas a y media. */
+const sufijo = (h: Hueco) =>
+  h.estado === 'media_hora' && h.hora.endsWith(':00') ? ' · sus citas son a y media' : SUFIJO[h.estado]
 
 export default function TimeSelect({
   value,
@@ -71,7 +74,7 @@ export default function TimeSelect({
         // Una hora con cita no se puede elegir en ningún rol: dos pacientes no pueden solaparse.
         <option key={h.hora} value={h.hora} disabled={h.estado === 'ocupado'}>
           {h.hora}
-          {SUFIJO[h.estado]}
+          {sufijo(h)}
         </option>
       ))}
     </select>

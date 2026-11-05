@@ -3,6 +3,10 @@
  * (sin React ni Supabase): recibe tramos, citas y bloqueos ya cargados y
  * devuelve los huecos con su estado. Toda cita dura 60 minutos.
  *
+ * Desde F1 (feedback v2, nov 2026): un psicólogo con "citas a las medias horas"
+ * tiene sus citas SOLO a y media (09:30, 10:30…), y uno sin ella, solo en punto.
+ * Así nunca hay dos huecos dentro de la misma hora.
+ *
  * Desde B1 (octubre 2026): los tramos vienen ya filtrados por el centro de la
  * cita; sin tramos no hay citas (antes era "sin restricción"); nadie agenda en
  * el pasado ni, salvo el agente con aviso, con menos de 2 h de antelación; y
@@ -51,7 +55,7 @@ export type ParamsHuecos = {
   bloqueos: Bloqueo[]
   /** 'YYYY-MM-DD' */
   fecha: string
-  /** psicologos.citas_media_hora */
+  /** psicologos.citas_media_hora: sus citas empiezan a y media (y no en punto). */
   mediaHora: boolean
   /** Modo aviso (agente): lista las y media aunque no estén activas. */
   incluirMedias: boolean
@@ -94,7 +98,10 @@ export function etiquetaMotivo(motivo: string | null | undefined): string {
 }
 
 export function generarHuecos(p: ParamsHuecos): Hueco[] {
-  const paso = p.mediaHora || p.incluirMedias ? 30 : 60
+  // Modo aviso (agente): todas las medias horas, con estado. Si no, una por hora:
+  // en punto, o a y media para quien tiene las citas a y media.
+  const paso = p.incluirMedias ? 30 : 60
+  const primerInicio = !p.incluirMedias && p.mediaHora ? PRIMER_INICIO_MIN + 30 : PRIMER_INICIO_MIN
   const dia = diaSemanaISO(p.fecha)
   const tramosDia = p.tramos
     .filter((t) => t.dia_semana === dia)
@@ -111,7 +118,7 @@ export function generarHuecos(p: ParamsHuecos): Hueco[] {
   const minAntelacion = p.ahora ? sumarMinutos(p.ahora, ANTELACION_MIN).minutos : -1
 
   const huecos: Hueco[] = []
-  for (let m = PRIMER_INICIO_MIN; m <= ULTIMO_INICIO_MIN; m += paso) {
+  for (let m = primerInicio; m <= ULTIMO_INICIO_MIN; m += paso) {
     const fin = m + DURACION_CITA_MIN
     let estado: EstadoHueco = 'libre'
     if (iniciosOcupados.some((c) => c < fin && c + DURACION_CITA_MIN > m)) {
@@ -126,7 +133,7 @@ export function generarHuecos(p: ParamsHuecos): Hueco[] {
       estado = 'fuera_horario'
     } else if (p.centroInactivo) {
       estado = 'centro_inactivo'
-    } else if (m % 60 !== 0 && !p.mediaHora) {
+    } else if ((m % 60 !== 0) !== p.mediaHora) {
       estado = 'media_hora'
     }
     huecos.push({ hora: aHora(m), estado })
@@ -176,5 +183,6 @@ export function motivoAviso(p: ParamsAviso): string | null {
   if (hueco.estado === 'bloqueado') return `la agenda de ${p.nombrePsicologo} está bloqueada ese día`
   if (hueco.estado === 'centro_inactivo') return `${p.nombrePsicologo} no recibe citas nuevas en ${p.nombreCentro}`
   if (hueco.estado === 'fuera_horario') return `las ${p.hora} quedan fuera del horario de ${p.nombrePsicologo} en ${p.nombreCentro}`
+  if (p.mediaHora) return `${p.nombrePsicologo} tiene las citas a y media`
   return `${p.nombrePsicologo} no tiene activadas las citas a y media`
 }

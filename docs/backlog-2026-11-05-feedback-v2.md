@@ -17,7 +17,7 @@ Fuente: `docs/Feedback IA v2.docx` (en la carpeta `docs/` de la raíz del proyec
 | F1 Calendario y bloqueos | `../somos-app-f1` | `f1-calendario-bloqueos` | 024 (no usada) | **en main** 05-11-2026 (b512d47, fast-forward; tsc, 249 tests y build OK). Notas y pruebas P1–P10 en `docs/f1-notas.md`. Falta: arreglo de Make (baja médica → F4), pruebas de aceptación |
 | F2 Call center | `../somos-app-f2` | `f2-call-center` | 025 (no usada) | **en main** 05-11-2026 (58963d7; tsc, 257 tests y build OK). Notas y pruebas 1–11 en `docs/f2-notas.md`. Make ruta «Otro» sin ficha hecha por Sonia 05-11. Falta: pruebas de aceptación |
 | F3 Pacientes, comunicaciones y usuarios | `../somos-app-f3` | `f3-pacientes-comunicaciones` | 026 (aplicada 05-11) | **en main** 05-11-2026 (55a2eca; tsc, 273 tests y build OK). Notas y pruebas 1–9 en `docs/f3-notas.md`. Falta: número de Dante (18), Make rutas 6–8 (F4 tarea 19), pruebas |
-| F4 Dante y Make | `../somos-app-f4` | `f4-dante-make` | 027 | pendiente |
+| F4 Dante y Make | `../somos-app-f4` | `f4-dante-make` | 027 (no usada) | **en main** 05-11-2026 (solo docs: `docs/f4-notas.md`). Make 1A y 1B hechos; Dante subido a n8n; historial de Jaime limpio. Falta: 1C (opcional), Marta y Bea inician @Jaimervr_bot, borrar 5 eventos del calendario de JAIME, pruebas P1–P9 |
 
 ---
 
@@ -62,12 +62,12 @@ Estado: `pendiente` · `en curso` · `hecha` · `verificar` · `espera cliente`.
 
 | # | Tarea | Estado | Notas |
 |---|---|---|---|
-| 19 | No llega Telegram de «Sin cita disponible», «Hablar con el psicólogo» y «Cambio de psicólogo» desde el call center; «Otros» sí (3.6) | pendiente | Make |
-| 20 | No llega Telegram de baja médica ni de bloqueo general (6.4, 6.5) | pendiente | Make; vacaciones y asuntos propios sí llegan |
-| 21 | Dante se queda colgado al confirmar la cita y no crea el paciente (cita para el padre de Jaime, «PapáJaime Prueba Paciente», lun 9-11 10:00) (5.1) | pendiente | Necesita ejecuciones de n8n (conector n8n sin autorizar) |
-| 22 | Derivaciones a Marta: no le llega el Telegram (7.2, 7.6); bloquea 7.5 y 7.7 | pendiente | Probable chat_id de Marta ausente o no ha iniciado el bot |
-| 23 | Añadir a Marta a los avisos de emergencia (junto a Bea y Jaime) (7.1) | pendiente | |
-| 24 | Borrar el historial de Jaime en Dante para que pueda repetir 1.6 y 5.2–5.16 (Dante le deriva siempre a un agente) | pendiente | |
+| 19 | No llega Telegram de «Sin cita disponible», «Hablar con el psicólogo» y «Cambio de psicólogo» desde el call center; «Otros» sí (3.6) | verificar (Make arreglado el 01-11; las pruebas de Jaime eran anteriores) | Make |
+| 20 | No llega Telegram de baja médica ni de bloqueo general (6.4, 6.5) | hecha en Make 05-11 (baja médica y «Cerrar agenda» avisan a los agentes); falta 1C opcional | Make; vacaciones y asuntos propios sí llegan |
+| 21 | Dante se queda colgado al confirmar la cita y no crea el paciente (cita para el padre de Jaime, «PapáJaime Prueba Paciente», lun 9-11 10:00) (5.1) | verificar (Dante con memoria de 30 y reglas nuevas, subido 05-11) | Necesita ejecuciones de n8n (conector n8n sin autorizar) |
+| 22 | Derivaciones a Marta: no le llega el Telegram (7.2, 7.6); bloquea 7.5 y 7.7 | espera Marta y Bea (abrir @Jaimervr_bot y pulsar Iniciar) | Probable chat_id de Marta ausente o no ha iniciado el bot |
+| 23 | Añadir a Marta a los avisos de emergencia (junto a Bea y Jaime) (7.1) | verificar (emergencia a Jaime, Bea y Marta, subido 05-11) | |
+| 24 | Borrar el historial de Jaime en Dante para que pueda repetir 1.6 y 5.2–5.16 (Dante le deriva siempre a un agente) | hecha 05-11 (memoria vacía, citas desactivadas, derivaciones cerradas); faltan 5 eventos de Google Calendar | |
 
 ---
 

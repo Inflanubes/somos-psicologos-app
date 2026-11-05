@@ -5,6 +5,8 @@ import { generateTempPassword } from '@/lib/temp-password'
 import { validarTramos, type Tramo, type CentroHorario } from '@/lib/horarios'
 import { TIPOS_CONSULTA } from '@/lib/pacientes-tipos'
 import type { TipoCita } from '@/types/database'
+import { pacientesSinOtroPsicologo, textoBloqueoEliminar, type TipoUsuarioEliminar } from '@/lib/eliminar-usuario'
+import { ahoraMadrid } from '@/lib/fechas'
 
 type EditarBody = {
   tipo: 'psicologo' | 'agente' | 'call_center' | 'inspeccion'
@@ -210,4 +212,115 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const reset = await admin.auth.resetPasswordForEmail(email)
   if (reset.error) return NextResponse.json({ error: reset.error.message }, { status: 500 })
   return NextResponse.json({ ok: true, metodo: 'email', email })
+}
+
+// ── Eliminar un usuario (feedback v2, tarea 17) ─────────────────────────────
+// GET  ?tipo=psicologo → qué pasaría: pacientes que lo impiden y citas futuras.
+// DELETE {tipo}        → borra. Psicólogo: función eliminar_psicologo (migración
+// 026, una sola transacción) y después su cuenta de acceso. Agente, call center
+// e inspección: su cuenta y su fila de agentes; lo que registraron se conserva.
+
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const guard = await requireAgente()
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status })
+
+  const { id } = await ctx.params
+  if (req.nextUrl.searchParams.get('tipo') !== 'psicologo') {
+    return NextResponse.json({ bloqueantes: [], citasFuturas: 0 })
+  }
+  const admin = createSupabaseAdmin()
+  const [pacs, citas] = await Promise.all([
+    admin
+      .from('pacientes')
+      .select('id, nombre, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id')
+      .or(`psicologo_adultos_id.eq.${id},psicologo_pareja_id.eq.${id},psicologo_infantil_id.eq.${id}`),
+    admin
+      .from('acciones_psicologos')
+      .select('id', { count: 'exact', head: true })
+      .eq('psicologo_id', id)
+      .eq('accion', 'Agendar cita')
+      .eq('activo', true)
+      .gte('fecha_cita', ahoraMadrid().fecha),
+  ])
+  if (pacs.error) return NextResponse.json({ error: pacs.error.message }, { status: 500 })
+  if (citas.error) return NextResponse.json({ error: citas.error.message }, { status: 500 })
+  const bloqueantes = pacientesSinOtroPsicologo(pacs.data ?? [], id).map((p) => ({ id: p.id, nombre: p.nombre }))
+  return NextResponse.json({ bloqueantes, citasFuturas: citas.count ?? 0 })
+}
+
+/** Borra cuentas de acceso; un usuario que ya no existe no es un error. */
+async function borrarCuentas(admin: ReturnType<typeof createSupabaseAdmin>, ids: string[]): Promise<string | null> {
+  for (const uid of ids) {
+    const r = await admin.auth.admin.deleteUser(uid)
+    if (r.error && r.error.status !== 404) return r.error.message
+  }
+  return null
+}
+
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const guard = await requireAgente()
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status })
+
+  const { id } = await ctx.params
+  const body = (await req.json().catch(() => ({}))) as { tipo?: TipoUsuarioEliminar }
+  const admin = createSupabaseAdmin()
+
+  if (body.tipo === 'psicologo') {
+    const [ficha, perfiles] = await Promise.all([
+      admin.from('psicologos').select('nombre').eq('id', id).maybeSingle(),
+      admin.from('perfiles').select('id').eq('psicologo_id', id),
+    ])
+    if (ficha.error) return NextResponse.json({ error: ficha.error.message }, { status: 500 })
+    if (!ficha.data) return NextResponse.json({ error: 'No se encontró el psicólogo' }, { status: 404 })
+    // La cuenta de acceso se enlaza por perfiles.psicologo_id (como en «Enviar acceso»).
+    if (perfiles.error) return NextResponse.json({ error: perfiles.error.message }, { status: 500 })
+    const cuentas = (perfiles.data ?? []).map((p) => p.id)
+    if (cuentas.includes(guard.userId)) {
+      return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 })
+    }
+
+    // Se repite la comprobación aquí para devolver el mismo texto que la pantalla.
+    const pacs = await admin
+      .from('pacientes')
+      .select('id, nombre, psicologo_adultos_id, psicologo_pareja_id, psicologo_infantil_id')
+      .or(`psicologo_adultos_id.eq.${id},psicologo_pareja_id.eq.${id},psicologo_infantil_id.eq.${id}`)
+    if (pacs.error) return NextResponse.json({ error: pacs.error.message }, { status: 500 })
+    const bloqueantes = pacientesSinOtroPsicologo(pacs.data ?? [], id)
+    if (bloqueantes.length > 0) {
+      return NextResponse.json({ error: textoBloqueoEliminar(ficha.data.nombre, bloqueantes) }, { status: 409 })
+    }
+
+    const rpc = await admin.rpc('eliminar_psicologo', { p_psicologo_id: id })
+    if (rpc.error) {
+      // PGRST202: PostgREST no encuentra la función (migración 026 sin aplicar).
+      const sinMigracion = rpc.error.code === 'PGRST202'
+      return NextResponse.json(
+        { error: sinMigracion ? 'Falta aplicar la migración 026 en Supabase para poder eliminar psicólogos.' : rpc.error.message },
+        { status: rpc.error.code === '23514' ? 409 : 500 },
+      )
+    }
+    const errCuenta = await borrarCuentas(admin, cuentas)
+    if (errCuenta) {
+      return NextResponse.json({ error: `Se eliminó la ficha, pero no la cuenta de acceso: ${errCuenta}` }, { status: 500 })
+    }
+    return NextResponse.json({ ok: true })
+  }
+
+  if (body.tipo === 'agente' || body.tipo === 'call_center' || body.tipo === 'inspeccion') {
+    const ag = await admin.from('agentes').select('auth_user_id').eq('id', id).maybeSingle()
+    if (ag.error) return NextResponse.json({ error: ag.error.message }, { status: 500 })
+    if (!ag.data) return NextResponse.json({ error: 'No se encontró el usuario' }, { status: 404 })
+    const uid = ag.data.auth_user_id as string | null
+    if (uid && uid === guard.userId) {
+      return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 })
+    }
+    // Primero la cuenta (con ella se va su perfil): si falla, la fila sigue y se puede reintentar.
+    const errCuenta = uid ? await borrarCuentas(admin, [uid]) : null
+    if (errCuenta) return NextResponse.json({ error: errCuenta }, { status: 500 })
+    const del = await admin.from('agentes').delete().eq('id', id)
+    if (del.error) return NextResponse.json({ error: del.error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
+
+  return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
 }

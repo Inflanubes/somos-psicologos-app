@@ -7,6 +7,8 @@ import { etiquetaOrigen } from '@/lib/call-center'
 import { TIPOS_CONSULTA, COLUMNA_PSICOLOGO, ETIQUETA_TIPO, textoSolicitante, type ColumnaPsicologo } from '@/lib/pacientes-tipos'
 import type { Actor } from '@/lib/consentimiento'
 import ConsentimientoAcciones from '../_components/ConsentimientoAcciones'
+import EntidadesVista from './EntidadesVista'
+import type { FilaTutores } from '@/lib/entidades'
 
 export interface PacienteTableRow {
   id: string
@@ -20,6 +22,8 @@ export interface PacienteTableRow {
   psicologo_adultos_id: string | null
   psicologo_pareja_id: string | null
   psicologo_infantil_id: string | null
+  /** La otra persona de la pareja (migración 018). */
+  pareja_de: string | null
   anadido_por: string | null
   /** Ficha de quien pidió la cita por esta persona (Dante, migración 019). */
   solicitante_id: string | null
@@ -72,6 +76,7 @@ export default function PacientesClient({
   puedeEditarPsicologos = false,
   rol = 'agente',
   actor,
+  tutores = null,
 }: {
   pacientes: PacienteTableRow[]
   psicologos?: PsicologoOpcion[]
@@ -80,8 +85,11 @@ export default function PacientesClient({
   rol?: Rol
   /** Quién reenvía o marca el consentimiento. */
   actor: Actor
+  /** Tutores de los menores: con ellos se ven las subpestañas Parejas y Menores (solo agentes). */
+  tutores?: FilaTutores[] | null
 }) {
   const [pacientes, setPacientes] = useState(pacientesIniciales)
+  const [vista, setVista] = useState<'todos' | 'parejas' | 'menores'>('todos')
   // Nombres de la lista ya cargada, para "a petición de …" sin otra consulta.
   const nombrePorId = useMemo(() => new Map(pacientes.map((p) => [p.id, p.nombre])), [pacientes])
   const [search, setSearch] = useState('')
@@ -156,6 +164,17 @@ export default function PacientesClient({
 
   return (
     <div>
+      {/* Subpestañas Parejas y Menores (feedback v2, tarea 14): solo agentes. */}
+      {tutores && (
+        <div className="pestanas" role="tablist">
+          {([['todos', 'Todos'], ['parejas', 'Parejas'], ['menores', 'Menores']] as const).map(([v, etiqueta]) => (
+            <button key={v} type="button" role="tab" className="pestana" aria-selected={vista === v} onClick={() => setVista(v)}>
+              {etiqueta}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <input
@@ -165,7 +184,7 @@ export default function PacientesClient({
           onChange={(e) => setSearch(e.target.value)}
           style={{ ...inputStyle, width: 320 }}
         />
-        <select
+        {vista === 'todos' && <select
           value={estadoFilter}
           onChange={(e) => setEstadoFilter(e.target.value as EstadoPaciente | '')}
           style={{ ...inputStyle, minWidth: 200, cursor: 'pointer' }}
@@ -176,7 +195,7 @@ export default function PacientesClient({
               {e}
             </option>
           ))}
-        </select>
+        </select>}
         {(search || estadoFilter) && (
           <button
             onClick={() => { setSearch(''); setEstadoFilter('') }}
@@ -194,13 +213,19 @@ export default function PacientesClient({
             Limpiar
           </button>
         )}
-        <span style={{ marginLeft: 'auto', fontSize: 13, color: '#8899bb', alignSelf: 'center' }}>
-          {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-        </span>
+        {vista === 'todos' && (
+          <span style={{ marginLeft: 'auto', fontSize: 13, color: '#8899bb', alignSelf: 'center' }}>
+            {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
+      {vista !== 'todos' && tutores && (
+        <EntidadesVista tipo={vista} pacientes={pacientes} tutores={tutores} busqueda={search} nombrePsi={nombrePsi} />
+      )}
+
       {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
+      {vista === 'todos' && <div style={{ overflowX: 'auto' }}>
         <table className="r-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr>
@@ -370,7 +395,7 @@ export default function PacientesClient({
             )}
           </tbody>
         </table>
-      </div>
+      </div>}
     </div>
   )
 }

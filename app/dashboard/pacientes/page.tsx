@@ -4,6 +4,7 @@ import PacientesClient from './PacientesClient'
 import type { PacienteTableRow } from './PacientesClient'
 import { filtroPacientesDePsicologo, ETIQUETA_TIPO, TIPOS_CONSULTA, COLUMNA_PSICOLOGO } from '@/lib/pacientes-tipos'
 import type { Actor } from '@/lib/consentimiento'
+import type { FilaTutores } from '@/lib/entidades'
 
 export default async function PacientesPage() {
   const supabase = await createSupabaseServerClient()
@@ -43,7 +44,15 @@ export default async function PacientesPage() {
     // Pacientes en los que este psicólogo es el de adultos, pareja o infantil.
     pacientesQuery = pacientesQuery.or(filtroPacientesDePsicologo(miPsicologoId ?? '00000000-0000-0000-0000-000000000000'))
   }
-  const { data: pacientes } = await pacientesQuery
+  // Tutores de los menores, para la subpestaña Menores (solo agentes).
+  const [{ data: pacientes }, { data: tutores }] = await Promise.all([
+    pacientesQuery,
+    esPsicologo
+      ? Promise.resolve({ data: [] as FilaTutores[] })
+      : supabase
+          .from('asociados_menores')
+          .select('id_menor, T1_nombre_completo, "T1_teléfono", T1_consentimiento, T1_paciente_id, T2_nombre_completo, "T2_teléfono", T2_consentimiento, T2_paciente_id'),
+  ])
 
   const pac = (pacientes ?? []) as Paciente[]
 
@@ -60,6 +69,7 @@ export default async function PacientesPage() {
     psicologo_adultos_id: p.psicologo_adultos_id,
     psicologo_pareja_id: p.psicologo_pareja_id,
     psicologo_infantil_id: p.psicologo_infantil_id,
+    pareja_de: p.pareja_de ?? null,
     // "Adultos: Marta · Pareja: Juan": un psicólogo por tipo de consulta.
     psicologo_nombre: TIPOS_CONSULTA
       .map((t) => [t, p[COLUMNA_PSICOLOGO[t]]] as const)
@@ -122,6 +132,7 @@ export default async function PacientesPage() {
           puedeEditarPsicologos={!esPsicologo}
           rol={rol}
           actor={actor}
+          tutores={esPsicologo ? null : ((tutores ?? []) as FilaTutores[])}
         />
       </div>
     </div>

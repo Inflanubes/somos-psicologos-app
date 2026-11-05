@@ -50,6 +50,11 @@ const MENSAJES_ESPERA: Record<string, string> = {
     'Hola {{nombre}}, tu psicólogo no tiene disponibilidad en este momento. Estamos buscando la mejor solución para ti y te contactaremos pronto.',
 }
 
+/** Título de cada apartado de En espera; «Cambio solicitado» es lo que el call center llama «Cambio de psicólogo». */
+const ETIQUETA_APARTADO_ESPERA: Record<string, string> = {
+  'Cambio solicitado': 'Cambio de psicólogo',
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function diasDesde(fecha: string | null): number {
   if (!fecha) return 0
@@ -171,7 +176,7 @@ export default function MensajesPage() {
   // desaparece de esta lista (si agenda, Make lo pone en Agendado).
   const [marcando, setMarcando] = useState<Record<string, boolean>>({})
   async function marcarInactivo(p: PacienteConExtra) {
-    if (!window.confirm(`¿Marcar a ${p.nombre} como Inactivo? Dejará de aparecer en "Hablar con Psicólogo".`)) return
+    if (!window.confirm(`¿Marcar a ${p.nombre} como Inactivo? Dejará de aparecer en «Hablar con el psicólogo».`)) return
     setMarcando(prev => ({ ...prev, [p.id]: true }))
     const ahora = new Date().toISOString()
     const { error } = await supabase
@@ -333,10 +338,11 @@ export default function MensajesPage() {
 
   // ── Tab bar ──────────────────────────────────────────────────────────────
   const tabs: { key: Tab; label: string; count: number; color: string }[] = [
-    { key: 'psicologo', label: 'Hablar con Psicólogo', count: pacientesPsicologo.length, color: '#f59e0b' },
+    // Mismos nombres que las acciones del call center (feedback v2, tarea 16).
+    { key: 'psicologo', label: 'Hablar con el psicólogo', count: pacientesPsicologo.length, color: '#f59e0b' },
     { key: 'dudoso', label: 'Dudosos', count: pacientesDudoso.length, color: '#6366f1' },
     { key: 'espera', label: 'En Espera', count: pacientesEspera.length, color: '#2f5aae' },
-    { key: 'sin-disp', label: 'Sin disponibilidad', count: pacientesSinDisp.length, color: '#dc2626' },
+    { key: 'sin-disp', label: 'Sin cita disponible', count: pacientesSinDisp.length, color: '#dc2626' },
     { key: 'recomendado', label: 'Recomendaciones', count: pacientesRecomendados.length, color: '#a855f7' },
   ]
 
@@ -356,6 +362,12 @@ export default function MensajesPage() {
         </h1>
         <p style={{ fontSize: 13.5, color: '#667799', margin: 0 }}>
           Envía mensajes a pacientes y psicólogos según su estado
+        </p>
+        <p style={{ fontSize: 12.5, color: '#667799', margin: '10px 0 0', background: '#f7f4ef', borderRadius: 8, padding: '8px 12px' }}>
+          Dónde aparece cada solicitud del formulario de Citas: <strong>Sin cita disponible</strong> → pestaña Sin cita
+          disponible · <strong>Hablar con el psicólogo</strong> → pestaña Hablar con el psicólogo · <strong>Cambio de
+          psicólogo</strong> (o «Cambio de psicólogo o centro») → pestaña En espera, apartado Cambio de psicólogo. <strong>Otros</strong> solo avisa al equipo
+          por Telegram y no cambia el estado del paciente. El paciente aparece aquí unos segundos después de enviar la solicitud.
         </p>
       </div>
 
@@ -410,7 +422,7 @@ export default function MensajesPage() {
           {tab === 'psicologo' && (
             <div>
               <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
-                Pacientes que llevan más de 1 día esperando que un psicólogo les llame.
+                Pacientes que esperan a que su psicólogo les llame (desde el call center, «Hablar con el psicólogo»); la etiqueta indica cuántos días llevan.
                 El mensaje se envía <strong>al psicólogo</strong> con los datos del paciente. Si un paciente tiene
                 varios psicólogos, elige a cuál avisar. Si tras hablar el paciente no quiere continuar, márcalo como
                 <strong> Inactivo</strong> y saldrá de esta lista.
@@ -596,7 +608,7 @@ export default function MensajesPage() {
           {tab === 'sin-disp' && (
             <div>
               <p style={{ fontSize: 13, color: '#667799', marginBottom: 20 }}>
-                Pacientes sin disponibilidad. Al pulsar el botón se envía un mensaje al
+                Pacientes para los que no había cita disponible («Sin cita disponible»). Al pulsar el botón se envía un mensaje al
                 paciente y su estado pasa a <strong>En espera</strong>.
               </p>
               {pacientesSinDisp.length === 0 ? (
@@ -675,7 +687,7 @@ export default function MensajesPage() {
                       marginBottom: 12,
                     }}>
                       <div>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: '#272626' }}>{estado}</span>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: '#272626' }}>{ETIQUETA_APARTADO_ESPERA[estado] ?? estado}</span>
                         <span style={{ fontSize: 13, color: '#8899bb', marginLeft: 8 }}>{lista.length} paciente{lista.length !== 1 ? 's' : ''}</span>
                       </div>
                       {allSent ? (

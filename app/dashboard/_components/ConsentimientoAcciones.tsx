@@ -102,7 +102,7 @@ export default function ConsentimientoAcciones({
   }
 
   async function marcar() {
-    if (!confirm(`¿Marcar el consentimiento de ${paciente.nombre} como firmado?`)) return
+    if (!confirm(`¿Marcar el consentimiento de ${paciente.nombre} como firmado en papel?`)) return
     setOcupado(true)
     setMensaje(null)
     try {
@@ -206,8 +206,9 @@ export default function ConsentimientoAcciones({
       )}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {boton(compacto ? 'Reenviar consentimiento' : 'Reenviar', reenviar, 'Enviar de nuevo el enlace del consentimiento')}
-        {!compacto && !firmado && boton('Marcar firmado', marcar, 'Firmado en papel o fuera de la app')}
-        {!compacto && firmado && puedeDesmarcar(rol) && boton('Desmarcar', desmarcar, 'Quitar la marca de firmado')}
+        {/* Literales pedidos por Jaime (feedback v2, 4.3 y 4.4) para que no haya dudas. */}
+        {!compacto && !firmado && boton('Marcar «firmado en papel»', marcar, 'Firmado en papel o fuera de la app')}
+        {!compacto && firmado && puedeDesmarcar(rol) && boton('Desmarcar «firmado»', desmarcar, 'Quitar la marca de firmado')}
       </div>
       {eleccionTutor && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>

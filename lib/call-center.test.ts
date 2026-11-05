@@ -19,6 +19,9 @@ import {
   puedeGestionarCita,
   sufijoBusquedaTelefono,
   textoAvisoMismoDia,
+  supuestoCallCenter,
+  telefonoCompleto,
+  motivoRechazoPrefillCallCenter,
 } from './call-center'
 
 describe('puedeGestionarCita', () => {
@@ -191,5 +194,38 @@ describe('operadorParaEnvio', () => {
     expect(operadorParaEnvio('call_center', '   ')).toBe('agente en general')
     expect(operadorParaEnvio('agente', 'Ana')).toBe(null)
     expect(operadorParaEnvio('psicologo', '')).toBe(null)
+  })
+})
+
+describe('formulario por pasos del call center (F2, tarea 11)', () => {
+  it('supuesto según si el paciente existe y si tuvo cita', () => {
+    expect(supuestoCallCenter({ existe: false, tieneCitas: false })).toBe(3)
+    expect(supuestoCallCenter({ existe: true, tieneCitas: false })).toBe(2)
+    expect(supuestoCallCenter({ existe: true, tieneCitas: true })).toBe(1)
+  })
+  it('persona nueva solo con el teléfono completo (9 dígitos)', () => {
+    expect(telefonoCompleto('600 11 22')).toBe(false)
+    expect(telefonoCompleto('600 11 22 33')).toBe(true)
+    expect(telefonoCompleto('+34 600112233')).toBe(true)
+  })
+  it('clic en el calendario: hay que buscar antes y no se puede cambiar de psicólogo ni de paciente', () => {
+    const opciones = ['Agendar cita', 'Cambio solicitado', 'Otro']
+    const paso = { supuesto: 2 as const, bloqueado: true, centroId: 'c1', psicologoId: 'p1', pacienteId: 'a1' }
+    expect(motivoRechazoPrefillCallCenter(null, { accion: 'Agendar cita', psicologoId: 'p1' }, opciones))
+      .toBe('Busca primero el teléfono del paciente.')
+    expect(motivoRechazoPrefillCallCenter({ ...paso, supuesto: 3, bloqueado: false }, { accion: 'Agendar cita', psicologoId: 'p1' }, ['Añadir nuevo paciente', 'Otro']))
+      .toBe('Primero da de alta al paciente con «Añadir nuevo paciente».')
+    expect(motivoRechazoPrefillCallCenter(paso, { accion: 'Agendar cita', psicologoId: 'p2' }, opciones))
+      .toBe('Este paciente va con su psicólogo: elige un hueco de su agenda.')
+    expect(motivoRechazoPrefillCallCenter(paso, { accion: 'Cambiar cita', psicologoId: 'p1', pacienteId: 'a1' }, opciones))
+      .toBe('Esa acción no está disponible para este paciente.')
+    expect(motivoRechazoPrefillCallCenter({ ...paso, supuesto: 1 }, { accion: 'Cambiar cita', psicologoId: 'p1', pacienteId: 'a9' }, ['Cambiar cita']))
+      .toBe('Esa cita es de otro paciente.')
+    expect(motivoRechazoPrefillCallCenter(paso, { accion: 'Agendar cita', centroId: 'c2', psicologoId: 'p1' }, opciones))
+      .toBe('Este paciente va a otro centro: elige un hueco de su centro.')
+    expect(motivoRechazoPrefillCallCenter(paso, { accion: 'Agendar cita', centroId: 'c1', psicologoId: 'p1' }, opciones)).toBeNull()
+    expect(motivoRechazoPrefillCallCenter(paso, { accion: 'Agendar cita', psicologoId: 'p1' }, opciones)).toBeNull()
+    // Sin bloqueo (la selección falló y se eligió a mano): solo se comprueba que haya búsqueda y la acción.
+    expect(motivoRechazoPrefillCallCenter({ ...paso, bloqueado: false }, { accion: 'Agendar cita', psicologoId: 'p2' }, opciones)).toBeNull()
   })
 })

@@ -8,6 +8,7 @@ import {
   subtitulo, td, th,
   type AgenteGestion, type CentroGestion, type PsicologoGestion, type TipoUsuario,
 } from '../_components/gestion'
+import { textoBloqueoEliminar, textoConfirmEliminar } from '@/lib/eliminar-usuario'
 
 // Accesos (antes Usuarios; la ruta sigue siendo /dashboard/usuarios): solo cuentas para entrar en la app (alta, enviar acceso, contraseña
 // temporal y activar agentes / call center). Cómo trabaja cada psicólogo
@@ -144,12 +145,46 @@ export default function UsuariosPage() {
     }
   }
 
-  function botonesAcceso(t: TipoUsuario, id: string) {
+  // Eliminar un usuario (feedback v2, tarea 17). Un psicólogo con pacientes sin otro
+  // psicólogo no se puede borrar; si tiene citas futuras, la confirmación lo dice.
+  async function eliminar(t: TipoUsuario, id: string, nombre: string) {
+    marcar(id, true); setError(null)
+    try {
+      let citasFuturas = 0
+      if (t === 'psicologo') {
+        const res = await fetch(`/api/usuarios/${id}?tipo=psicologo`)
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) { setError(data.error ?? 'No se pudo comprobar el psicólogo'); return }
+        if ((data.bloqueantes ?? []).length > 0) { setError(textoBloqueoEliminar(nombre, data.bloqueantes)); return }
+        citasFuturas = data.citasFuturas ?? 0
+      }
+      if (!window.confirm(textoConfirmEliminar(t, nombre, { citasFuturas }))) return
+      const res = await fetch(`/api/usuarios/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: t }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error ?? 'No se pudo eliminar el usuario'); await cargar(); return }
+      const quitar = <T extends { id: string }>(lista: T[]) => lista.filter((x) => x.id !== id)
+      if (t === 'psicologo') setPsicologos(quitar)
+      else if (t === 'agente') setAgentes(quitar)
+      else if (t === 'inspeccion') setInspeccion(quitar)
+      else setCallCenter(quitar)
+    } catch {
+      setError('Error de conexión al eliminar el usuario')
+    } finally {
+      marcar(id, false)
+    }
+  }
+
+  function botonesAcceso(t: TipoUsuario, id: string, nombre: string) {
     const ocupado = ocupados.has(id)
     return (
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         <ActionButton onClick={() => restablecer(t, id, 'email')} disabled={ocupado} title="Enviar email para que el usuario cree su contraseña">Enviar acceso</ActionButton>
         <ActionButton onClick={() => restablecer(t, id, 'generar')} disabled={ocupado} title="Generar una contraseña temporal para entregar tú">Generar contraseña</ActionButton>
+        <ActionButton variant="danger" onClick={() => eliminar(t, id, nombre)} disabled={ocupado} title="Eliminar la cuenta y su acceso">Eliminar</ActionButton>
       </div>
     )
   }
@@ -315,7 +350,7 @@ export default function UsuariosPage() {
                   <td data-label="Email" style={td}>{p.email ?? '—'}</td>
                   <td data-label="Centros" style={{ ...td, fontSize: 12, color: '#667799' }}>{p.centros_nombres.join(' · ') || '—'}</td>
                   <td data-label="Estado" style={td}><EstadoBadge activo={p.activo} title="Se cambia en Psicólogos" /></td>
-                  <td data-label="" style={td}>{botonesAcceso('psicologo', p.id)}</td>
+                  <td data-label="" style={td}>{botonesAcceso('psicologo', p.id, p.nombre)}</td>
                 </tr>
               ))}
             </tbody>
@@ -344,7 +379,7 @@ export default function UsuariosPage() {
                       onChange={() => toggleActivoAgente(pestana as 'agente' | 'call_center' | 'inspeccion', a)}
                     />
                   </td>
-                  <td data-label="" style={td}>{botonesAcceso(pestana, a.id)}</td>
+                  <td data-label="" style={td}>{botonesAcceso(pestana, a.id, a.nombre)}</td>
                 </tr>
               ))}
             </tbody>

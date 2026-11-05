@@ -62,10 +62,18 @@ describe('generarHuecos: franja y medias horas', () => {
     expect(h[0]).toEqual({ hora: '08:00', estado: 'libre' })
     expect(h[13]).toEqual({ hora: '21:00', estado: 'libre' })
   })
-  it('con medias horas activas: 28 huecos hasta 21:30, todos libres', () => {
+  it('con medias horas activas: 14 huecos de 08:30 a 21:30, solo a y media (F1, feedback v2)', () => {
     const h = generarHuecos({ ...base, mediaHora: true })
+    expect(h).toHaveLength(14)
+    expect(h[0]).toEqual({ hora: '08:30', estado: 'libre' })
+    expect(h[13]).toEqual({ hora: '21:30', estado: 'libre' })
+    expect(estado(h, '10:00')).toBeUndefined()
+  })
+  it('incluirMedias con mediaHora: las en punto salen como media_hora', () => {
+    const h = generarHuecos({ ...base, mediaHora: true, incluirMedias: true })
     expect(h).toHaveLength(28)
-    expect(h[27]).toEqual({ hora: '21:30', estado: 'libre' })
+    expect(estado(h, '10:30')).toBe('libre')
+    expect(estado(h, '10:00')).toBe('media_hora')
   })
   it('incluirMedias sin mediaHora: las y media salen como media_hora', () => {
     const h = generarHuecos({ ...base, incluirMedias: true })
@@ -77,12 +85,16 @@ describe('generarHuecos: franja y medias horas', () => {
 
 describe('generarHuecos: horario', () => {
   it('fuera de horario antes, después y cuando la hora entera no cabe en el tramo', () => {
-    const h = generarHuecos({ ...base, tramos: [t(1, '09:00', '14:00')], mediaHora: true })
+    const h = generarHuecos({ ...base, tramos: [t(1, '09:00', '14:00')] })
     expect(estado(h, '08:00')).toBe('fuera_horario')
     expect(estado(h, '09:00')).toBe('libre')
     expect(estado(h, '13:00')).toBe('libre')
-    expect(estado(h, '13:30')).toBe('fuera_horario') // 13:30–14:30 no cabe
     expect(estado(h, '14:00')).toBe('fuera_horario')
+  })
+  it('con medias horas y tramo 09:00–14:00 (caso Marta): 09:30, 10:30, 11:30 y 12:30', () => {
+    const h = generarHuecos({ ...base, tramos: [t(1, '09:00', '14:00')], mediaHora: true })
+    expect(h.filter((x) => x.estado === 'libre').map((x) => x.hora)).toEqual(['09:30', '10:30', '11:30', '12:30'])
+    expect(estado(h, '13:30')).toBe('fuera_horario') // 13:30–14:30 no cabe
   })
   it('tramos partidos: mañana y tarde', () => {
     const h = generarHuecos({ ...base, tramos: [t(1, '09:00', '14:00'), t(1, '16:00', '20:00')] })
@@ -108,19 +120,22 @@ describe('generarHuecos: ocupación', () => {
     expect(estado(h, '10:00')).toBe('ocupado')
     expect(estado(h, '11:00')).toBe('libre')
   })
-  it('una cita a las 10:00 con medias ocupa 09:30, 10:00 y 10:30', () => {
+  it('una cita antigua a las 10:00 con medias ocupa 09:30 y 10:30', () => {
     const h = generarHuecos({ ...base, mediaHora: true, citas: [{ fecha: LUNES, hora: '10:00' }] })
-    expect(estado(h, '09:00')).toBe('libre')
+    expect(estado(h, '08:30')).toBe('libre')
     expect(estado(h, '09:30')).toBe('ocupado')
-    expect(estado(h, '10:00')).toBe('ocupado')
     expect(estado(h, '10:30')).toBe('ocupado')
-    expect(estado(h, '11:00')).toBe('libre')
+    expect(estado(h, '11:30')).toBe('libre')
   })
-  it('una cita a las 10:30:00 (con segundos) ocupa 10:00, 10:30 y 11:00', () => {
+  it('una cita a las 10:30:00 (con segundos) solo ocupa las 10:30', () => {
     const h = generarHuecos({ ...base, mediaHora: true, citas: [{ fecha: LUNES, hora: '10:30:00' }] })
     expect(estado(h, '09:30')).toBe('libre')
-    expect(estado(h, '10:00')).toBe('ocupado')
     expect(estado(h, '10:30')).toBe('ocupado')
+    expect(estado(h, '11:30')).toBe('libre')
+  })
+  it('modo aviso con medias: una cita a las 10:30 ocupa también 10:00 y 11:00', () => {
+    const h = generarHuecos({ ...base, mediaHora: true, incluirMedias: true, citas: [{ fecha: LUNES, hora: '10:30' }] })
+    expect(estado(h, '10:00')).toBe('ocupado')
     expect(estado(h, '11:00')).toBe('ocupado')
     expect(estado(h, '11:30')).toBe('libre')
   })
@@ -190,9 +205,9 @@ describe('generarHuecos: pasado, antelación y centro inactivo', () => {
 })
 
 describe('generarHuecos: límite superior de la franja', () => {
-  it('una cita a las 21:00 con medias ocupa 20:30, 21:00 y 21:30 (dura hasta las 22:00) y deja libre 20:00', () => {
-    const h = generarHuecos({ ...base, mediaHora: true, citas: [{ fecha: LUNES, hora: '21:00' }] })
-    expect(estado(h, '20:00')).toBe('libre')
+  it('una cita a las 21:00 con medias (modo aviso) ocupa 20:30, 21:00 y 21:30 (dura hasta las 22:00) y no 20:00', () => {
+    const h = generarHuecos({ ...base, mediaHora: true, incluirMedias: true, citas: [{ fecha: LUNES, hora: '21:00' }] })
+    expect(estado(h, '20:00')).toBe('media_hora')
     expect(estado(h, '20:30')).toBe('ocupado')
     expect(estado(h, '21:00')).toBe('ocupado')
     expect(estado(h, '21:30')).toBe('ocupado')
@@ -217,9 +232,9 @@ describe('aplicarCitaLocal (estado optimista tras agendar o cambiar)', () => {
 })
 
 describe('etiquetaMotivo', () => {
-  it('Otros y nulo se muestran como Bloqueo', () => {
-    expect(etiquetaMotivo('Otros')).toBe('Bloqueo')
-    expect(etiquetaMotivo(null)).toBe('Bloqueo')
+  it('Otros y nulo (Cerrar agenda) se muestran como Cerrado', () => {
+    expect(etiquetaMotivo('Otros')).toBe('Cerrado')
+    expect(etiquetaMotivo(null)).toBe('Cerrado')
     expect(etiquetaMotivo('Vacaciones')).toBe('Vacaciones')
   })
 })
@@ -244,6 +259,10 @@ describe('motivoAviso', () => {
   it('hora fuera de horario', () => {
     expect(motivoAviso({ ...ctx, hora: '16:00', tramos: [t(1, '09:00', '14:00')] }))
       .toBe('las 16:00 quedan fuera del horario de Marta en San Blas')
+  })
+  it('con medias horas, una hora en punto avisa de que sus citas son a y media', () => {
+    expect(motivoAviso({ ...ctx, mediaHora: true, hora: '10:00' })).toBe('Marta tiene las citas a y media')
+    expect(motivoAviso({ ...ctx, mediaHora: true, hora: '10:30' })).toBeNull()
   })
   it('media hora no activa', () => {
     expect(motivoAviso({ ...ctx, hora: '10:30' })).toBe('Marta no tiene activadas las citas a y media')
